@@ -97,3 +97,8 @@ Die schon angewendete Migration `0002_roles.sql` bleibt unverändert.
 Für eine spätere Produktivdatenbank in demselben Cluster ist stattdessen
 `db/bootstrap/0002_roles_existing_cluster.sql` als geprüfter Rollen-
 Wiederverwendungsweg vorgesehen. **V1-Berechtigungen nicht verändern.**
+
+
+## Aktueller Stand nach Migration 0004 (08.11.2026)
+
+Die vorstehenden Abschnitte beschreiben die ursprüngliche Planung von Migration 0002. Inzwischen wurden 0002 und 0003 auf `retro_rag_v2_test` erfolgreich angewendet. Reader-, Importer- und Migrator-Login sind aktiviert. Die Importer-/Migrator-HBA-Regeln (Zeilen 125–129) wurden vor den allgemeinen `trust`-Regeln ergänzt und geprüft, und je drei real ausgeführte Negativtests pro Rolle bestanden. Migration 0004 führt die transaktional gesperrte Schreibfreigabeprüfung mit `SECURITY DEFINER` ein, ohne `UPDATE` auf `write_gate` zu vergeben. `verify_0004.sql` und der echte Importer-Test bei geschlossenem Gate wurden bestanden. Die übrigen vier Loginrollen, offenes Gate, vollständiges Staging und IPv6-/Container-Fremdzugriffe bleiben offen. Vollständige Details und Nachweise: [`IMPORTER_WRITE_GATE.md`](IMPORTER_WRITE_GATE.md).
