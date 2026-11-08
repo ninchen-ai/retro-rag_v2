@@ -6,7 +6,8 @@ Stand: 08.11.2026. Entwicklungsbranch `feat/import-webdav-staging`.
 
 - Verbindliche Datenbankstruktur: `feature/phase0-database` (Migrationen 0001–0003).
 - Vorhandene Markdown-Vorstufe aus `feat/import-pipeline-foundation` integriert.
-- WebDAV-Discovery per Depth-1-PROPFIND mit Nextcloud-`oc:fileid` als Quellkennung.
+- WebDAV-Discovery per Depth-1-PROPFIND mit explizit angeforderter Nextcloud-`oc:fileid` als Quellkennung.
+- Die Verzeichnisse `Import`, `Retro-RAG-Vorlagen` und `Sofortupload` werden unabhängig von Groß-/Kleinschreibung auf jeder Ebene vor der rekursiven Traversierung ausgeschlossen.
 - SHA-256 anhand heruntergeladener Originalbytes.
 - Dry-Run zeigt neue, geänderte und bereits vorhandene Inhalte.
 - `--apply` erstellt ausschließlich Dokument, Quelle, Version, Job, abgeschlossenen Archivschritt und Archivartefakt in `retro_rag_v2_test`.
