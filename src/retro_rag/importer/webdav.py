@@ -1,8 +1,8 @@
 """Read-only WebDAV discovery with explicit identity and safe URL handling."""
 
 from dataclasses import dataclass
-from urllib.parse import quote, unquote, urljoin, urlsplit
-from urllib.request import Request, urlopen
+from urllib.parse import unquote, urljoin, urlsplit
+from urllib.request import Request
 from urllib.error import HTTPError
 from xml.etree import ElementTree as ET
 import base64
@@ -64,7 +64,13 @@ class WebDAV:
             if len(seen) > max_directories:
                 raise RuntimeError("WebDAV-Verzeichnislimit überschritten")
             xml = self._request(current, "PROPFIND",
-                                b'<?xml version="1.0"?><d:propfind xmlns:d="DAV:"><d:allprop/></d:propfind>')
+                                (
+                                    b'<?xml version="1.0" encoding="utf-8"?>'
+                                    b'<d:propfind xmlns:d="DAV:" xmlns:oc="http://owncloud.org/ns">'
+                                    b'<d:prop><d:resourcetype/><d:displayname/>'
+                                    b'<d:getetag/><d:getcontentlength/><d:getcontenttype/>'
+                                    b'<oc:fileid/></d:prop></d:propfind>'
+                                ))
             root = ET.fromstring(xml)
             if root.tag != DAV + "multistatus":
                 raise RuntimeError("Ungültige WebDAV-Multistatus-Antwort")
