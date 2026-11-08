@@ -20,8 +20,13 @@ BEGIN
     END IF;
     IF NOT has_function_privilege('rag_v2_importer_login',
                                  'rag_v2.assert_import_write_gate()', 'EXECUTE')
-       OR has_function_privilege('PUBLIC',
-                                'rag_v2.assert_import_write_gate()', 'EXECUTE')
+       OR EXISTS (
+           SELECT 1
+           FROM pg_proc p
+           CROSS JOIN LATERAL aclexplode(p.proacl) a
+           WHERE p.oid = 'rag_v2.assert_import_write_gate()'::regprocedure
+             AND a.grantee = 0 AND a.privilege_type = 'EXECUTE'
+       )
        OR has_table_privilege('rag_v2_importer_login','rag_v2.write_gate','UPDATE')
        OR has_table_privilege('rag_v2_importer_login','rag_v2.write_gate','DELETE')
        OR has_table_privilege('rag_v2_importer_login','rag_v2.write_gate','INSERT')
