@@ -3,7 +3,7 @@
 # Keine Daten, Credentials oder V1-Datenbanken werden exportiert.
 set -Eeuo pipefail
 
-cd "$(dirname "$0")/../.."
+cd "$(dirname "$0")/.."
 container="codeanalyse-postgres"
 database="retro_rag_v2_test"
 target="db/schema/retro_rag_v2_test.sql"
