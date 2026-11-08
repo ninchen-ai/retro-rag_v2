@@ -129,7 +129,7 @@ und Ablehnungstests durchführen. Diesen Schritt nicht automatisch vornehmen.
 
 Passwörter niemals ins Repository, in einen SQL-Migrationsparameter, die
 Shell-History oder in ein GitHub-Issue schreiben. Nach überprüfter
-HBA-Konfiguration können im interaktiven `psql` mit `\\password ROLE`
+HBA-Konfiguration können im interaktiven `psql` mit `\password ROLE`
 Passwörter vergeben werden. Diese Anweisung fragt das Passwort verdeckt ab.
 Danach kann eine Loginrolle kontrolliert mit `ALTER ROLE ... LOGIN`
 aktiviert werden. Das betrifft ausschließlich die neuen V2-Rollen.
