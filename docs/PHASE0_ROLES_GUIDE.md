@@ -82,3 +82,18 @@ gleichnamige Clusterrollen und ist nicht für wiederholte Ausführung gedacht.
    macht sie nicht zur Eigentümerin bereits bestehender Tabellen.
 5. Default Privileges für Objekte zukünftiger Migrationen, anschließend
    echte Tests mit separaten LOGIN-Rollen.
+
+
+## Fortsetzung nach erfolgreich geprüfter Migration 0002
+
+Der vollständige Rollen- und Login-Entwurf ist nun in
+[`PHASE0_ACCESS_ARCHITECTURE.md`](PHASE0_ACCESS_ARCHITECTURE.md)
+dokumentiert. Migration `0003_access.sql` wird **erst nach Prüfung in
+`retro_rag_v2_test`** eingesetzt; sie erzeugt deaktivierte Loginrollen
+und überträgt das V2-Objekteigentum. Die Vorlage für HBA-Regeln liegt unter
+`deploy/postgresql/pg_hba_v2_example.conf` und wird nicht automatisch aktiviert.
+
+Die schon angewendete Migration `0002_roles.sql` bleibt unverändert.
+Für eine spätere Produktivdatenbank in demselben Cluster ist stattdessen
+`db/bootstrap/0002_roles_existing_cluster.sql` als geprüfter Rollen-
+Wiederverwendungsweg vorgesehen. **V1-Berechtigungen nicht verändern.**
