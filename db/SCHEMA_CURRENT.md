@@ -21,6 +21,8 @@ Die **Migrationen** sind die versionierte Definition und Quelle der Änderungen:
 
 **Write-Gate-Abnahme (08.11.2026):** Versionsmarker 1–4 erneut lesend geprüft; `write_gate` zunächst `false` mit Initialisierungsgrund und `document`, `document_version`, `processing_job` jeweils 0 Zeilen. Im nachfolgenden Realtest wurde das Gate kontrolliert geöffnet, die Prüf-Funktion als echter Importer erfolgreich ausgeführt (`BEGIN` / `ROLLBACK`), anschließend das Gate wieder geschlossen (`writes_enabled=false`). Auch der erneute Ablehnungstest als Importer bei geschlossenem Gate war erfolgreich. Der Sperrgrund lautet seitdem `Importer-Test abgeschlossen; Freigabe ausstehend`. Ein zweiter lesender Zähl-/Migrationsstatus nach dem Test wurde noch nicht vorgelegt; ein End-to-End-Import fand nicht statt.
 
+**Aktueller Gate-Endzustand (08.11.2026):** Nach einem Gate-UPDATE mit 3-Sekunden-Lock-Timeout wurde der Schalter erfolgreich geschlossen (`UPDATE 1`). Die lesende Kontrolle ergab `writes_enabled=false`, Grund `Parallelitätstest erfolgreich; Freigabe ausstehend`. Der Lock-Konflikt wurde beobachtet; die blockierende Session ist nicht durch zeitgleiche Terminal-2-Logs oder `pg_locks` nachgewiesen. Die zuletzt gemeldeten Zähler vor diesen rein gate-bezogenen Tests waren 0/0/0; kein End-to-End-Import wurde ausgeführt.
+
 **Schema-Snapshot:** Die im Repository eingecheckte Datei `db/schema/retro_rag_v2_test.sql` stammt aus dem Stand vor Migration 0004 und muss nach einem neuen Export aktualisiert werden. Sie darf bis dahin nicht als vollständiger DDL-Snapshot des derzeit installierten Schemas ausgegeben werden.
 
 Die **tatsächlich installierte Struktur** kann aus PostgreSQL in
@@ -46,7 +48,7 @@ Diese Gruppierung ist eine Lesehilfe aus `0001_init.sql`; sie verändert keine S
 
 ## Installiertes Schema als SQL im Repository ablegen
 
-Auf Poseidon im Branch `feature/phase0-database`:
+Auf Poseidon im aktuellen Branch `fix/importer-write-gate`:
 
 ```bash
 cd ~/projects/retro-rag_v2
@@ -62,7 +64,7 @@ git push
 das ist bei dieser Sichtprüfung normal.
 
 Das Skript überprüft zuerst explizit die V2-Testdatenbank und den
-Migrationsstand 3, erzeugt danach mit `pg_dump --schema-only
+Migrationsstand 4, erzeugt danach mit `pg_dump --schema-only
 --schema=rag_v2 --no-owner --no-privileges` einen reinen DDL-Snapshot
 und erwartet 37 Tabellen. Es greift nicht auf V1 zu.
 
