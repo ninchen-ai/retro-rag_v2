@@ -61,7 +61,7 @@ flowchart LR
 
 **Führende Quellen:** Nextcloud ist führend für Dokumente; PostgreSQL für Inventar, Review-Entscheidungen, historische Belegmetadaten und Jobzustände. Die Dokumentensuche kann technisch erfolgreich indexierte, aber ungeprüfte Quellen anzeigen; solche Aussagen sind nicht als bestätigte Fakten auszugeben.
 
-**Rollen:** In PostgreSQL heißen die V2-Gruppen `rag_v2_importer`, `rag_v2_reviewer`, `rag_v2_inventory`, `rag_v2_reader`, `rag_v2_lifecycle`, `rag_v2_query_logger` und `rag_v2_migrator`. Die separaten `*_login`-Identitäten aus Migration 0003 wurden zunächst deaktiviert angelegt. `rag_v2_reader_login` ist inzwischen mit eigenem Passwort aktiviert und über HBA auf die V2-Testdatenbank eingeschränkt; die übrigen sechs Loginrollen sind deaktiviert. V1-ACLs bleiben unverändert. Die API erzwingt zusätzlich Authentifizierung und Benutzerautorisierung. LLMs erhalten keine direkten Schreibrechte. Siehe [`docs/PHASE0_ACCESS_ARCHITECTURE.md`](docs/PHASE0_ACCESS_ARCHITECTURE.md).
+**Rollen:** In PostgreSQL heißen die V2-Gruppen `rag_v2_importer`, `rag_v2_reviewer`, `rag_v2_inventory`, `rag_v2_reader`, `rag_v2_lifecycle`, `rag_v2_query_logger` und `rag_v2_migrator`. Die separaten `*_login`-Identitäten aus Migration 0003 wurden zunächst deaktiviert angelegt. `rag_v2_reader_login`, `rag_v2_importer_login` und `rag_v2_migrator_login` sind mit getrennten Passwörtern aktiviert; die vier übrigen Loginrollen sind deaktiviert. Spezifische HBA-Regeln begrenzen die aktivierten Rollen auf die V2-Testdatenbank (praktische IPv4-Tests für Importer/Migrator bestanden). V1-ACLs bleiben unverändert. Die API erzwingt zusätzlich Authentifizierung und Benutzerautorisierung. LLMs erhalten keine direkten Schreibrechte. Siehe [`docs/PHASE0_ACCESS_ARCHITECTURE.md`](docs/PHASE0_ACCESS_ARCHITECTURE.md).
 
 **Jobsteuerung:** systemd startet Worker; PostgreSQL hält Jobs, Schritte, Artefaktverweise, Wiederholungen und ablaufende Bearbeitungssperren vor. Kein Redis/Celery für V2 vorgesehen.
 
@@ -257,7 +257,7 @@ Die bestehende V1-Datenbank `retro_rag` und `retro_rag_test` sowie die
 Nextcloud-Datenbank wurden nicht verändert. PostgreSQL-Zugriffe über
 `PUBLIC CONNECT` auf V1 bestehen noch; für den Reader sind
 HBA-Sperren gegen beide V1-Datenbanken, Unix-Socket und direkten Container-IP-Zugriff
-bereits praktisch getestet. Die übrigen sechs V2-Logins sind noch nicht freigeschaltet.
+bereits praktisch getestet. Importer- und Migrator-Login sind ebenfalls aktiviert und mittels positiver und negativer HBA-Verbindungstests über IPv4 geprüft; vier andere V2-Logins bleiben deaktiviert. `0004_import_write_gate.sql` wurde erfolgreich auf der Testdatenbank angewendet und `verify_0004.sql` bestanden. Der echte Importer kann die Gate-Prüffunktion ausführen, aber das Gate nicht verändern; die geschlossene Sperre wurde praktisch bestätigt. Details: [`docs/IMPORTER_WRITE_GATE.md`](docs/IMPORTER_WRITE_GATE.md).
 
 Die Schritte, Ausgaben, Einschränkungen und Betriebsanweisungen:
 [Phase-0-Zugriffsarchitektur](docs/PHASE0_ACCESS_ARCHITECTURE.md).
