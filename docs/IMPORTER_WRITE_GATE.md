@@ -35,34 +35,31 @@ git fetch origin
 git switch fix/importer-write-gate
 git status --short
 
-# Nach sicherer Einrichtung des Migrator-Logins, über TCP-Loopback
-# innerhalb des Containers (Passwort interaktiv):
-docker exec -i codeanalyse-postgres \
+# Migrationsdatei in den DB-Container kopieren:
+docker cp db/migrations/0004_import_write_gate.sql \
+  codeanalyse-postgres:/tmp/0004_import_write_gate.sql
+
+# Dedizierten Migrator interaktiv anmelden (Passwort verdeckt):
+docker exec -it codeanalyse-postgres \
   psql -X -W -h 127.0.0.1 -U rag_v2_migrator_login \
-  -d retro_rag_v2_test -v ON_ERROR_STOP=1 \
-  -c 'SET ROLE rag_v2_migrator;' \
-  -f /dev/stdin < db/migrations/0004_import_write_gate.sql
+  -d retro_rag_v2_test -v ON_ERROR_STOP=1
 ```
 
-**Achtung:** `psql -c` und `-f` in demselben Aufruf sind getrennte
-Ausführungsoptionen; `SET ROLE` ist nicht garantiert auf die
-Dateiausführung übertragbar. Bevorzugt stattdessen eine interaktive
-`psql`-Sitzung nutzen:
+In der interaktiven PostgreSQL-Sitzung:
 
 ```sql
 SET ROLE rag_v2_migrator;
-\i /pfad/im/container/zu/0004_import_write_gate.sql
+\i /tmp/0004_import_write_gate.sql
 RESET ROLE;
 ```
 
-Oder SQL in einer einzigen Sitzung per Eingabestream ausgeben:
+Anschließend die Datei aus dem Container entfernen und den lesenden
+Abnahmecheck ausführen (die bereits vorhandene administrative
+Migrationsidentität darf ausschließlich für diesen Kontrollcheck
+verwendet werden, niemals als Importer-DSN):
 
 ```bash
-{ printf 'SET ROLE rag_v2_migrator;\n'; cat db/migrations/0004_import_write_gate.sql; } |
-  docker exec -i codeanalyse-postgres \
-  psql -X -W -h 127.0.0.1 -U rag_v2_migrator_login \
-  -d retro_rag_v2_test -v ON_ERROR_STOP=1
-
+docker exec codeanalyse-postgres rm /tmp/0004_import_write_gate.sql
 docker exec -i codeanalyse-postgres \
   psql -X -U codeanalyse -d retro_rag_v2_test \
   -v ON_ERROR_STOP=1 < db/checks/verify_0004.sql
