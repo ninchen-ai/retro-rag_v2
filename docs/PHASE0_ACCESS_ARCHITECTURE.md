@@ -176,3 +176,20 @@ testen, nicht nur als Superuser.
    V2-Testlogin testen; V1 und Nextcloud auf unveränderten Zugang prüfen.
 4. Review- und Bestandsänderungen als echte Rollen testen.
 5. Nur nach dieser Abnahme den Branch in `main` übernehmen.
+
+## Durchführung: Reader-Authentifizierung (08.11.2026)
+
+**Auf Poseidon vom Benutzer bestätigt; kein automatischer Zugriff durch GitHub:**
+
+- `pg_hba.conf` im Container wurde unter `pg_hba.conf.pre-retro-v2` gesichert.
+- Für `rag_v2_reader_login` wurden vor den allgemeinen `trust`-Regeln spezielle HBA-Einträge eingefügt: Unix-Socket `reject`; IPv4/IPv6-Loopback nur `retro_rag_v2_test` mit `scram-sha-256`; sonstiges IPv4/IPv6 `reject`.
+- `pg_hba_file_rules` zeigte fünf Reader-Regeln ohne Fehler; `pg_reload_conf()` ergab `t`, erneute Prüfung ergab 0 Fehlerzeilen.
+- Das Passwort wurde lokal mit `\\password rag_v2_reader_login` vergeben (nicht gespeichert); `ALTER ROLE rag_v2_reader_login LOGIN` war erfolgreich.
+- Echter Verbindungsversuch per TCP IPv4 `127.0.0.1` mit Passwort auf `retro_rag_v2_test`: **erfolgreich**; `current_user = rag_v2_reader_login`.
+- Dieselbe Rolle über IPv4-Loopback auf produktives `retro_rag`: **von pg_hba.conf ausdrücklich abgewiesen** (erwarteter Fehler).
+- Effektive Rechte auf `rag_v2.document`: `SELECT = true`, `INSERT = false`, `UPDATE = false`, `DELETE = false`.
+
+**Abgrenzung:** Bislang sind dies echte Login-Tests für den Reader **über TCP-IPv4-Loopback**. Noch nicht als echter Login getestet sind `retro_rag_test`, Unix-Socket, IPv6, Zugriffe über andere Docker-Netzwerkadressen und die sechs übrigen `*_login`-Rollen. Ein `has_database_privilege(..., 'CONNECT') = true` bei V1 bleibt wegen `PUBLIC` bestehen, auch wenn HBA die geprüfte Verbindung blockiert.
+
+**Noch offen:** Die Repository-HBA-Vorlage beschreibt sieben Rollen, während auf Poseidon bisher nur die fünf Reader-Regeln aktiv eingebaut sind. Die weiteren Loginrollen bleiben deaktiviert; niemals die Vorlage unbesehen nochmals am Dateianfang einfügen. Bei Erweiterung vorher die bereits aktiven Regeln berücksichtigen und die exakte HBA-Reihenfolge testen.
+
