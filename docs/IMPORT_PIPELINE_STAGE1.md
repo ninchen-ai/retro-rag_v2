@@ -4,7 +4,7 @@ Stand: 08.11.2026. Entwicklungsbranch `feat/import-webdav-staging`.
 
 ## Umfang
 
-- Verbindliche Datenbankstruktur: `feature/phase0-database` (Migrationen 0001–0003).
+- Verbindliche Datenbankstruktur: `feature/phase0-database` (Migrationen 0001–0004).
 - Vorhandene Markdown-Vorstufe aus `feat/import-pipeline-foundation` integriert.
 - WebDAV-Discovery per Depth-1-PROPFIND mit explizit angeforderter Nextcloud-`oc:fileid` als Quellkennung.
 - Die Verzeichnisse `Import`, `retro-rag-hardware-vorlagen-v1` und `Sofortupload` werden unabhängig von Groß-/Kleinschreibung auf jeder Ebene vor der rekursiven Traversierung ausgeschlossen.
@@ -32,7 +32,7 @@ python -m retro_rag.importer.sync_cli
 python -m retro_rag.importer.sync_cli --apply --archive-root /srv/retro-rag-v2/originals
 ```
 
-**Wichtig:** Die vorbereitete Importer-Loginrolle ist nach Migration 0003 noch deaktiviert. Keine Rolle oder Write-Gate-Einstellung automatisch aktivieren. Änderungen an DB-Zugang und Sicherung erst separat kontrollieren.
+**Stand 08.11.2026:** `rag_v2_importer_login` wurde mit eigenem Passwort aktiviert; HBA-Positiv- und Ablehnungstests über IPv4 wurden bestanden. Migration `0004_import_write_gate.sql` wurde ausgeführt und überprüft. `stage_file()` prüft die geschlossene Schreibsperre über `rag_v2.assert_import_write_gate()` (SECURITY DEFINER mit zeilenweiser Transaktionssperre). Der Importer hat nur EXECUTE auf die Funktion, kein UPDATE auf `write_gate`. **Kein `--apply`-Integrationstest durchgeführt, Gate weiterhin geschlossen.** Siehe [`IMPORTER_WRITE_GATE.md`](IMPORTER_WRITE_GATE.md).
 
 ## Noch offen
 
