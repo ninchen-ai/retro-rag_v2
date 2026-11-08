@@ -38,6 +38,28 @@ aus `0002` bleiben erhalten. **Für neue Objekte müssen weitere Migrationen
 ihre Rechte ausdrücklich vergeben**; pauschale Default-Grants sind
 nicht vorgesehen.
 
+## Wiederverwendung clusterweiter Rollen bei der späteren V2-Produktion
+
+`0002_roles.sql` ist in der Testdatenbank bereits angewendet und erzeugt
+Rollen auf Clusterebene. Ein zweiter unveränderter Aufruf in
+`retro_rag_v2` würde an existierenden Rollen scheitern.
+**Bereits angewendete Migrationsdateien werden nicht umgeschrieben.**
+
+Deshalb enthält das Repository `db/bootstrap/0002_roles_existing_cluster.sql`:
+Es darf ausschließlich in `retro_rag_v2` nach erfolgreicher `0001`
+ausgeführt werden. Die sieben existierenden NOLOGIN-Gruppen werden auf
+Sicherheit geprüft, dieselben Tabellenrechte wie aus `0002` vergeben
+und die Versionsmarke 2 in **dieser** Datenbank protokolliert.
+Dieses spezielle Bootstrap-SQL ist ein ausdrücklich dokumentierter
+Alternativpfad, keine nachträgliche Änderung an `0002`.
+
+`0003_access.sql` kann bestehende deaktivierte V2-Loginrollen ebenfalls
+prüfen und erneut verwenden. **Vor dem Produktions-Bootstrap dürfen die
+sieben Loginrollen noch nicht aktiviert worden sein.** Eine strikte
+Trennung von V2-Test- und V2-Produktionsidentitäten ist vor produktivem
+Betrieb gesondert umzusetzen; diese erste Version verwendet gemeinsame
+Berechtigungsgruppen.
+
 ## Status Migration 0003
 
 **Auf GitHub vorbereitet, noch NICHT auf Poseidon ausgeführt oder an PostgreSQL
