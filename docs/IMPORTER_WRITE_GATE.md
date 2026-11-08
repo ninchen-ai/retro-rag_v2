@@ -185,3 +185,16 @@ Freigabe, kein automatischer Vollimport und keine Änderung von V1-/Nextcloud-AC
 **Bewertung:** Positive und negative Funktionsausführung als echter Importer sowie Rückkehr zum gesperrten Zustand bestätigt. Die Freigabe war temporär, aber **committed und damit für andere zulässige Sessions sichtbar**; sie war kein bloßer Rollback-Test. Die HBA-/Rollenbeschränkungen blieben bestehen.
 
 **Weiterhin offen:** Parallelitätstest mit offener Importer-Transaktion und konkurrierendem Gate-Schließen (FOR SHARE/Lock-Warteverhalten); ein echter WebDAV-Staging-Durchlauf mit `--apply` und kontrollierter Testdatei; weitere Netz-Negativtests (IPv6, `retro_rag_test`, anderer Container) sowie erneuter Nachweis der Datenzähler nach einem späteren Integrationslauf. Der letzte gemeldete Gate-Endzustand ist **geschlossen**. Kein produktiver Rollout freigegeben.
+
+## Parallelitätstest: konkurrierende Gate-Aktualisierung (08.11.2026)
+
+**Beobachteter Ablauf auf Poseidon:**
+
+- Terminal 1: `rag_v2_migrator_login` mit `SET ROLE rag_v2_migrator` setzte `rag_v2.write_gate.writes_enabled=true` (`UPDATE 1`); `SELECT writes_enabled` lieferte `t`.
+- Terminal 2: Der erste Versuch der Gate-Prüfung traf zuvor auf ein geschlossenes Gate (`ERROR: V2-Schreibsperre ist geschlossen`) und führte zu einem abgebrochenen Transaktionszustand. Der Versuch war kein gültiger Lock-Nachweis; `ROLLBACK` wurde zur Bereinigung angewiesen.
+- Beim nachfolgenden Versuch in Terminal 1 führte `SET lock_timeout='3s'` und `UPDATE rag_v2.write_gate SET writes_enabled=false, reason='Parallelitätstest abgeschlossen' WHERE id=true` zu `ERROR: canceling statement due to lock timeout`, mit `CONTEXT: while updating tuple (0,8) in relation "write_gate"`.
+- Nachdem die Blockade nicht mehr bestand, führte Terminal 1 dieselbe Schließung mit dem Grund `Parallelitätstest erfolgreich; Freigabe ausstehend` erfolgreich aus (`UPDATE 1`). Der anschließend angezeigte Endzustand war **`writes_enabled=f`** und `reason='Parallelitätstest erfolgreich; Freigabe ausstehend'`.
+
+**Aussagekraft:** Der Lock-Timeout belegt einen tatsächlichen Zeilensperrkonflikt auf `write_gate`. Der geplante Importer-Aufruf `assert_import_write_gate()` nutzt transaktional `FOR SHARE` und ist damit ein plausibler Blockierer. Für diesen konkreten Timeout wurde jedoch keine vollständige zeitgleiche Terminal-2-Ausgabe der erfolgreichen Gate-Prüfung mit noch offener Transaktion oder eine `pg_locks`/`pg_stat_activity`-Zuordnung vorgelegt. Die genaue Blockiereridentität ist daher **nicht zweifelsfrei protokolliert**. Den Test als „Lock-Konflikt beobachtet“, nicht als vollständigen Nachweis der Importer-zu-Migrator-Sperrbeziehung werten.
+
+**Abnahme weiterhin offen:** Parallelitätstest mit nachgewiesener gleichzeitiger Importer-Transaktion und eindeutiger Blockiererzuordnung, WebDAV-`--apply`-Integration mit kontrollierter Quelle und echtem Importer, weitere HBA-Negativtests (IPv6, V1-Testdatenbank, separater Container). Die letzte vom Betreiber abgelesene Gate-Einstellung ist geschlossen. Keine automatische Schreibfreigabe.
