@@ -51,3 +51,50 @@ def test_webdav_requests_explicit_nextcloud_fileid():
     assert files[0].source_key == "777"
     assert b"<oc:fileid/>" in calls[0][2]
     assert b"<d:allprop/>" not in calls[0][2]
+
+
+def test_excluded_directory_segments_are_case_insensitive():
+    from retro_rag.importer.webdav import is_excluded_directory
+    root = "http://127.0.0.1:8080/remote.php/dav/files/nina/Retro-Computing/"
+    assert is_excluded_directory(root + "Import/test.md", root)
+    assert is_excluded_directory(root + "Hardware/RETRO-RAG-VORLAGEN/test.pdf", root)
+    assert is_excluded_directory(root + "Sofortupload/nested/test.md", root)
+    assert not is_excluded_directory(root + "Hardware/Importiert/test.md", root)
+    assert not is_excluded_directory(root + "Hardware/import.md", root)
+
+
+def test_excluded_directories_are_not_traversed():
+    from retro_rag.importer.webdav import WebDAV
+    root = "http://127.0.0.1:8080/remote.php/dav/files/nina/Retro-Computing/"
+    client = WebDAV(root, "nina", "secret")
+    calls = []
+    responses = {
+        root: (
+            '<d:multistatus xmlns:d="DAV:" xmlns:oc="http://owncloud.org/ns">'
+            '<d:response><d:href>/remote.php/dav/files/nina/Retro-Computing/</d:href></d:response>'
+            '<d:response><d:href>/remote.php/dav/files/nina/Retro-Computing/Import/</d:href>'
+            '<d:propstat><d:prop><d:resourcetype><d:collection/></d:resourcetype>'
+            '</d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response>'
+            '<d:response><d:href>/remote.php/dav/files/nina/Retro-Computing/Hardware/</d:href>'
+            '<d:propstat><d:prop><d:resourcetype><d:collection/></d:resourcetype>'
+            '</d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response>'
+            '</d:multistatus>'
+        ).encode(),
+        root + "Hardware/": (
+            '<d:multistatus xmlns:d="DAV:" xmlns:oc="http://owncloud.org/ns">'
+            '<d:response><d:href>/remote.php/dav/files/nina/Retro-Computing/Hardware/</d:href></d:response>'
+            '<d:response><d:href>/remote.php/dav/files/nina/Retro-Computing/Hardware/board.md</d:href>'
+            '<d:propstat><d:prop><oc:fileid>321</oc:fileid></d:prop>'
+            '<d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response>'
+            '</d:multistatus>'
+        ).encode(),
+    }
+
+    def fake_request(url, method, data=None):
+        calls.append(url)
+        return responses[url]
+
+    client._request = fake_request
+    files = client.list_files()
+    assert [file.source_key for file in files] == ["321"]
+    assert root + "Import/" not in calls
