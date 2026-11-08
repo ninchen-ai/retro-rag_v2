@@ -193,3 +193,11 @@ testen, nicht nur als Superuser.
 
 **Noch offen:** Die Repository-HBA-Vorlage beschreibt sieben Rollen, während auf Poseidon bisher nur die fünf Reader-Regeln aktiv eingebaut sind. Die weiteren Loginrollen bleiben deaktiviert; niemals die Vorlage unbesehen nochmals am Dateianfang einfügen. Bei Erweiterung vorher die bereits aktiven Regeln berücksichtigen und die exakte HBA-Reihenfolge testen.
 
+
+## Zusätzliche Reader-Ablehnungstests (08.11.2026)
+
+Vom Benutzer auf Poseidon ausgeführt und anhand der Terminalausgabe bestätigt:
+
+- `psql -X -W -h 127.0.0.1 -U rag_v2_reader_login -d retro_rag_test`: `FATAL: pg_hba.conf rejects connection`. Neben der produktiven V1-Datenbank ist damit auch die **V1-Testdatenbank über IPv4-Loopback** für den Reader gesperrt.
+- `psql -X -U rag_v2_reader_login -d retro_rag_v2_test` **ohne -h**: `FATAL: pg_hba.conf rejects connection for host "[local]"`. Die vorrangige `local ... reject`-Regel verhindert damit den Zugriff via Unix-Socket, obwohl für andere Benutzer weiterhin `local all all trust` gilt.
+- Offene Gegenproben: direkte Docker-Netzwerkadresse, IPv6 und weitere sechs Loginrollen. Die allgemeinen Authentifizierungsregeln und V1-ACLs bleiben unverändert.
