@@ -111,3 +111,7 @@ Erwartung: `diff` bleibt leer. Das beweist eine unveränderte **Schemastruktur**
 - Die Dateien wurden in einer isolierten Arbeitsumgebung erstellt; kein Zugriff auf den laufenden PostgreSQL-Server Poseidon.
 - Shell-Syntax und statische Sicherheitsaspekte können hier geprüft werden.
 - **Eine echte PostgreSQL-16-/pgvector-Migration und die Laufzeittests konnten hier mangels `psql`/Server nicht ausgeführt werden.** Deshalb ist der Test auf `retro_rag_v2_test` vor jeder produktiven Anwendung verpflichtend.
+
+## Historischer Migrationsleitfaden – nachträglicher Status 08.11.2026
+
+Die oben stehenden Aussagen „Entwurf“, „noch nicht auf Poseidon ausgeführt“ und „keine echten PostgreSQL-Tests“ beziehen sich auf den ursprünglichen Planungsstand der Initialmigration 0001, **nicht** auf den heutigen Zustand. Auf `retro_rag_v2_test` sind inzwischen die Migrationen 0001 bis einschließlich 0004 angewendet; 0004 wurde durch `verify_0004.sql` und einen Realtest als `rag_v2_importer_login` bei geschlossenem Gate bestätigt. Reader, Importer und Migrator sind mit getrennten HBA-Regeln aktiviert. Die übrigen vier Loginrollen und die Integrationstests bei geöffnetem Gate bleiben offen. Details unter [`IMPORTER_WRITE_GATE.md`](IMPORTER_WRITE_GATE.md). Keine nachträgliche Veränderung bereits angewendeter Migrationsdateien.
