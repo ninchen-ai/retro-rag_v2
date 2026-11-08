@@ -10,6 +10,23 @@ import base64
 
 DAV = "{DAV:}"
 
+# Verzeichnisse mit Eingangsdateien, Vorlagen oder automatischen Uploads.
+EXCLUDED_DIRECTORIES = frozenset({"import", "retro-rag-vorlagen", "sofortupload"})
+
+
+def is_excluded_directory(uri: str, root_uri: str) -> bool:
+    """Prüft ganze Pfadsegmente unterhalb der WebDAV-Wurzel, ohne Präfixverwechslungen."""
+    path = unquote(urlsplit(uri).path)
+    root_path = unquote(urlsplit(root_uri).path).rstrip("/") + "/"
+    if not path.startswith(root_path):
+        raise ValueError("WebDAV-Pfad liegt außerhalb des Startverzeichnisses")
+    relative = path[len(root_path):]
+    # Dateien werden nicht anhand des Dateinamens ausgefiltert.
+    segments = relative.strip("/").split("/") if relative.strip("/") else []
+    directories = segments if path.endswith("/") else segments[:-1]
+    return any(segment.casefold() in EXCLUDED_DIRECTORIES for segment in directories)
+
+
 
 @dataclass(frozen=True)
 class RemoteFile:
@@ -58,7 +75,7 @@ class WebDAV:
         results: list[RemoteFile] = []
         while pending:
             current = pending.pop()
-            if current in seen:
+            if current in seen or is_excluded_directory(current, self.root):
                 continue
             seen.add(current)
             if len(seen) > max_directories:
@@ -86,6 +103,8 @@ class WebDAV:
                     raise ValueError("WebDAV-Quellpfad außerhalb des Startverzeichnisses")
                 if uri.rstrip("/") == current.rstrip("/"):
                     continue
+                if is_excluded_directory(uri, self.root):
+                    continue
                 prop = None
                 for status in response.findall(DAV + "propstat"):
                     if (status.findtext(DAV + "status") or "").split(" ")[1:2] == ["200"]:
@@ -95,6 +114,8 @@ class WebDAV:
                     raise RuntimeError("WebDAV-Eigenschaften fehlen oder sind nicht lesbar")
                 rtype = prop.find(DAV + "resourcetype")
                 if rtype is not None and rtype.find(DAV + "collection") is not None:
+                    if is_excluded_directory(uri.rstrip("/") + "/", self.root):
+                        continue
                     pending.append(uri.rstrip("/") + "/")
                     continue
                 name = unquote(parts.path.rstrip("/").split("/")[-1])
