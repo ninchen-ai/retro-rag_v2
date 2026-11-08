@@ -217,3 +217,7 @@ Dies ist **kein** Nachweis eines Tests aus einem separaten Anwendungscontainer; 
 - Bis zur Umstellung **keine dauerhafte HBA-Freigabe für `172.19.0.0/16`** und keine hartkodierte PostgreSQL-Container-IP in Retro-RAG V2. Für Verbindungen aus Containern den Docker-DNS-Namen `codeanalyse-postgres` verwenden.
 - Vor der Netzumstellung: alle VLAN-/WireGuard-/Docker-Netze abgleichen, Container-/Compose-Zuordnungen, statische IPs und Portfreigaben erfassen, Sicherung und geplantes Wartungsfenster prüfen. Netzwerk bei Bedarf neu erstellen und betroffene Container erneut anbinden. V1/Nextcloud-Dienste vor und nach Umstellung auf Konnektivität testen.
 - Die bisher getesteten Reader-HBA-Regeln für Loopback bleiben dokumentiert; nach der Umstellung HBA-Regeln für konkrete V2-Dienstadressen anpassen und Verbindungs-/Ablehnungstests wiederholen.
+
+## Zeitplanung ai-network-Umstellung (08.11.2026)
+
+Auf Wunsch der Betreiberin ist die Umstellung des mit einem VLAN kollidierenden Docker-Subnetzes `172.19.0.0/16` **für in etwa zwei Wochen (Zieldatum 22.11.2026)** zurückgestellt. Das Datum ist eine Planung, **keine automatisierte Ausführung oder verbindlich bestätigtes Wartungsfenster**. Bis dahin keine Subnetz-, Netzwerk- oder dauerhaften HBA-Freigabeänderungen für Containerverbindungen. Die anderen Phase-0-Aufgaben können fortgesetzt werden. Vor dem tatsächlichen Wechsel Subnetzüberschneidungen und abhängige Dienste prüfen und das Wartungsfenster festlegen.
