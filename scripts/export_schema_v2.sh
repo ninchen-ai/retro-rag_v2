@@ -33,6 +33,10 @@ if ! grep -q '^CREATE TABLE rag_v2\.schema_migration' "$tmp"; then
     echo "Abbruch: erwartete Schema-Migrations-Tabelle fehlt im Export" >&2
     exit 1
 fi
+if ! grep -q '^CREATE FUNCTION rag_v2.assert_import_write_gate()' "$tmp"; then
+    echo "Abbruch: Gate-Funktion aus Migration 0004 fehlt im Schemaexport" >&2
+    exit 1
+fi
 if [[ "$(grep -c '^CREATE TABLE rag_v2\.' "$tmp")" -ne 37 ]]; then
     echo "Abbruch: erwartet genau 37 rag_v2-Tabellen" >&2
     exit 1
