@@ -57,8 +57,9 @@ def test_excluded_directory_segments_are_case_insensitive():
     from retro_rag.importer.webdav import is_excluded_directory
     root = "http://127.0.0.1:8080/remote.php/dav/files/nina/Retro-Computing/"
     assert is_excluded_directory(root + "Import/test.md", root)
-    assert is_excluded_directory(root + "Hardware/RETRO-RAG-VORLAGEN/test.pdf", root)
+    assert is_excluded_directory(root + "Hardware/RETRO-RAG-HARDWARE-VORLAGEN-V1/test.pdf", root)
     assert is_excluded_directory(root + "Sofortupload/nested/test.md", root)
+    assert not is_excluded_directory(root + "Hardware/retro-rag-vorlagen/test.pdf", root)
     assert not is_excluded_directory(root + "Hardware/Importiert/test.md", root)
     assert not is_excluded_directory(root + "Hardware/import.md", root)
 
