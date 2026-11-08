@@ -324,6 +324,18 @@
         <node TEXT="Ollama qwen3.5:4b; qwen3:8b bei Unklarheit" />
         <node TEXT="Embedding-Modell und Dimension konfigurierbar" />
       </node>
+      <node TEXT="Phase 0 PostgreSQL Rollenarchitektur (08.11.2026)">
+        <node TEXT="0001 Init getestet: 37 Tabellen, pgvector 0.8.6, Schreibsperre aktiv" />
+        <node TEXT="0002 Rollen getestet: 7 NOLOGIN Gruppen" />
+        <node TEXT="0003 Zugriff vorbereitet, noch nicht ausgefuehrt">
+          <node TEXT="7 eigene Loginidentitaeten, zuerst NOLOGIN und ohne Passwort" />
+          <node TEXT="V2-Migrator als Eigentuemmer der V2-Objekte" />
+          <node TEXT="Berechtigungen nur in rag_v2, V1 unveraendert" />
+        </node>
+        <node TEXT="Produktivbootstrap bei gemeinsamen Clusterrollen: db/bootstrap/0002_roles_existing_cluster.sql" />
+        <node TEXT="HBA-Sperre fuer V2-Logins vor bestehenden Trust-Regeln; noch nicht aktiviert" />
+        <node TEXT="Dokumentation: docs/PHASE0_ACCESS_ARCHITECTURE.md" />
+      </node>
       <node TEXT="Offene Implementierungsparameter: Fristen, OCR-Schwellen, Authentifizierung, Alarme, Lizenz, Paketversionen" />
     </node>
   </node>
