@@ -1,0 +1,51 @@
+# Geheimnisse und lokale Konfiguration
+.env
+.env.*
+!.env.example
+config.yaml
+config.local.yaml
+*.pem
+*.key
+
+# Python und Werkzeuge
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+*.egg-info/
+dist/
+build/
+
+# Daten und Sicherungen
+*.dump
+*.backup
+*.bak
+backups/
+archives/
+archive/
+data/
+models/
+*.gguf
+*.safetensors
+*.onnx
+
+# Externe Quellen und Inventarbilder
+*.pdf
+*.jpg
+*.jpeg
+*.png
+*.tiff
+*.webp
+
+# Laufzeitdateien
+*.log
+*.sqlite
+*.sqlite3
+.DS_Store
+.vscode/
+.idea/
