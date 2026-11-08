@@ -61,7 +61,7 @@ flowchart LR
 
 **Führende Quellen:** Nextcloud ist führend für Dokumente; PostgreSQL für Inventar, Review-Entscheidungen, historische Belegmetadaten und Jobzustände. Die Dokumentensuche kann technisch erfolgreich indexierte, aber ungeprüfte Quellen anzeigen; solche Aussagen sind nicht als bestätigte Fakten auszugeben.
 
-**Rollen:** `rag_importer` (Import/Staging), `rag_reviewer` (Freigaben), `rag_inventory` (bestätigte Inventaränderungen), `rag_reader` (nur Lesen), separate Migrationsrolle. Die API erzwingt zusätzlich Authentifizierung und Benutzerautorisierung. LLMs erhalten keine direkten Schreibrechte.
+**Rollen:** In PostgreSQL heißen die V2-Gruppen `rag_v2_importer`, `rag_v2_reviewer`, `rag_v2_inventory`, `rag_v2_reader`, `rag_v2_lifecycle`, `rag_v2_query_logger` und `rag_v2_migrator`. Die separaten `*_login`-Identitäten aus Migration 0003 bleiben zunächst deaktiviert. Aktivierung und HBA-Abschirmung erfolgen erst nach Tests; V1-ACLs bleiben unverändert. Die API erzwingt zusätzlich Authentifizierung und Benutzerautorisierung. LLMs erhalten keine direkten Schreibrechte. Siehe [`docs/PHASE0_ACCESS_ARCHITECTURE.md`](docs/PHASE0_ACCESS_ARCHITECTURE.md).
 
 **Jobsteuerung:** systemd startet Worker; PostgreSQL hält Jobs, Schritte, Artefaktverweise, Wiederholungen und ablaufende Bearbeitungssperren vor. Kein Redis/Celery für V2 vorgesehen.
 
@@ -241,6 +241,24 @@ retro-rag/
 └── deploy/
     └── systemd/               # Units und Timer
 ```
+
+---
+
+## Phase 0 – Stand auf Poseidon (08.11.2026)
+
+Die Testdatenbank `retro_rag_v2_test` läuft im bestehenden Container `codeanalyse-postgres`
+(PostgreSQL 16.15, pgvector 0.8.6). `0001_init.sql` wurde ausgeführt und
+mit 37 Tabellen und Smoke-Test geprüft. `0002_roles.sql` wurde ausgeführt
+und mit sieben NOLOGIN-Gruppen geprüft. Die vorbereitete
+`0003_access.sql` und `verify_0003.sql` sind **noch nicht ausgeführt**.
+
+Die bestehende V1-Datenbank `retro_rag` und `retro_rag_test` sowie die
+Nextcloud-Datenbank wurden nicht verändert. PostgreSQL-Zugriffe über
+`PUBLIC CONNECT` auf V1 bestehen noch; eine wirksame V2-Anmeldesperre gegen
+V1 erfordert die separat vorbereiteten HBA-Regeln.
+
+Die Schritte, Ausgaben, Einschränkungen und Betriebsanweisungen:
+[Phase-0-Zugriffsarchitektur](docs/PHASE0_ACCESS_ARCHITECTURE.md).
 
 ---
 
