@@ -418,7 +418,7 @@ Die folgenden **Implementierungsparameter** wurden durch die Variantenwahl nicht
 
 - `0001_init.sql`: auf `retro_rag_v2_test` ausgeführt; 37 Tabellen, Schema- und Smoke-Test bestanden.
 - `0002_roles.sql`: auf `retro_rag_v2_test` ausgeführt; sieben `rag_v2_*`-NOLOGIN-Gruppen und Rechte geprüft.
-- `0003_access.sql`: vorbereitet, **noch nicht ausgeführt**. Sie richtet deaktivierte Loginidentitäten ein und überträgt V2-Objektbesitz auf `rag_v2_migrator`.
+- `0003_access.sql`: auf `retro_rag_v2_test` ausgeführt und geprüft; Eigentümer ist `rag_v2_migrator`.
 - PostgreSQL-Instanz: Docker `codeanalyse-postgres` (16.15), pgvector 0.8.6. Host-Port nur `127.0.0.1:5432` veröffentlicht; im Container lokale `trust`-Authentifizierung.
-- Noch offen: HBA-Reihenfolge für V2-Logins, Passwortvergabe, Aktivierung, Verifikation tatsächlicher Verbindungen und Rechte; **V1-/Nextcloud-ACLs unverändert lassen**.
+- Reader-, Importer- und Migrator-Login aktiviert; Importer/Migrator haben echte IPv4-HBA-Positiv- und Negativtests bestanden. `0004_import_write_gate.sql` ausgeführt und geprüft; der Importer darf die SECURITY-DEFINER-Gate-Funktion ausführen, aber `write_gate` nicht ändern. Bei geschlossenem Gate erfolgt erwartungsgemäß ein Fehler. Noch offen: Test bei geöffnetem Gate, End-to-End-Staging, IPv6/separater Container und weitere Loginrollen; **V1-/Nextcloud-ACLs unverändert lassen**. Siehe `docs/IMPORTER_WRITE_GATE.md`.
 - Betrieb und Sicherheitsgrenzen sind in `docs/PHASE0_ACCESS_ARCHITECTURE.md` festgehalten.
