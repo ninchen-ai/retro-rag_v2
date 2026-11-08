@@ -208,3 +208,12 @@ Vom Benutzer ausgeführt: `docker exec -it codeanalyse-postgres psql -X -W -h 17
 Ergebnis: `FATAL: pg_hba.conf rejects connection for host "172.19.0.3"`.
 Somit ist auch der direkte TCP-Zugriff **aus dem PostgreSQL-Container auf dessen eigene Adresse im Netzwerk `ai-network`** für den Reader abgewiesen worden.
 Dies ist **kein** Nachweis eines Tests aus einem separaten Anwendungscontainer; dieser sowie IPv6 und die verbleibenden sechs Loginrollen sind noch offen. Die Konfiguration blieb unverändert.
+
+## Netzentscheidung und offener Adresskonflikt (08.11.2026)
+
+- Architekturentscheidung: Retro-RAG V2 soll das bestehende Docker-Netz `ai-network` zusammen mit PostgreSQL nutzen; kein zusätzliches V2-Bridge-Netz erforderlich.
+- Auf Poseidon aus `docker network inspect ai-network` bestätigt: `Subnet = 172.19.0.0/16`, `Gateway = 172.19.0.1`; PostgreSQL hat derzeit `172.19.0.3`.
+- Der Betreiber hat einen **Adresskonflikt mit einem VLAN** festgestellt. Das `ai-network`-Subnetz muss deshalb später umgestellt werden; neuer CIDR und Zeitpunkt sind noch nicht festgelegt.
+- Bis zur Umstellung **keine dauerhafte HBA-Freigabe für `172.19.0.0/16`** und keine hartkodierte PostgreSQL-Container-IP in Retro-RAG V2. Für Verbindungen aus Containern den Docker-DNS-Namen `codeanalyse-postgres` verwenden.
+- Vor der Netzumstellung: alle VLAN-/WireGuard-/Docker-Netze abgleichen, Container-/Compose-Zuordnungen, statische IPs und Portfreigaben erfassen, Sicherung und geplantes Wartungsfenster prüfen. Netzwerk bei Bedarf neu erstellen und betroffene Container erneut anbinden. V1/Nextcloud-Dienste vor und nach Umstellung auf Konnektivität testen.
+- Die bisher getesteten Reader-HBA-Regeln für Loopback bleiben dokumentiert; nach der Umstellung HBA-Regeln für konkrete V2-Dienstadressen anpassen und Verbindungs-/Ablehnungstests wiederholen.
