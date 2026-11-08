@@ -11,7 +11,7 @@ import base64
 DAV = "{DAV:}"
 
 # Verzeichnisse mit Eingangsdateien, Vorlagen oder automatischen Uploads.
-EXCLUDED_DIRECTORIES = frozenset({"import", "retro-rag-vorlagen", "sofortupload"})
+EXCLUDED_DIRECTORIES = frozenset({"import", "retro-rag-hardware-vorlagen-v1", "sofortupload"})
 
 
 def is_excluded_directory(uri: str, root_uri: str) -> bool:
