@@ -172,3 +172,16 @@ repräsentativer WebDAV-End-to-End-Test mit echtem Importer und
 `--apply`, sowie gesonderte Negativtests für IPv6, V1-Testdatenbank und
 separaten Container. Bis dahin Gate geschlossen lassen. Keine produktive
 Freigabe, kein automatischer Vollimport und keine Änderung von V1-/Nextcloud-ACLs.
+
+## Nachtrag: beide Gate-Zustände mit echtem Importer geprüft (08.11.2026)
+
+**Von Poseidon zurückgemeldete SQL-Ergebnisse:**
+
+1. Rein lesender Stand vor den zusätzlichen Tests: `schema_migration` enthält die Versionen **1, 2, 3 und 4**; `write_gate.writes_enabled=f`, Grund `Initialisierung: Schreibfreigabe ausstehend`, `changed_at=2026-11-08 14:00:13.699269+00`. `document=0`, `document_version=0` und `processing_job=0`.
+2. Transaktionaler Funktionstest als `rag_v2_migrator_login` mit `SET LOCAL ROLE rag_v2_migrator`: `BEGIN`, `UPDATE write_gate SET writes_enabled=true` (`UPDATE 1`), `SELECT rag_v2.assert_import_write_gate()` erfolgreich (eine leere `void`-Ergebniszeile), `ROLLBACK`. Nach dem Rollback: `writes_enabled=f`, Initialisierungsgrund unverändert. Dieser Test belegte noch **nicht** den positiven Aufruf als Importer.
+3. Für den anschließenden Realtest hat `rag_v2_migrator_login` mit `SET ROLE rag_v2_migrator` das Gate explizit auf `true` gesetzt und committed (`UPDATE 1`, `COMMIT`). **Während dieser Freigabe** hat `rag_v2_importer_login` in einem eigenen Terminal `BEGIN;`, `SELECT current_user;` → `rag_v2_importer_login`, `SELECT rag_v2.assert_import_write_gate();` → **erfolgreich**, `ROLLBACK;` ausgeführt. Das ist der echte Positivtest mit operativer Rolle; keine Daten wurden durch diesen Aufruf angelegt.
+4. Der Migrator hat das Gate anschließend wieder auf `false` gesetzt (`UPDATE 1`). Abgelesener Endzustand: `writes_enabled=f`, `reason='Importer-Test abgeschlossen; Freigabe ausstehend'`. Ein erneuter echter Importer-Aufruf ergab erwartungsgemäß `ERROR: V2-Schreibsperre ist geschlossen`.
+
+**Bewertung:** Positive und negative Funktionsausführung als echter Importer sowie Rückkehr zum gesperrten Zustand bestätigt. Die Freigabe war temporär, aber **committed und damit für andere zulässige Sessions sichtbar**; sie war kein bloßer Rollback-Test. Die HBA-/Rollenbeschränkungen blieben bestehen.
+
+**Weiterhin offen:** Parallelitätstest mit offener Importer-Transaktion und konkurrierendem Gate-Schließen (FOR SHARE/Lock-Warteverhalten); ein echter WebDAV-Staging-Durchlauf mit `--apply` und kontrollierter Testdatei; weitere Netz-Negativtests (IPv6, `retro_rag_test`, anderer Container) sowie erneuter Nachweis der Datenzähler nach einem späteren Integrationslauf. Der letzte gemeldete Gate-Endzustand ist **geschlossen**. Kein produktiver Rollout freigegeben.
