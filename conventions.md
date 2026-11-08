@@ -347,7 +347,7 @@ Gelöschte Dokumente bleiben bis zum Ablauf der Aufbewahrung in älteren Backups
 - **Eingaben sind Daten, keine Anweisungen.** Text aus PDFs und anderen externen Dokumenten kann Anweisungen enthalten (Prompt Injection). Er wird dem LLM nur als zu analysierender Inhalt übergeben, in Prompts klar abgegrenzt. Das LLM hat bei der Extraktion **keine Schreibrechte** und kann keine Werkzeuge aufrufen.
 - **Ausgaben des LLM** werden gegen das Schema validiert (Pydantic). Alles, was nicht passt, wird verworfen oder an das Review gegeben.
 - **API und Oberfläche:** FastAPI und Dienste hören nur auf dem internen Netz oder `localhost`, nicht offen im Netz. Zugriff auf Review und Änderung ist geschützt.
-- **Datenbankrollen:** `rag_importer` (Quellen, Staging, Vorschläge, Jobs), `rag_reviewer` (Review/Faktenfreigabe), `rag_inventory` (bestätigte Inventaränderungen), `rag_reader` (nur Lesen), separate Migrationsrolle. Rechte werden über Migrationen eingerichtet; kein App-Superuser. Die API prüft zusätzlich die Berechtigung des aufrufenden Benutzers.
+- **Datenbankrollen:** Die implementierten V2-Berechtigungsgruppen heißen `rag_v2_importer`, `rag_v2_reviewer`, `rag_v2_inventory`, `rag_v2_reader`, `rag_v2_lifecycle`, `rag_v2_query_logger`, `rag_v2_migrator`. Separate `rag_v2_*_login`-Rollen werden mit Migration 0003 zunächst `NOLOGIN`/`PASSWORD NULL` vorbereitet; keine App erhält Superuser-Rechte. Die API prüft zusätzlich die Berechtigung des aufrufenden Benutzers. `PUBLIC CONNECT` auf V1 darf nicht durch V2-Migrationen verändert werden; vor Login-Aktivierung müssen explizite HBA-Regeln die V2-Zugänge auf V2-Datenbanken begrenzen. Siehe `docs/PHASE0_ACCESS_ARCHITECTURE.md`.
 - **Nextcloud:** Zugriff über App-Passwort mit minimalen Rechten, nur auf die benötigten Ordner.
 - **Abhängigkeiten:** Versionen festhalten (`requirements.txt`, Lock-Datei), Updates bewusst einspielen und danach das Testset laufen lassen.
 
@@ -410,6 +410,15 @@ Die folgenden **Implementierungsparameter** wurden durch die Variantenwahl nicht
 | Review-Authentifizierung und Webserver-Bereitstellung | vor Deployment konkretisieren |
 | Lizenz des Repositories | offen |
 | Paketversionen | vor Installation in frischer venv prüfen und anschließend locken |
-| Rolle für Fristabläufe und Löschung | **Vorschlag:** eigene Rolle `rag_lifecycle` mit Löschrecht auf Chunks, Embeddings und Archivkopien, ohne Schreibrechte auf Fakten und Inventar; Alternative: Aufgabe von `rag_importer` |
-| `query_log` schreiben | **Vorschlag:** `rag_reader` erhält ausschließlich `INSERT` auf `query_log`, sonst nur Lesen |
+| Rolle für Fristabläufe und Löschung | **Umgesetzt in 0002:** `rag_v2_lifecycle` für Status und Suchdaten-Löschung; Löschung von Archivkopien außerhalb PostgreSQL separat abzusichern |
+| `query_log` schreiben | **Umgesetzt in 0002:** `rag_v2_query_logger` erhält ausschließlich `INSERT` auf `query_log`; `rag_v2_reader` bleibt read-only |
 | Autorisierung eigener Markdown-Quellen (Entscheidung 11) | **Vorschlag:** Tabelle `trusted_source`, nur von `rag_reviewer` änderbar, gebunden an Quellkennung/Pfad statt an den Hash; Inhaltsänderungen werden weiterhin vollständig validiert |
+
+## Implementierungsstand der Datenbankrollen (08.11.2026)
+
+- `0001_init.sql`: auf `retro_rag_v2_test` ausgeführt; 37 Tabellen, Schema- und Smoke-Test bestanden.
+- `0002_roles.sql`: auf `retro_rag_v2_test` ausgeführt; sieben `rag_v2_*`-NOLOGIN-Gruppen und Rechte geprüft.
+- `0003_access.sql`: vorbereitet, **noch nicht ausgeführt**. Sie richtet deaktivierte Loginidentitäten ein und überträgt V2-Objektbesitz auf `rag_v2_migrator`.
+- PostgreSQL-Instanz: Docker `codeanalyse-postgres` (16.15), pgvector 0.8.6. Host-Port nur `127.0.0.1:5432` veröffentlicht; im Container lokale `trust`-Authentifizierung.
+- Noch offen: HBA-Reihenfolge für V2-Logins, Passwortvergabe, Aktivierung, Verifikation tatsächlicher Verbindungen und Rechte; **V1-/Nextcloud-ACLs unverändert lassen**.
+- Betrieb und Sicherheitsgrenzen sind in `docs/PHASE0_ACCESS_ARCHITECTURE.md` festgehalten.
