@@ -54,6 +54,7 @@ $guard$;
 SELECT pg_advisory_xact_lock(824020, 2);
 
 -- Die spätere App erhält eigene Login-Identitäten, die JETZT noch NOLOGIN sind.
+-- Bereits vorhandene deaktivierte V2-Logins werden streng geprüft und wiederverwendet.
 -- Ein aktiviertes Login braucht zusätzlich ein starkes Passwort und wirksame
 -- HBA-Regeln, welche V1-Verbindungen für genau diese Konten verhindern.
 DO $roles$
@@ -70,12 +71,22 @@ BEGIN
         'rag_v2_migrator_login'
     ] LOOP
         IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = v_role) THEN
-            RAISE EXCEPTION 'Login-Rolle % existiert bereits; Schutzabbruch', v_role;
+            -- Bei späterer V2-Produktiv-DB sind dieselben Clusterrollen schon
+            -- durch den erfolgreichen Testdatenbanklauf vorhanden.
+            -- Bestehende Rollen nur nach strenger Prüfung wiederverwenden.
+            IF NOT EXISTS (
+                SELECT 1 FROM pg_roles
+                WHERE rolname = v_role AND NOT rolcanlogin AND NOT rolsuper
+                  AND NOT rolcreatedb AND NOT rolcreaterole AND NOT rolreplication
+            ) THEN
+                RAISE EXCEPTION 'Bestehende Rolle % ist nicht sicher deaktiviert', v_role;
+            END IF;
+        ELSE
+            EXECUTE format(
+                'CREATE ROLE %I NOLOGIN PASSWORD NULL INHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION',
+                v_role
+            );
         END IF;
-        EXECUTE format(
-            'CREATE ROLE %I NOLOGIN PASSWORD NULL INHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION',
-            v_role
-        );
     END LOOP;
 END;
 $roles$;
