@@ -81,10 +81,9 @@ def stage_file(
     file_hash = digest(data)
     with conn.transaction():
         with conn.cursor() as cur:
-            cur.execute("SELECT writes_enabled FROM rag_v2.write_gate WHERE id = true FOR SHARE")
-            gate = cur.fetchone()
-            if not gate or not gate[0]:
-                raise PermissionError("V2-Schreibsperre ist geschlossen")
+            # SECURITY DEFINER prüft und hält den FOR SHARE-Row-Lock.
+            # Importer benötigt nur EXECUTE, niemals UPDATE auf write_gate.
+            cur.execute("SELECT rag_v2.assert_import_write_gate()")
             # Eine bereits geschlossene Schreibsperre darf kein Archiv erzeugen.
             # Bei einem späteren SQL-Fehler bleibt höchstens eine verwaiste Archivdatei.
             archive_uri = archive_original(archive_root, data, file.name)
