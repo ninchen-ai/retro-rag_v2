@@ -257,7 +257,7 @@ Die bestehende V1-Datenbank `retro_rag` und `retro_rag_test` sowie die
 Nextcloud-Datenbank wurden nicht verändert. PostgreSQL-Zugriffe über
 `PUBLIC CONNECT` auf V1 bestehen noch; für den Reader sind
 HBA-Sperren gegen beide V1-Datenbanken, Unix-Socket und direkten Container-IP-Zugriff
-bereits praktisch getestet. Importer- und Migrator-Login sind ebenfalls aktiviert und mittels positiver und negativer HBA-Verbindungstests über IPv4 geprüft; vier andere V2-Logins bleiben deaktiviert. `0004_import_write_gate.sql` wurde erfolgreich auf der Testdatenbank angewendet und `verify_0004.sql` bestanden. Der echte Importer kann die Gate-Prüffunktion ausführen, aber das Gate nicht verändern; die geschlossene Sperre wurde praktisch bestätigt. Details: [`docs/IMPORTER_WRITE_GATE.md`](docs/IMPORTER_WRITE_GATE.md).
+bereits praktisch getestet. Importer- und Migrator-Login sind ebenfalls aktiviert und mittels positiver und negativer HBA-Verbindungstests über IPv4 geprüft; vier andere V2-Logins bleiben deaktiviert. `0004_import_write_gate.sql` wurde erfolgreich auf der Testdatenbank angewendet und `verify_0004.sql` bestanden. Der echte Importer kann die Gate-Prüffunktion ausführen, aber das Gate nicht verändern; die geschlossene **und** geöffnete Sperre wurden mit dem echten Importer praktisch bestätigt; nach dem Test wurde das Gate wieder geschlossen. Ein konkurrierender Lock-Test und ein End-to-End-`--apply`-Test stehen noch aus. Details: [`docs/IMPORTER_WRITE_GATE.md`](docs/IMPORTER_WRITE_GATE.md).
 
 Die Schritte, Ausgaben, Einschränkungen und Betriebsanweisungen:
 [Phase-0-Zugriffsarchitektur](docs/PHASE0_ACCESS_ARCHITECTURE.md).
