@@ -289,3 +289,11 @@ repräsentativer WebDAV-End-to-End-Test mit echtem Importer und
 `--apply`, sowie gesonderte Negativtests für IPv6, V1-Testdatenbank und
 separaten Container. Bis dahin Gate geschlossen lassen. Keine produktive
 Freigabe, kein automatischer Vollimport und keine Änderung von V1-/Nextcloud-ACLs.
+
+## Ergänzende Gate-Abnahme auf Poseidon (08.11.2026)
+
+Nach Migration 0004 wurden die vier Migrationsmarker 1–4 und der Ausgangszustand (geschlossenes Gate; je 0 Dokumente, Dokumentversionen und Verarbeitungsjobs) lesend bestätigt. Ein Migrator-Transaktionstest mit temporär geöffnetem Gate, erfolgreichem Funktionsaufruf und `ROLLBACK` stellte den ursprünglichen Zustand wieder her.
+
+Danach wurde das Gate für einen kurzen Realtest vom dedizierten Migrator **committed geöffnet**. In einer getrennten Sitzung als `rag_v2_importer_login` gelang `BEGIN; SELECT current_user; SELECT rag_v2.assert_import_write_gate(); ROLLBACK;` ohne Fehler. Anschließend schloss der Migrator das Gate wieder (`writes_enabled=f`, Grund: `Importer-Test abgeschlossen; Freigabe ausstehend`). Ein erneuter Aufruf durch den echten Importer scheiterte erwartungsgemäß an der geschlossenen Sperre. Somit sind beide Gate-Zustände unter der realen Importer-Identität geprüft, ohne ihr UPDATE auf das Gate zu geben.
+
+**Nicht mit diesen Ergebnissen nachgewiesen:** Verhalten unter konkurrierendem `FOR SHARE`- und UPDATE-Lock, regulärer `--apply`-Import samt Archivierung/Jobanlage, IPv6- und Container-Fremdverbindungen. Eine allgemeine DB-Schreibbarriere ersetzt die Prüf-Funktion nicht. Die vorigen historischen Hinweise auf den noch ausstehenden positiven Gate-Test gelten durch diesen Nachtrag als überholt.
