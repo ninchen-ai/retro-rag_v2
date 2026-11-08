@@ -6,9 +6,9 @@
 
 - PostgreSQL 16.15, pgvector 0.8.6, Schema `rag_v2`.
 - Angelegte und auf Poseidon geprüfte Datenbank: `retro_rag_v2_test`.
-- Angewendete Migrationen: `0001_init.sql`, `0002_roles.sql`, `0003_access.sql` (Versionsmarker 3).
+- Angewendete Migrationen: `0001_init.sql`, `0002_roles.sql`, `0003_access.sql`, `0004_import_write_gate.sql` (Versionsmarker 4; erfolgreiche Ausführung und Check 08.11.2026).
 - 37 Tabellen; Eigentümer des Schemas und der V2-Objekte: `rag_v2_migrator`.
-- Sieben Berechtigungsgruppen; `rag_v2_reader_login` als einzige bislang aktivierte V2-Loginrolle, mit Reader-Rechten.
+- Sieben Berechtigungsgruppen; `rag_v2_reader_login`, `rag_v2_importer_login` und `rag_v2_migrator_login` aktiviert (vier weitere deaktiviert), mit getrennten Rollen und minimalen Rechten.
 - `retro_rag_v2` (Produktion) wurde noch nicht eingerichtet.
 - V1-Datenbanken `retro_rag` und `retro_rag_test` sind **nicht Teil dieses Schemas** und bleiben unangetastet.
 
@@ -17,6 +17,9 @@ Die **Migrationen** sind die versionierte Definition und Quelle der Änderungen:
 1. `db/migrations/0001_init.sql` – Tabellen, Constraints, Indizes, Trigger, Funktionen.
 2. `db/migrations/0002_roles.sql` – Berechtigungsgruppen und Grants.
 3. `db/migrations/0003_access.sql` – vorbereitete Loginrollen und Eigentümertransfer.
+4. `db/migrations/0004_import_write_gate.sql` – gesicherte Import-Gate-Funktion (SECURITY DEFINER, `FOR SHARE`) mit minimalem EXECUTE-Grant.
+
+**Schema-Snapshot:** Die im Repository eingecheckte Datei `db/schema/retro_rag_v2_test.sql` stammt aus dem Stand vor Migration 0004 und muss nach einem neuen Export aktualisiert werden. Sie darf bis dahin nicht als vollständiger DDL-Snapshot des derzeit installierten Schemas ausgegeben werden.
 
 Die **tatsächlich installierte Struktur** kann aus PostgreSQL in
 `db/schema/retro_rag_v2_test.sql` exportiert werden. Weil GitHub nicht
