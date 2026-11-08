@@ -99,3 +99,49 @@ def test_excluded_directories_are_not_traversed():
     files = client.list_files()
     assert [file.source_key for file in files] == ["321"]
     assert root + "Import/" not in calls
+
+
+def test_stage_checks_write_gate_before_archiving(monkeypatch, tmp_path):
+    """Kein Originalarchiv anlegen, wenn die DB-Gate-Funktion ablehnt."""
+    from contextlib import contextmanager
+
+    from retro_rag.importer import staging
+    from retro_rag.importer.webdav import RemoteFile
+
+    statements = []
+
+    class Cursor:
+        def execute(self, sql, params=None):
+            statements.append(sql)
+            if "assert_import_write_gate()" in sql:
+                raise PermissionError("V2-Schreibsperre ist geschlossen")
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return False
+
+    class Connection:
+        @contextmanager
+        def transaction(self):
+            yield
+
+        def cursor(self):
+            return Cursor()
+
+    def archive_must_not_run(*args, **kwargs):
+        raise AssertionError("Archivierung trotz geschlossenem Gate")
+
+    monkeypatch.setattr(staging, "archive_original", archive_must_not_run)
+    remote = RemoteFile(
+        source_key="777",
+        uri="https://nextcloud.example/remote.php/dav/files/u/test.md",
+        name="test.md",
+        etag=None,
+        byte_size=4,
+        content_type="text/markdown",
+    )
+    with pytest.raises(PermissionError, match="Schreibsperre"):
+        staging.stage_file(Connection(), remote, b"test", tmp_path)
+    assert statements == ["SELECT rag_v2.assert_import_write_gate()"]
