@@ -9,7 +9,7 @@ Der Nutzen entsteht durch die Verknüpfung beider Quellen, etwa bei der Frage *�
 
 Alles läuft lokal auf dem Homelab-Server **Poseidon**. Es gibt keine Cloud-Dienste, und eine Internetrecherche durch das LLM ist vorerst nicht vorgesehen.
 
-> **Status:** Phase 0 (Architektur, Datenmodell, Importvertrag). Es ist noch kein produktiver Code vorhanden. Die Planung liegt in `docs/Retro-Rag V2.mm` (Freeplane). Die verbindlichen Regeln stehen in [`conventions.md`](conventions.md).
+> **Status (09.11.2026):** Phase 0 und Import-Staging sind als Entwicklungsstand vorhanden. C1 (atomare Versionsaktivierung) ist mit sieben PostgreSQL-Tests abgenommen, jedoch noch nicht an einen echten Verarbeitungs-Worker angebunden. Kein produktiver Import freigegeben; Write-Gate geschlossen. Verbindliche Regeln: [`conventions.md`](conventions.md).
 
 ---
 
@@ -152,7 +152,7 @@ Stufen: Quelle identifizieren → Dokument prüfen → Text/PDF extrahieren (opt
 | OpenWebUI | Chat-Oberfläche |
 | systemd / Borg | Worker/Timer und konsistente Sicherung/Wiederherstellung |
 
-Ollama-intensive Verarbeitung auf der GTX 1060 zunächst seriell. Layoutanalyse ist optional; Python-Pakete werden vor Produktiveinsatz in einer frischen Umgebung getestet. Konkrete Abhängigkeiten stehen in `requirements.txt`.
+Ollama-intensive Verarbeitung auf der GTX 1060 zunächst seriell. Layoutanalyse ist optional; Python-Pakete werden vor Produktiveinsatz in einer frischen Umgebung getestet. Die aktuell implementierten Python-Abhängigkeiten stehen in `pyproject.toml`. Für spätere OCR-/Layout-Worker ist noch keine paketierte optionale Abhängigkeitsgruppe festgelegt.
 
 ## Phasen
 
@@ -179,15 +179,10 @@ Ollama-intensive Verarbeitung auf der GTX 1060 zunächst seriell. Layoutanalyse 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
+python -m pip install -e '.[dev]'
 ```
 
-Die Layoutanalyse ist optional. Nur falls sie benötigt wird, zunächst eine passende PyTorch-Installation wählen und anschließend die optionalen Abhängigkeiten installieren:
-
-```bash
-pip install torch --index-url https://download.pytorch.org/whl/cpu
-pip install -r requirements-layout.txt
-```
+OCR und Layoutanalyse sind noch nicht implementiert. Für diese optionalen zukünftigen Worker werden Abhängigkeiten erst nach Kompatibilitätsprüfung separat in `pyproject.toml` definiert; derzeit existiert keine `requirements-layout.txt`.
 
 Tesseract-OCR wird bei Bedarf als Systempaket installiert (`sudo apt install tesseract-ocr tesseract-ocr-deu tesseract-ocr-eng`).
 
@@ -298,3 +293,11 @@ Vier rollback-basierte PostgreSQL-Integrationstests sind als `tests/test_documen
 ### Punkt B – abschließender Datenbanknachweis (09.11.2026)
 
 **Abnahme 09.11.2026:** Vier Integrationstests bestanden (`4 passed in 0.14s`). Anschließende unabhängige SQL-Kontrolle: `writes_enabled=f`, Grund `Parallelitätstest erfolgreich; Freigabe ausstehend`; `document=0`, `document_source=0`, `document_version=0`, `review_item=0`, `processing_job=0`. Damit sind Test-Rollback und unveränderter persistenter Gate-Zustand nachgewiesen. Kein echter WebDAV-`--apply`-Test und keine Review-Auflösung durchgeführt. Der tatsächlich exportierte Schema-Snapshot wurde in Commit `04b9c98` versioniert. Frühere Statusvermerke weiter oben sind historische Zwischenstände.
+
+## C1 – Atomare Versionsaktivierung (Abnahme 09.11.2026)
+
+Der Entwicklungsbranch `feature/c1-atomic-version-activation` enthält `src/retro_rag/importer/activation.py` und zwei DB-Testsuiten. Auf Poseidon wurden **6 C1-Integrationstests** gegen `retro_rag_v2_test` und **1 echter Konkurrenztest** in einem isolierten PostgreSQL-Container erfolgreich ausgeführt. Der Konkurrenztest bestätigte einen tatsächlichen Blockierer via `pg_blocking_pids()` und exakt eine aktive Version nach beiden Transaktionen. Die anschließende unabhängige Kontrolle des bestehenden Testclusters ergab `writes_enabled=f` und `document=0`, `document_version=0`, `processing_job=0`; der temporäre Container wurde gestoppt.
+
+Die Validierung bezieht sich auf die atomaren DB-Statuswechsel. Ein vollständiger WebDAV-`--apply`-Durchlauf sowie die Anbindung eines Verarbeitungs-Workers stehen weiter aus. Details und Befehle: [`docs/C1_ATOMIC_VERSION_ACTIVATION.md`](docs/C1_ATOMIC_VERSION_ACTIVATION.md).
+
+**Python-Dependency-Quelle:** `pyproject.toml` ist maßgeblich. `requirements.txt` und `requirements-layout.txt` sind nicht vorhanden; die bisherigen Hinweise darauf waren überholt.
