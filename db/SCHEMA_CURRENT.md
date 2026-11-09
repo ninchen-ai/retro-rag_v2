@@ -95,3 +95,7 @@ Snapshot zusammen mit der Migrationsdatei committen. So wird Schema-Drift sichtb
 - Temporäre Datei `/tmp/0005_document_identity.sql` im Container nach erfolgreicher Abnahme entfernt.
 
 **Noch offen:** SQL-Schema-Snapshot aus Poseidon neu exportieren und versionieren; ausführliche Datenbank-Integrationstests für unterschiedliche Instanzen/gleiche `oc:fileid`, identische SHA-256-Inhalte und Review-Staging; End-to-End-WebDAV-`--apply`; Review-Auflösung. **Keine** dieser weiteren Prüfungen ist durch den reinen Schema-/Unit-Test-Nachweis erbracht. V1 und Nextcloud waren nicht Ziel der Migration.
+
+## Nachtrag nach Schemaexport und Integrationstests (09.11.2026)
+
+Der reale SQL-DDL-Snapshot nach Migration 0005 ist im Branch in Commit `04b9c98` enthalten. **Abnahme 09.11.2026:** Vier Integrationstests bestanden (`4 passed in 0.14s`). Anschließende unabhängige SQL-Kontrolle: `writes_enabled=f`, Grund `Parallelitätstest erfolgreich; Freigabe ausstehend`; `document=0`, `document_source=0`, `document_version=0`, `review_item=0`, `processing_job=0`. Damit sind Test-Rollback und unveränderter persistenter Gate-Zustand nachgewiesen. Kein echter WebDAV-`--apply`-Test und keine Review-Auflösung durchgeführt. Die oben noch als offen erwähnten Arbeiten an Snapshot und Datenbank-Integrationstests sind damit erledigt; offen bleiben WebDAV-End-to-End-Verarbeitung und Review-Auflösung.
