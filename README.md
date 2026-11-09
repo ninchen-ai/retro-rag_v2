@@ -277,6 +277,7 @@ Alle 13 Entscheidungen sind in [`conventions.md`](conventions.md#16-architekture
 ## Dokumentation
 
 - [`conventions.md`](conventions.md): verbindliche Regeln für Code, Datenmodell, Import, Lebenszyklus, Betrieb
+- [`docs/IMPORT_CONTRACT_METADATA.md`](docs/IMPORT_CONTRACT_METADATA.md): Metadatenfelder, Validierung und Vertrauensgrenzen für Markdown-Import
 - `docs/Retro-Rag V2.mm`: Mindmap mit dem gesamten Plan
 
 ## Lizenz
