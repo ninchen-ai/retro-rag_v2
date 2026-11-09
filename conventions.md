@@ -136,7 +136,7 @@ PostgreSQL 16 mit `pgvector`. Datenbankname und Rollen werden in der Konfigurati
 
 - Technische IDs sind **UUIDs** (`gen_random_uuid()`), werden einmal vergeben und nie wiederverwendet. `document.id` bleibt bei Umbenennung/Verschiebung gleich; `chunk.id` ist dagegen versionsgebunden und wird für eine neue Version neu erzeugt.
 - Für Exemplare gibt es zusätzlich eine **lesbare Inventarnummer** (z. B. `RPC-000123`) als eigene Spalte mit `UNIQUE`. Sie steht auf dem Etikett, die technische ID bleibt intern.
-- `content_hash` (SHA-256) identifiziert Dateiinhalte, nicht die logische Dokumentidentität. `document_source` hält Nextcloud-Quellkennung und Fundort; `document_version` hält Hash und Version. Mehrdeutige Zuordnungen werden geprüft.
+- `content_hash` (SHA-256) identifiziert Dateiinhalte, nicht die logische Dokumentidentität. `document_source` hält das Paar aus dauerhaft konfigurierter Nextcloud-Instanzkennung und `oc:fileid` sowie den Fundort; `document_version` hält Hash und Version. Mehrdeutige Zuordnungen werden geprüft.
 
 **Migrationen**
 
@@ -187,7 +187,7 @@ review_batch 1 ── n review_item ── n review_decision
 
 **Hardwareidentität:** `article.id` ist eine stabile UUID; `article_revision` beschreibt nachgewiesene Revisionen, `article_alias` alternative Schreibweisen. `model_key` (`hersteller:modell[:variante]`) ist ein normalisierter **Such-/Dublettenhinweis, kein Primärschlüssel**. Fakten können auf Modell- oder Revisionsebene gelten. Unklare Zuordnung wird geprüft; kein automatisches Zusammenführen.
 
-**Dokumentidentität:** `document` (logisches Objekt), `document_source` (Quellkennung/Fundort) und `document_version` (Inhaltsversion/Hash) sind getrennt. Gleicher Hash an mehreren Fundorten kann auf dieselben Inhaltsdaten verweisen, ohne zwingend identische logische Dokumente zu beweisen. Eindeutige Quellkennung erlaubt Rename/Move-Erkennung.
+**Dokumentidentität:** `document` (logisches Objekt), `document_source` (Quellkennung/Fundort) und `document_version` (Inhaltsversion/Hash) sind getrennt. Gleicher Hash an mehreren Fundorten kann auf dieselben Inhaltsdaten verweisen, ohne zwingend identische logische Dokumente zu beweisen. Die eindeutige Quellkennung besteht aus `source_system`, `source_instance` und `source_key` (`oc:fileid`); `source_instance` bezeichnet die stabile Installation, nicht URL oder Benutzer. Sie erlaubt Rename/Move-Erkennung. Ein identischer Hash einer bislang unbekannten Quelle erzeugt einen `document_identity`-Review, aber keine automatische Zusammenführung oder Indexierung dieser Quelle.
 
 **Zustand** hat zwei getrennte Felder je Exemplar: `completeness` (`complete`, `incomplete`) und `functional_state` (`working`, `needs_repair`, `defective`, `untested`). Neue Exemplare beginnen mit `untested`.
 
@@ -245,7 +245,7 @@ review_batch 1 ── n review_item ── n review_decision
 
 ## 9. Dokumentlebenszyklus
 
-**Drei Identitäten:** `document.id` ist dauerhaft; `document_source` erfasst Nextcloud-Kennung/Fundort; `document_version` enthält Versionsdaten und SHA-256-Hash. Hashgleichheit allein ist kein Beweis für gleiche logische Dokumentidentität. Umbenennen/Verschieben wird über stabile Quellkennung erkannt. Mehrere gültige Quellen verhindern eine Löschung beim Wegfall nur einer Quelle.
+**Drei Identitäten:** `document.id` ist dauerhaft; `document_source` erfasst Instanzkennung, Nextcloud-`oc:fileid` und Fundort; `document_version` enthält Versionsdaten und SHA-256-Hash. Hashgleichheit allein ist kein Beweis für gleiche logische Dokumentidentität. Umbenennen/Verschieben wird über stabile Quellkennung erkannt. Mehrere gültige Quellen verhindern eine Löschung beim Wegfall nur einer Quelle.
 
 **Zwei getrennte Statusachsen:** Der Versionsstatus (`document_version.state`: `active`, `superseded`, `archived`) beschreibt, welche Inhaltsversion gilt. Die Verfügbarkeit (`document.availability`: `available`, `deactivated`, `removed`) beschreibt, ob das Dokument noch eine gültige Quelle hat. Beide Felder sind unabhängig; nur bei `available` gilt der Versionsstatus für die Suche.
 
