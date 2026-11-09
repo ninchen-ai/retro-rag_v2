@@ -67,3 +67,9 @@ Schema-Migration und statische/unit-basierte Tests sind bestätigt. **Nicht best
 Die vier ausführbaren PostgreSQL-Tests und ihre Sicherheitsbedingungen sind unter [DOCUMENT_IDENTITY_INTEGRATION_TESTS.md](DOCUMENT_IDENTITY_INTEGRATION_TESTS.md) dokumentiert. Die Tests sind **noch nicht ausgeführt**: erst die reale Poseidon-Ausgabe `4 passed` ohne `skipped` und die Nachkontrolle des Gate-Zustands erlauben eine Abnahme. Die Suite simuliert lediglich das Originalarchiv, nicht die SQL-Verarbeitung; sie nutzt den dedizierten Migrator-Login und committet keine Gate-Freigabe.
 
 **Integrationstests am 09.11.2026:** Auf Poseidon wurden vier Datenbanktests über den Container-Netzwerk-Namespace mit `4 passed in 0.14s` bestanden (Instanzidentität, Hash-Review, Job-Sperre und Idempotenz). Die HBA-Regeln blieben unverändert. Der unabhängige Nachcheck des persistenten Write-Gates und der Tabellenzähler steht noch aus. Siehe [Integrationstest-Nachweis](DOCUMENT_IDENTITY_INTEGRATION_TESTS.md).
+
+## Abschließende Abnahme von Punkt B – 09.11.2026
+
+**Abnahme 09.11.2026:** Vier Integrationstests bestanden (`4 passed in 0.14s`). Anschließende unabhängige SQL-Kontrolle: `writes_enabled=f`, Grund `Parallelitätstest erfolgreich; Freigabe ausstehend`; `document=0`, `document_source=0`, `document_version=0`, `review_item=0`, `processing_job=0`. Damit sind Test-Rollback und unveränderter persistenter Gate-Zustand nachgewiesen. Kein echter WebDAV-`--apply`-Test und keine Review-Auflösung durchgeführt.
+
+Die vorstehenden älteren Angaben zum noch ausstehenden Schema-Snapshot oder zur Testausführung sind durch den Git-Commit `04b9c98` (tatsächlicher DDL-Export) und diesen Abnahmenachtrag überholt. Die fachliche Abnahme bezieht sich auf Migration 0005, SQL-Staging und die vier reproduzierbaren Datenbanktests, nicht auf einen vollständigen WebDAV-Workflow.
