@@ -105,3 +105,28 @@ wurde auf diesem Integrationsbranch **noch nicht erneut ausgeführt**.
 Er ist nur auf dem vorgelagerten C1-Branch abgenommen. Ein echter
 WebDAV-End-to-End-`--apply`-Import und Worker-/Embedding-Verarbeitung
 stehen ebenfalls aus; keine produktive Schreibfreigabe.
+
+## Wiederholter C1-Konkurrenztest im Integrationsbranch (09.11.2026)
+
+Betreiberseitig auf Poseidon mit separatem Container `retro-rag-v2-c1-isolated`,
+dessen Netzwerk-Namespace und `RETRO_V2_C1_ISOLATED_DSN` durchgeführt:
+
+```text
+. [100%]
+1 passed in 0.16s
+```
+
+Damit wurden im konsolidierten Integrationsbranch insgesamt **24 Unit-Tests
+und 11 echte PostgreSQL-Integrationstests** erfolgreich ausgeführt (4
+Dokumentidentität, 6 C1-Aktivierung und 1 isolierter C1-Konkurrenztest).
+Der Konkurrenztest verifiziert programmgesteuert auch die Blockierung
+zweier konkurrierender Aktivierungen.
+
+**Noch zu bestätigen:** unabhängige lesende Nachkontrolle des persistenten
+V2-Write-Gates und der Tabellenzähler im bestehenden PostgreSQL-Container,
+anschließend Stoppen des isolierten Testcontainers. Diese Schritte sind
+nicht Bestandteil der übermittelten Testausgabe; ihre Durchführung darf
+nicht vorweggenommen werden.
+
+Keine automatische Freigabe für WebDAV-`--apply`, Indexierungs-Worker
+oder Produktionsbetrieb. `main` wurde nicht verändert.
