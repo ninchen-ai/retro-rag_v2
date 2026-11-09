@@ -349,7 +349,7 @@ Gelöschte Dokumente bleiben bis zum Ablauf der Aufbewahrung in älteren Backups
 - **API und Oberfläche:** FastAPI und Dienste hören nur auf dem internen Netz oder `localhost`, nicht offen im Netz. Zugriff auf Review und Änderung ist geschützt.
 - **Datenbankrollen:** Die implementierten V2-Berechtigungsgruppen heißen `rag_v2_importer`, `rag_v2_reviewer`, `rag_v2_inventory`, `rag_v2_reader`, `rag_v2_lifecycle`, `rag_v2_query_logger`, `rag_v2_migrator`. Separate `rag_v2_*_login`-Rollen werden mit Migration 0003 zunächst `NOLOGIN`/`PASSWORD NULL` vorbereitet; keine App erhält Superuser-Rechte. Die API prüft zusätzlich die Berechtigung des aufrufenden Benutzers. `PUBLIC CONNECT` auf V1 darf nicht durch V2-Migrationen verändert werden; vor Login-Aktivierung müssen explizite HBA-Regeln die V2-Zugänge auf V2-Datenbanken begrenzen. Siehe `docs/PHASE0_ACCESS_ARCHITECTURE.md`.
 - **Nextcloud:** Zugriff über App-Passwort mit minimalen Rechten, nur auf die benötigten Ordner.
-- **Abhängigkeiten:** Versionen festhalten (`requirements.txt`, Lock-Datei), Updates bewusst einspielen und danach das Testset laufen lassen.
+- **Abhängigkeiten:** `pyproject.toml` ist die maßgebliche Definition der aktuellen Python-Pakete und Entwicklungswerkzeuge. Vor produktivem Betrieb müssen getestete konkrete Versionen in einer reproduzierbaren Lock-Datei festgehalten werden (noch offen); Updates bewusst einspielen und danach das Testset laufen lassen. Die früher erwähnten Dateien `requirements.txt` und `requirements-layout.txt` existieren derzeit nicht.
 
 ---
 
