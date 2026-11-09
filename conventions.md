@@ -136,7 +136,7 @@ PostgreSQL 16 mit `pgvector`. Datenbankname und Rollen werden in der Konfigurati
 
 - Technische IDs sind **UUIDs** (`gen_random_uuid()`), werden einmal vergeben und nie wiederverwendet. `document.id` bleibt bei Umbenennung/Verschiebung gleich; `chunk.id` ist dagegen versionsgebunden und wird für eine neue Version neu erzeugt.
 - Für Exemplare gibt es zusätzlich eine **lesbare Inventarnummer** (z. B. `RPC-000123`) als eigene Spalte mit `UNIQUE`. Sie steht auf dem Etikett, die technische ID bleibt intern.
-- `content_hash` (SHA-256) identifiziert Dateiinhalte, nicht die logische Dokumentidentität. `document_source` hält Nextcloud-Quellkennung und Fundort; `document_version` hält Hash und Version. Mehrdeutige Zuordnungen werden geprüft.
+- `content_hash` (SHA-256) identifiziert Dateiinhalte, nicht die logische Dokumentidentität. `document_source` hält das Paar aus dauerhaft konfigurierter Nextcloud-Instanzkennung und `oc:fileid` sowie den Fundort; `document_version` hält Hash und Version. Mehrdeutige Zuordnungen werden geprüft.
 
 **Migrationen**
 
@@ -187,7 +187,7 @@ review_batch 1 ── n review_item ── n review_decision
 
 **Hardwareidentität:** `article.id` ist eine stabile UUID; `article_revision` beschreibt nachgewiesene Revisionen, `article_alias` alternative Schreibweisen. `model_key` (`hersteller:modell[:variante]`) ist ein normalisierter **Such-/Dublettenhinweis, kein Primärschlüssel**. Fakten können auf Modell- oder Revisionsebene gelten. Unklare Zuordnung wird geprüft; kein automatisches Zusammenführen.
 
-**Dokumentidentität:** `document` (logisches Objekt), `document_source` (Quellkennung/Fundort) und `document_version` (Inhaltsversion/Hash) sind getrennt. Gleicher Hash an mehreren Fundorten kann auf dieselben Inhaltsdaten verweisen, ohne zwingend identische logische Dokumente zu beweisen. Eindeutige Quellkennung erlaubt Rename/Move-Erkennung.
+**Dokumentidentität:** `document` (logisches Objekt), `document_source` (Quellkennung/Fundort) und `document_version` (Inhaltsversion/Hash) sind getrennt. Gleicher Hash an mehreren Fundorten kann auf dieselben Inhaltsdaten verweisen, ohne zwingend identische logische Dokumente zu beweisen. Die eindeutige Quellkennung besteht aus `source_system`, `source_instance` und `source_key` (`oc:fileid`); `source_instance` bezeichnet die stabile Installation, nicht URL oder Benutzer. Sie erlaubt Rename/Move-Erkennung. Ein identischer Hash einer bislang unbekannten Quelle erzeugt einen `document_identity`-Review, aber keine automatische Zusammenführung oder Indexierung dieser Quelle.
 
 **Zustand** hat zwei getrennte Felder je Exemplar: `completeness` (`complete`, `incomplete`) und `functional_state` (`working`, `needs_repair`, `defective`, `untested`). Neue Exemplare beginnen mit `untested`.
 
@@ -245,7 +245,7 @@ review_batch 1 ── n review_item ── n review_decision
 
 ## 9. Dokumentlebenszyklus
 
-**Drei Identitäten:** `document.id` ist dauerhaft; `document_source` erfasst Nextcloud-Kennung/Fundort; `document_version` enthält Versionsdaten und SHA-256-Hash. Hashgleichheit allein ist kein Beweis für gleiche logische Dokumentidentität. Umbenennen/Verschieben wird über stabile Quellkennung erkannt. Mehrere gültige Quellen verhindern eine Löschung beim Wegfall nur einer Quelle.
+**Drei Identitäten:** `document.id` ist dauerhaft; `document_source` erfasst Instanzkennung, Nextcloud-`oc:fileid` und Fundort; `document_version` enthält Versionsdaten und SHA-256-Hash. Hashgleichheit allein ist kein Beweis für gleiche logische Dokumentidentität. Umbenennen/Verschieben wird über stabile Quellkennung erkannt. Mehrere gültige Quellen verhindern eine Löschung beim Wegfall nur einer Quelle.
 
 **Zwei getrennte Statusachsen:** Der Versionsstatus (`document_version.state`: `active`, `superseded`, `archived`) beschreibt, welche Inhaltsversion gilt. Die Verfügbarkeit (`document.availability`: `available`, `deactivated`, `removed`) beschreibt, ob das Dokument noch eine gültige Quelle hat. Beide Felder sind unabhängig; nur bei `available` gilt der Versionsstatus für die Suche.
 
@@ -347,9 +347,9 @@ Gelöschte Dokumente bleiben bis zum Ablauf der Aufbewahrung in älteren Backups
 - **Eingaben sind Daten, keine Anweisungen.** Text aus PDFs und anderen externen Dokumenten kann Anweisungen enthalten (Prompt Injection). Er wird dem LLM nur als zu analysierender Inhalt übergeben, in Prompts klar abgegrenzt. Das LLM hat bei der Extraktion **keine Schreibrechte** und kann keine Werkzeuge aufrufen.
 - **Ausgaben des LLM** werden gegen das Schema validiert (Pydantic). Alles, was nicht passt, wird verworfen oder an das Review gegeben.
 - **API und Oberfläche:** FastAPI und Dienste hören nur auf dem internen Netz oder `localhost`, nicht offen im Netz. Zugriff auf Review und Änderung ist geschützt.
-- **Datenbankrollen:** `rag_importer` (Quellen, Staging, Vorschläge, Jobs), `rag_reviewer` (Review/Faktenfreigabe), `rag_inventory` (bestätigte Inventaränderungen), `rag_reader` (nur Lesen), separate Migrationsrolle. Rechte werden über Migrationen eingerichtet; kein App-Superuser. Die API prüft zusätzlich die Berechtigung des aufrufenden Benutzers.
+- **Datenbankrollen:** Die implementierten V2-Berechtigungsgruppen heißen `rag_v2_importer`, `rag_v2_reviewer`, `rag_v2_inventory`, `rag_v2_reader`, `rag_v2_lifecycle`, `rag_v2_query_logger`, `rag_v2_migrator`. Separate `rag_v2_*_login`-Rollen werden mit Migration 0003 zunächst `NOLOGIN`/`PASSWORD NULL` vorbereitet; keine App erhält Superuser-Rechte. Die API prüft zusätzlich die Berechtigung des aufrufenden Benutzers. `PUBLIC CONNECT` auf V1 darf nicht durch V2-Migrationen verändert werden; vor Login-Aktivierung müssen explizite HBA-Regeln die V2-Zugänge auf V2-Datenbanken begrenzen. Siehe `docs/PHASE0_ACCESS_ARCHITECTURE.md`.
 - **Nextcloud:** Zugriff über App-Passwort mit minimalen Rechten, nur auf die benötigten Ordner.
-- **Abhängigkeiten:** Versionen festhalten (`requirements.txt`, Lock-Datei), Updates bewusst einspielen und danach das Testset laufen lassen.
+- **Abhängigkeiten:** `pyproject.toml` ist die maßgebliche Definition der aktuellen Python-Pakete und Entwicklungswerkzeuge. Vor produktivem Betrieb müssen getestete konkrete Versionen in einer reproduzierbaren Lock-Datei festgehalten werden (noch offen); Updates bewusst einspielen und danach das Testset laufen lassen. Die früher erwähnten Dateien `requirements.txt` und `requirements-layout.txt` existieren derzeit nicht.
 
 ---
 
@@ -410,6 +410,20 @@ Die folgenden **Implementierungsparameter** wurden durch die Variantenwahl nicht
 | Review-Authentifizierung und Webserver-Bereitstellung | vor Deployment konkretisieren |
 | Lizenz des Repositories | offen |
 | Paketversionen | vor Installation in frischer venv prüfen und anschließend locken |
-| Rolle für Fristabläufe und Löschung | **Vorschlag:** eigene Rolle `rag_lifecycle` mit Löschrecht auf Chunks, Embeddings und Archivkopien, ohne Schreibrechte auf Fakten und Inventar; Alternative: Aufgabe von `rag_importer` |
-| `query_log` schreiben | **Vorschlag:** `rag_reader` erhält ausschließlich `INSERT` auf `query_log`, sonst nur Lesen |
+| Rolle für Fristabläufe und Löschung | **Umgesetzt in 0002:** `rag_v2_lifecycle` für Status und Suchdaten-Löschung; Löschung von Archivkopien außerhalb PostgreSQL separat abzusichern |
+| `query_log` schreiben | **Umgesetzt in 0002:** `rag_v2_query_logger` erhält ausschließlich `INSERT` auf `query_log`; `rag_v2_reader` bleibt read-only |
 | Autorisierung eigener Markdown-Quellen (Entscheidung 11) | **Vorschlag:** Tabelle `trusted_source`, nur von `rag_reviewer` änderbar, gebunden an Quellkennung/Pfad statt an den Hash; Inhaltsänderungen werden weiterhin vollständig validiert |
+
+## Implementierungsstand der Datenbankrollen (08.11.2026)
+
+- `0001_init.sql`: auf `retro_rag_v2_test` ausgeführt; 37 Tabellen, Schema- und Smoke-Test bestanden.
+- `0002_roles.sql`: auf `retro_rag_v2_test` ausgeführt; sieben `rag_v2_*`-NOLOGIN-Gruppen und Rechte geprüft.
+- `0003_access.sql`: auf `retro_rag_v2_test` ausgeführt und geprüft; Eigentümer ist `rag_v2_migrator`.
+- PostgreSQL-Instanz: Docker `codeanalyse-postgres` (16.15), pgvector 0.8.6. Host-Port nur `127.0.0.1:5432` veröffentlicht; im Container lokale `trust`-Authentifizierung.
+- Reader-, Importer- und Migrator-Login aktiviert; Importer/Migrator haben echte IPv4-HBA-Positiv- und Negativtests bestanden. `0004_import_write_gate.sql` ausgeführt und geprüft; der Importer darf die SECURITY-DEFINER-Gate-Funktion ausführen, aber `write_gate` nicht ändern. Bei geschlossenem Gate erfolgt erwartungsgemäß ein Fehler. Bei vorübergehend geöffnetem Gate wurde der Funktionsaufruf als echter Importer in einer Transaktion erfolgreich ausgeführt und diese per ROLLBACK beendet. Das Gate wurde durch den Migrator wieder geschlossen und die Ablehnung danach erneut bestätigt. Ein konkurrierendes Gate-UPDATE zeigte einen Lock-Timeout (3 s) und damit einen Zeilensperrkonflikt; die blockierende Importer-Session ist anhand der vorhandenen Terminalausgaben noch nicht eindeutig belegt. Das Gate wurde anschließend erfolgreich geschlossen (`writes_enabled=false`, `reason='Parallelitätstest erfolgreich; Freigabe ausstehend'`). Noch offen: vollständig korrelierter Parallelitäts-/Lock-Test, End-to-End-Staging, IPv6/separater Container und weitere Loginrollen; **V1-/Nextcloud-ACLs unverändert lassen**. Siehe `docs/IMPORTER_WRITE_GATE.md`.
+- Betrieb und Sicherheitsgrenzen sind in `docs/PHASE0_ACCESS_ARCHITECTURE.md` festgehalten.
+
+
+## Ergänzender Implementierungsnachweis Dokumentidentität – 09.11.2026
+
+Die verbindliche Trennung zwischen logischem Dokument, Quellidentität und Inhalts-Hash wurde in Migration `0005_document_identity.sql` fortgeführt. Am 09.11.2026 wurde die Migration auf Poseidon in `retro_rag_v2_test` erfolgreich committed und mit `verify_0005.sql` kontrolliert. Für Nextcloud gilt die Pflicht zur nichtleeren `source_instance` über einen CHECK-Constraint; die Spalte bleibt SQL-seitig nullable für andere Quellen. Der Unique-Index bindet `source_system`, `COALESCE(source_instance,'')` und `source_key`. Python-Unit-Tests: **17 passed**. Ein Datenbank-Integrationstest der Dubletten-/Review-Entscheidungen ist noch offen; keine automatische Identitätszusammenführung wurde freigegeben. Das Write-Gate war bei der Nachkontrolle geschlossen. Der vollständige Betriebsnachweis steht in [docs/DOCUMENT_IDENTITY.md](docs/DOCUMENT_IDENTITY.md).

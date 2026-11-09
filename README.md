@@ -9,7 +9,7 @@ Der Nutzen entsteht durch die Verknüpfung beider Quellen, etwa bei der Frage *�
 
 Alles läuft lokal auf dem Homelab-Server **Poseidon**. Es gibt keine Cloud-Dienste, und eine Internetrecherche durch das LLM ist vorerst nicht vorgesehen.
 
-> **Status:** Phase 0 (Architektur, Datenmodell, Importvertrag). Es ist noch kein produktiver Code vorhanden. Die Planung liegt in `docs/Retro-Rag V2.mm` (Freeplane). Die verbindlichen Regeln stehen in [`conventions.md`](conventions.md).
+> **Status (09.11.2026):** Phase 0 und Import-Staging sind als Entwicklungsstand vorhanden. C1 (atomare Versionsaktivierung) ist mit sieben PostgreSQL-Tests abgenommen, jedoch noch nicht an einen echten Verarbeitungs-Worker angebunden. Der Metadatenvertrag aus `feat/import-contract-metadata` ist im Integrationsbranch zusätzlich konsolidiert; ein gemeinsamer Testlauf auf Poseidon ist noch ausstehend. Kein produktiver Import freigegeben; Write-Gate geschlossen. Verbindliche Regeln: [`conventions.md`](conventions.md).
 
 ---
 
@@ -61,7 +61,7 @@ flowchart LR
 
 **Führende Quellen:** Nextcloud ist führend für Dokumente; PostgreSQL für Inventar, Review-Entscheidungen, historische Belegmetadaten und Jobzustände. Die Dokumentensuche kann technisch erfolgreich indexierte, aber ungeprüfte Quellen anzeigen; solche Aussagen sind nicht als bestätigte Fakten auszugeben.
 
-**Rollen:** `rag_importer` (Import/Staging), `rag_reviewer` (Freigaben), `rag_inventory` (bestätigte Inventaränderungen), `rag_reader` (nur Lesen), separate Migrationsrolle. Die API erzwingt zusätzlich Authentifizierung und Benutzerautorisierung. LLMs erhalten keine direkten Schreibrechte.
+**Rollen:** In PostgreSQL heißen die V2-Gruppen `rag_v2_importer`, `rag_v2_reviewer`, `rag_v2_inventory`, `rag_v2_reader`, `rag_v2_lifecycle`, `rag_v2_query_logger` und `rag_v2_migrator`. Die separaten `*_login`-Identitäten aus Migration 0003 wurden zunächst deaktiviert angelegt. `rag_v2_reader_login`, `rag_v2_importer_login` und `rag_v2_migrator_login` sind mit getrennten Passwörtern aktiviert; die vier übrigen Loginrollen sind deaktiviert. Spezifische HBA-Regeln begrenzen die aktivierten Rollen auf die V2-Testdatenbank (praktische IPv4-Tests für Importer/Migrator bestanden). V1-ACLs bleiben unverändert. Die API erzwingt zusätzlich Authentifizierung und Benutzerautorisierung. LLMs erhalten keine direkten Schreibrechte. Siehe [`docs/PHASE0_ACCESS_ARCHITECTURE.md`](docs/PHASE0_ACCESS_ARCHITECTURE.md).
 
 **Jobsteuerung:** systemd startet Worker; PostgreSQL hält Jobs, Schritte, Artefaktverweise, Wiederholungen und ablaufende Bearbeitungssperren vor. Kein Redis/Celery für V2 vorgesehen.
 
@@ -152,7 +152,7 @@ Stufen: Quelle identifizieren → Dokument prüfen → Text/PDF extrahieren (opt
 | OpenWebUI | Chat-Oberfläche |
 | systemd / Borg | Worker/Timer und konsistente Sicherung/Wiederherstellung |
 
-Ollama-intensive Verarbeitung auf der GTX 1060 zunächst seriell. Layoutanalyse ist optional; Python-Pakete werden vor Produktiveinsatz in einer frischen Umgebung getestet. Konkrete Abhängigkeiten stehen in `requirements.txt`.
+Ollama-intensive Verarbeitung auf der GTX 1060 zunächst seriell. Layoutanalyse ist optional; Python-Pakete werden vor Produktiveinsatz in einer frischen Umgebung getestet. Die aktuell implementierten Python-Abhängigkeiten stehen in `pyproject.toml`. Für spätere OCR-/Layout-Worker ist noch keine paketierte optionale Abhängigkeitsgruppe festgelegt.
 
 ## Phasen
 
@@ -179,15 +179,10 @@ Ollama-intensive Verarbeitung auf der GTX 1060 zunächst seriell. Layoutanalyse 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
+python -m pip install -e '.[dev]'
 ```
 
-Die Layoutanalyse ist optional. Nur falls sie benötigt wird, zunächst eine passende PyTorch-Installation wählen und anschließend die optionalen Abhängigkeiten installieren:
-
-```bash
-pip install torch --index-url https://download.pytorch.org/whl/cpu
-pip install -r requirements-layout.txt
-```
+OCR und Layoutanalyse sind noch nicht implementiert. Für diese optionalen zukünftigen Worker werden Abhängigkeiten erst nach Kompatibilitätsprüfung separat in `pyproject.toml` definiert; derzeit existiert keine `requirements-layout.txt`.
 
 Tesseract-OCR wird bei Bedarf als Systempaket installiert (`sudo apt install tesseract-ocr tesseract-ocr-deu tesseract-ocr-eng`).
 
@@ -244,6 +239,32 @@ retro-rag/
 
 ---
 
+## Phase 0 – Stand auf Poseidon (08.11.2026)
+
+Die Testdatenbank `retro_rag_v2_test` läuft im bestehenden Container `codeanalyse-postgres`
+(PostgreSQL 16.15, pgvector 0.8.6). `0001_init.sql` wurde ausgeführt und
+mit 37 Tabellen und Smoke-Test geprüft. `0002_roles.sql` wurde ausgeführt
+und mit sieben NOLOGIN-Gruppen geprüft. `0003_access.sql` wurde erfolgreich ausgeführt
+und mit `verify_0003.sql` überprüft (Schema-Eigentümer `rag_v2_migrator`,
+37 Tabellen, sieben vorbereitete Loginrollen).
+
+Die bestehende V1-Datenbank `retro_rag` und `retro_rag_test` sowie die
+Nextcloud-Datenbank wurden nicht verändert. PostgreSQL-Zugriffe über
+`PUBLIC CONNECT` auf V1 bestehen noch; für den Reader sind
+HBA-Sperren gegen beide V1-Datenbanken, Unix-Socket und direkten Container-IP-Zugriff
+bereits praktisch getestet. Importer- und Migrator-Login sind ebenfalls aktiviert und mittels positiver und negativer HBA-Verbindungstests über IPv4 geprüft; vier andere V2-Logins bleiben deaktiviert. `0004_import_write_gate.sql` wurde erfolgreich auf der Testdatenbank angewendet und `verify_0004.sql` bestanden. Der echte Importer kann die Gate-Prüffunktion ausführen, aber das Gate nicht verändern; die geschlossene **und** geöffnete Sperre wurden mit dem echten Importer praktisch bestätigt; nach dem Test wurde das Gate wieder geschlossen. Ein konkurrierender Gate-UPDATE-Versuch endete mit erwartetem Lock-Timeout; die blockierende Session wurde dabei noch nicht eindeutig protokolliert. Ein vollständig korrelierter Parallelitätstest sowie ein End-to-End-`--apply`-Test stehen noch aus. Der zuletzt bestätigte Gate-Zustand ist `false` (Freigabe ausstehend). Details: [`docs/IMPORTER_WRITE_GATE.md`](docs/IMPORTER_WRITE_GATE.md).
+
+Die Schritte, Ausgaben, Einschränkungen und Betriebsanweisungen:
+[Phase-0-Zugriffsarchitektur](docs/PHASE0_ACCESS_ARCHITECTURE.md).
+
+Die **aktuelle Datenbankstruktur** (37 Tabellen und zugehörige
+Migrationsdateien) ist unter [db/SCHEMA_CURRENT.md](db/SCHEMA_CURRENT.md)
+dokumentiert. `scripts/export_schema_v2.sh` erzeugt auf Poseidon
+zusätzlich einen versionierbaren SQL-DDL-Snapshot der tatsächlich
+installierten V2-Testdatenbank.
+
+---
+
 ## Architekturentscheidungen (08.11.2026)
 
 Alle 13 Entscheidungen sind in [`conventions.md`](conventions.md#16-architekturentscheidungen) verbindlich dokumentiert und in der Freeplane-Mindmap nachgeführt.
@@ -256,3 +277,27 @@ Alle 13 Entscheidungen sind in [`conventions.md`](conventions.md#16-architekture
 ## Lizenz
 
 Noch festzulegen. Fremde Dokumente wie Datenblätter und Handbücher gehören nicht ins Repository (Urheberrecht).
+
+### Punkt B – Dokumentidentität (09.11.2026)
+
+Der Entwicklungsbranch `feat/document-identity-review` führt mit Migration `0005_document_identity.sql` eine stabile Nextcloud-Instanzkennung zusätzlich zu `oc:fileid` ein. Inhaltsgleiche Dateien unterschiedlicher Quellen werden nicht anhand des Hashes zusammengeführt, sondern als eigene vorläufige Dokumente mit `document_identity`-Review ohne Importjob erfasst. Eine spätere Auflösung des Reviews ist noch nicht implementiert. Die Migration wurde am 09.11.2026 auf Poseidon in `retro_rag_v2_test` erfolgreich angewendet und mit `verify_0005.sql` geprüft; End-to-End-Tests stehen noch aus. Details: [Dokumentidentität](docs/DOCUMENT_IDENTITY.md).
+
+**Abnahme 09.11.2026:** Vor dem Schemaeingriff: 17 Python-Tests erfolgreich (`17 passed in 0.18s`), `git diff --check` ohne Ausgabe. Backup `~/backups/retro-rag-v2/pre_migration_0005.dump` (123 KB, Modus `0600`); `pg_restore --list` lesbar, kein vollständiger Restore-Test. Migration 0005 über `rag_v2_migrator_login` mit `SET ROLE rag_v2_migrator`, Ausgabe `COMMIT`; `verify_0005.sql` erfolgreich. Anschließende lesende Kontrolle bestätigte `source_instance`, den eindeutigen Identitätsindex und den Marker 5. Write-Gate weiterhin geschlossen (`false`, Grund: „Parallelitätstest erfolgreich; Freigabe ausstehend“). Der eingecheckte SQL-Schema-Snapshot ist noch nicht neu exportiert. Weitere Details: [Dokumentidentität](docs/DOCUMENT_IDENTITY.md).
+
+### Integrationstests Dokumentidentität (09.11.2026)
+
+Vier rollback-basierte PostgreSQL-Integrationstests sind als `tests/test_document_identity_integration.py` implementiert. Sie überprüfen Instanztrennung, Hash-Kollision mit Review, Job-Unterdrückung und idempotentes Wiederholen gegen den echten Python-Stagingpfad. **Noch nicht auf Poseidon ausgeführt; keine bestandene DB-Integration behauptet.** Die dedizierte Testanleitung und Ergebnismatrix stehen in [docs/DOCUMENT_IDENTITY_INTEGRATION_TESTS.md](docs/DOCUMENT_IDENTITY_INTEGRATION_TESTS.md). Gate bleibt außerhalb der äußeren Testtransaktion unverändert geschlossen.
+
+**Integrationstests am 09.11.2026:** Auf Poseidon wurden vier Datenbanktests über den Container-Netzwerk-Namespace mit `4 passed in 0.14s` bestanden (Instanzidentität, Hash-Review, Job-Sperre und Idempotenz). Die HBA-Regeln blieben unverändert. Der unabhängige Nachcheck des persistenten Write-Gates und der Tabellenzähler steht noch aus. Siehe [Integrationstest-Nachweis](docs/DOCUMENT_IDENTITY_INTEGRATION_TESTS.md).
+
+### Punkt B – abschließender Datenbanknachweis (09.11.2026)
+
+**Abnahme 09.11.2026:** Vier Integrationstests bestanden (`4 passed in 0.14s`). Anschließende unabhängige SQL-Kontrolle: `writes_enabled=f`, Grund `Parallelitätstest erfolgreich; Freigabe ausstehend`; `document=0`, `document_source=0`, `document_version=0`, `review_item=0`, `processing_job=0`. Damit sind Test-Rollback und unveränderter persistenter Gate-Zustand nachgewiesen. Kein echter WebDAV-`--apply`-Test und keine Review-Auflösung durchgeführt. Der tatsächlich exportierte Schema-Snapshot wurde in Commit `04b9c98` versioniert. Frühere Statusvermerke weiter oben sind historische Zwischenstände.
+
+## C1 – Atomare Versionsaktivierung (Abnahme 09.11.2026)
+
+Der Entwicklungsbranch `feature/c1-atomic-version-activation` enthält `src/retro_rag/importer/activation.py` und zwei DB-Testsuiten. Auf Poseidon wurden **6 C1-Integrationstests** gegen `retro_rag_v2_test` und **1 echter Konkurrenztest** in einem isolierten PostgreSQL-Container erfolgreich ausgeführt. Der Konkurrenztest bestätigte einen tatsächlichen Blockierer via `pg_blocking_pids()` und exakt eine aktive Version nach beiden Transaktionen. Die anschließende unabhängige Kontrolle des bestehenden Testclusters ergab `writes_enabled=f` und `document=0`, `document_version=0`, `processing_job=0`; der temporäre Container wurde gestoppt.
+
+Die Validierung bezieht sich auf die atomaren DB-Statuswechsel. Ein vollständiger WebDAV-`--apply`-Durchlauf sowie die Anbindung eines Verarbeitungs-Workers stehen weiter aus. Details und Befehle: [`docs/C1_ATOMIC_VERSION_ACTIVATION.md`](docs/C1_ATOMIC_VERSION_ACTIVATION.md).
+
+**Python-Dependency-Quelle:** `pyproject.toml` ist maßgeblich. `requirements.txt` und `requirements-layout.txt` sind nicht vorhanden; die bisherigen Hinweise darauf waren überholt.
