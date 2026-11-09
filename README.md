@@ -350,3 +350,25 @@ gemeldete Teststand bleibt `28 passed, 11 skipped`.
 
 Details und exakte SHA-256-Werte:
 [Recovery- und Rollback-Nachtrag](docs/IMPORT_ARCHIVE_HARDENING_2026-11-09.md#12-nachtrag-recovery--und-rollback-nachweise-09112026).
+
+### Isolierter `stage_file()`-Integrationstest – bestanden (09.11.2026)
+
+Auf Poseidon wurde der **echte `stage_file()`-Pfad** in einem
+separaten, nicht vernetzten PostgreSQL-/pgvector-Container getestet.
+Ein Trigger verursachte nach Archivveröffentlichung einen SQL-Fehler.
+Anschließend waren `document`, `document_source`,
+`document_version`, `processing_job` und `processing_artifact`
+vollständig zurückgerollt (jeweils **0**), während die Archivdatei
+erhalten blieb. Der Wiederanlauf lieferte `new` (jeweils **1**
+Datensatz), der nächste identische Import `unchanged` (keine
+Dubletten). Das isolierte Write-Gate wurde geschlossen.
+
+Die unabhängige Kontrolle von `codeanalyse-postgres` zeigte
+`writes_enabled=f` und **0** Dokumente, Quellen, Versionen, Jobs und
+Reviews. Der isolierte Container wurde anschließend gestoppt und mit
+`docker ps -a` als entfernt bestätigt.
+
+Dies ist ein **manueller Integrationstest**, kein zusätzlicher pytest-Fall;
+`28 passed, 11 skipped` bleibt der zuletzt dokumentierte Suite-Stand.
+Der echte WebDAV-Einzeldatei-Apply und spezielle HTTP-Abbruchtests sind
+weiterhin offen. Details: [Staging-Rollback-Abnahme](docs/IMPORT_ARCHIVE_HARDENING_2026-11-09.md#13-abnahme-isolierter-echter-stage_file-rollback-und-wiederanlauf-09112026).
