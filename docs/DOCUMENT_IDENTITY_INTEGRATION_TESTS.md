@@ -73,3 +73,43 @@ Erwartung für den bisherigen leeren Testbestand: `writes_enabled=f`, alle fünf
 | Rollback-/Write-Gate-Nachkontrolle | **ausstehend** | keine Testlauf-Ausgabe |
 
 Erst nach Vorliegen der Terminalausgaben werden die Ergebnisse auf `bestanden` oder `fehlgeschlagen` aktualisiert. Es wurde **kein** automatischer Merge oder produktiver Rollout vorgenommen.
+
+## Erster Integrationsversuch auf Poseidon: HBA-Ablehnung (09.11.2026)
+
+Aus der vom Betreiber übermittelten Ausgabe:
+
+```text
+python -m pytest -q tests/test_document_identity_integration.py -rs
+EEEE [100%]
+psycopg.OperationalError: FATAL: pg_hba.conf rejects connection
+for host "172.19.0.1", user "rag_v2_migrator_login",
+database "retro_rag_v2_test", no encryption
+4 errors in 0.17s
+```
+
+**Ergebnis:** Die vier Tests scheiterten beim Fixture-Verbindungsaufbau und haben die fachlichen Assertions **nicht erreicht**. Sie dürfen weder als bestanden noch als fachlich fehlgeschlagen gewertet werden. Der Repository-Stand dokumentiert das Docker-Netz `ai-network` mit Gateway `172.19.0.1`, PostgreSQL-Container `172.19.0.3` und die bewusst auf Container-Loopback begrenzten HBA-Regeln. Der Host-Port `127.0.0.1:5432` bewirkt keine Loopback-Quelladresse *innerhalb* des Containers.
+
+**Keine HBA-Freigabe für `172.19.0.1` oder `172.19.0.0/16` erteilen.** Die geplante Docker-Netzbereinigung und die V1-Isolation bleiben unverändert.
+
+### Wiederholung mit echter Python-Laufzeit und Container-Netzwerk-Namespace
+
+Der folgende Weg nutzt **dieselbe lokale Python-venv**, denselben Testcode und dieselbe PostgreSQL-Instanz. `nsenter --net` ändert nur den Netzwerk-Namespace des gestarteten Testprozesses. Der `setpriv`-Aufruf gibt die privilegierte Ausführung vor Python wieder auf; keine Installation im DB-Container, kein zusätzliches Docker-Netz und keine HBA-Änderung. Auf Poseidon sind `sudo`, `nsenter`, `setpriv` und die Berechtigung für diesen Vorgang erforderlich. Das Testpasswort bleibt als Umgebungsvariable und wird nicht in Kommandoargumente kopiert.
+
+```bash
+cd ~/projects/retro-rag_v2
+git pull --ff-only
+read -r -s -p 'V2-Migrator-Passwort: ' PGPASSWORD; echo
+export PGPASSWORD
+export RETRO_V2_IDENTITY_TEST_DSN='host=127.0.0.1 port=5432 dbname=retro_rag_v2_test user=rag_v2_migrator_login'
+container_pid="$(docker inspect -f '{{.State.Pid}}' codeanalyse-postgres)"
+test "$container_pid" -gt 1 || { echo 'DB-Container nicht aktiv'; exit 1; }
+sudo --preserve-env=PGPASSWORD,RETRO_V2_IDENTITY_TEST_DSN \
+  nsenter --target "$container_pid" --net -- \
+  setpriv --reuid "$(id -u)" --regid "$(id -g)" --init-groups \
+  "$(pwd)/.venv/bin/python" -m pytest -q tests/test_document_identity_integration.py -rs
+unset PGPASSWORD RETRO_V2_IDENTITY_TEST_DSN
+```
+
+**Vorsicht:** Nicht `docker exec` für Python voraussetzen; die PostgreSQL-Image-Laufzeit enthält nicht notwendigerweise Projekt-venv und Python-Abhängigkeiten. Den Netzwerk-Namespace nicht für andere Prozesse/Anwendungen unkontrolliert verwenden. Falls `sudo --preserve-env` lokal untersagt ist, nicht durch ein offenes HBA-Netz ersetzen.
+
+Nach dem Test die im Abschnitt „Ausführung auf Poseidon“ dokumentierte lesende Kontrolle von `write_gate` und Tabellenzählern durchführen. Erst **4 passed**, **0 skipped** und ein nachweislich weiterhin geschlossenes Gate erfüllen die Abnahme.
