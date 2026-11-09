@@ -27,7 +27,7 @@ def parse_frontmatter(content: str) -> tuple[dict, str]:
         raise ValueError("YAML-Frontmatter ist nicht abgeschlossen")
     data = yaml.safe_load("".join(lines[1:end]))
     if not isinstance(data, dict):
-        raise ValueError("YAML-Frontmatter muss ein Mapping sein")
+        raise TypeError("YAML-Frontmatter muss ein Mapping sein")
     return data, "".join(lines[end + 1 :])
 
 
