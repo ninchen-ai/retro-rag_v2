@@ -65,3 +65,5 @@ Schema-Migration und statische/unit-basierte Tests sind bestätigt. **Nicht best
 ## Integrationstests (09.11.2026 vorbereitet)
 
 Die vier ausführbaren PostgreSQL-Tests und ihre Sicherheitsbedingungen sind unter [DOCUMENT_IDENTITY_INTEGRATION_TESTS.md](DOCUMENT_IDENTITY_INTEGRATION_TESTS.md) dokumentiert. Die Tests sind **noch nicht ausgeführt**: erst die reale Poseidon-Ausgabe `4 passed` ohne `skipped` und die Nachkontrolle des Gate-Zustands erlauben eine Abnahme. Die Suite simuliert lediglich das Originalarchiv, nicht die SQL-Verarbeitung; sie nutzt den dedizierten Migrator-Login und committet keine Gate-Freigabe.
+
+**Integrationstests am 09.11.2026:** Auf Poseidon wurden vier Datenbanktests über den Container-Netzwerk-Namespace mit `4 passed in 0.14s` bestanden (Instanzidentität, Hash-Review, Job-Sperre und Idempotenz). Die HBA-Regeln blieben unverändert. Der unabhängige Nachcheck des persistenten Write-Gates und der Tabellenzähler steht noch aus. Siehe [Integrationstest-Nachweis](DOCUMENT_IDENTITY_INTEGRATION_TESTS.md).
