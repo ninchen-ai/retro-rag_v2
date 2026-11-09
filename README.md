@@ -282,3 +282,7 @@ Alle 13 Entscheidungen sind in [`conventions.md`](conventions.md#16-architekture
 ## Lizenz
 
 Noch festzulegen. Fremde Dokumente wie Datenblätter und Handbücher gehören nicht ins Repository (Urheberrecht).
+
+### Punkt B – Dokumentidentität (09.11.2026)
+
+Der Entwicklungsbranch `feat/document-identity-review` führt mit Migration `0005_document_identity.sql` eine stabile Nextcloud-Instanzkennung zusätzlich zu `oc:fileid` ein. Inhaltsgleiche Dateien unterschiedlicher Quellen werden nicht anhand des Hashes zusammengeführt, sondern als eigene vorläufige Dokumente mit `document_identity`-Review ohne Importjob erfasst. Eine spätere Auflösung des Reviews ist noch nicht implementiert. Der Branch ist noch nicht auf Poseidon migriert oder end-to-end abgenommen. Details: [Dokumentidentität](docs/DOCUMENT_IDENTITY.md).
