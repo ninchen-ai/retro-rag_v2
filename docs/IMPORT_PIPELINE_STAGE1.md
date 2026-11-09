@@ -56,3 +56,5 @@ Die Testdatenbank `retro_rag_v2_test` erhielt Migration **0005** nach einer `pg_
 ## Regression/Integration – 09.11.2026
 
 `tests/test_document_identity_integration.py` prüft den echten Staging-SQL-Pfad mit vier Rollback-Testfällen. Noch **nicht auf Poseidon ausgeführt**. Testanleitung und Ergebnismatrix: [DOCUMENT_IDENTITY_INTEGRATION_TESTS.md](DOCUMENT_IDENTITY_INTEGRATION_TESTS.md). Kein realer WebDAV-`--apply`-Test und keine freigegebene Review-Auflösung.
+
+**Integrationstests am 09.11.2026:** Auf Poseidon wurden vier Datenbanktests über den Container-Netzwerk-Namespace mit `4 passed in 0.14s` bestanden (Instanzidentität, Hash-Review, Job-Sperre und Idempotenz). Die HBA-Regeln blieben unverändert. Der unabhängige Nachcheck des persistenten Write-Gates und der Tabellenzähler steht noch aus. Siehe [Integrationstest-Nachweis](DOCUMENT_IDENTITY_INTEGRATION_TESTS.md).
