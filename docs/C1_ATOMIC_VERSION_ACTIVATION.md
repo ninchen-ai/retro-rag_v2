@@ -149,3 +149,116 @@ bestehende Test-Fixture öffnet das Gate nur innerhalb einer uncommitteten
 als geöffnet lesen. Für einen belastbaren Konkurrenztest ist deshalb ein
 separat isolierter Testaufbau erforderlich, ohne das Gate der bestehenden
 V2-Testumgebung dauerhaft oder allgemein zu öffnen.
+
+
+## Isolierter Konkurrenztest – vorbereitet, noch nicht ausgeführt
+
+`tests/test_version_activation_concurrency.py` verwendet drei echte
+Verbindungen: Aktivierer 1 hält nach Aktivierung von Version 2 seine
+Dokument-Zeilensperre; Aktivierer 2 versucht gleichzeitig Version 3 zu
+aktivieren. Eine dritte Verbindung fragt `pg_blocking_pids()` ab. Erst nach
+nachgewiesener Blockierung committet Aktivierer 1. Erwartet werden
+Version 1/2 `superseded`, Version 3 `active`, exakt eine aktive Version.
+
+**Sicherheit:** Dieser Test committet absichtlich einen offenen Gate-Zustand
+und synthetische Versionen – er darf **niemals** auf `codeanalyse-postgres`
+oder einer anderen existierenden Datenbank laufen. Der Code verlangt zusätzlich
+`cluster_name='retro-rag-v2-c1-isolated'` und den User `postgres`.
+Nur ein separater Docker-Container ohne Netzanschluss ist zulässig.
+Es wird ausschließlich dessen Schema kopiert, keine V2-Datensätze.
+
+### Vorbereitung auf Poseidon
+
+Voraussetzung: Arbeitsbranch `feature/c1-atomic-version-activation`,
+Docker-Image `pgvector/pgvector:pg16` lokal verfügbar. Der neue Container
+verwendet nur temporären RAM-Speicher und veröffentlicht **keinen** Port.
+`docker stop` beendet ihn und entfernt den temporären Datenbestand.
+
+```bash
+cd ~/projects/retro-rag_v2
+git fetch origin
+git switch feature/c1-atomic-version-activation
+git pull --ff-only
+
+# Vorher nachprüfen, dass KEIN gleichnamiger Container existiert.
+docker ps -a --filter name=retro-rag-v2-c1-isolated
+
+docker run --rm -d \
+  --name retro-rag-v2-c1-isolated \
+  --network none \
+  --tmpfs /var/lib/postgresql/data:rw,size=768m \
+  -e POSTGRES_HOST_AUTH_METHOD=trust \
+  pgvector/pgvector:pg16 \
+  -c cluster_name=retro-rag-v2-c1-isolated
+
+docker exec retro-rag-v2-c1-isolated pg_isready -U postgres
+docker exec retro-rag-v2-c1-isolated \
+  psql -X -U postgres -d postgres -v ON_ERROR_STOP=1 \
+  -c 'CREATE DATABASE retro_rag_v2_test'
+docker exec retro-rag-v2-c1-isolated \
+  psql -X -U postgres -d retro_rag_v2_test -v ON_ERROR_STOP=1 \
+  -c 'CREATE EXTENSION vector WITH SCHEMA public'
+
+# Nur DDL/Schema aus dem bestehenden V2-Testcluster kopieren.
+# Weder echte Dokumente noch eine Freigabe des bestehenden Gates übernehmen.
+set -o pipefail
+docker exec codeanalyse-postgres \
+  pg_dump -U codeanalyse -d retro_rag_v2_test \
+  --schema-only --schema=rag_v2 --no-owner --no-acl --format=custom \
+  | docker exec -i retro-rag-v2-c1-isolated \
+      pg_restore -U postgres -d retro_rag_v2_test \
+      --no-owner --no-acl --exit-on-error
+
+# Für die isolierte Kopie nur Migrationsmarker und geschlossenes Gate initialisieren.
+docker exec retro-rag-v2-c1-isolated \
+  psql -X -U postgres -d retro_rag_v2_test -v ON_ERROR_STOP=1 -c "
+INSERT INTO rag_v2.schema_migration(version,description)
+SELECT n, 'Isolierte C1-Schemakopie' FROM generate_series(1,5) AS n;
+INSERT INTO rag_v2.write_gate(id,writes_enabled)
+VALUES (true,false);
+SELECT current_database(), current_setting('cluster_name');
+SELECT writes_enabled FROM rag_v2.write_gate;"
+```
+
+**Wichtig:** Bei Fehlern in `pg_restore` oder beim SQL-Bootstrap abbrechen;
+nicht auf den bestehenden PostgreSQL-Container ausweichen.
+
+### Konkurrenztest ausführen
+
+Wir verwenden erneut die bestehende Python-venv von Poseidon, aber ausschließlich
+den Netzwerk-Namespace des **neuen** Testcontainers. Das Trust-Auth-Verfahren
+ist durch `--network none` ausschließlich für dessen lokalen Namespace
+erreichbar. Es wird kein Port zu Host oder LAN veröffentlicht.
+
+```bash
+isolated_pid="$(docker inspect -f '{{.State.Pid}}' retro-rag-v2-c1-isolated)"
+test "$isolated_pid" -gt 1 || { echo 'Isolierter Container fehlt'; exit 1; }
+export RETRO_V2_C1_ISOLATED_DSN='host=127.0.0.1 port=5432 dbname=retro_rag_v2_test user=postgres'
+sudo --preserve-env=RETRO_V2_C1_ISOLATED_DSN \
+  nsenter --target "$isolated_pid" --net -- \
+  setpriv --reuid "$(id -u)" --regid "$(id -g)" --init-groups \
+  "$(pwd)/.venv/bin/python" -m pytest -q \
+  tests/test_version_activation_concurrency.py -rs
+unset RETRO_V2_C1_ISOLATED_DSN
+```
+
+Erwartet: **1 passed, 0 skipped**. Zusätzlich muss die zweite Verbindung
+in `pg_blocking_pids()` als tatsächlich blockiert beobachtet worden sein,
+sonst schlägt der Test fehl.
+
+### Isolation kontrollieren und aufräumen
+
+```bash
+docker exec codeanalyse-postgres \
+  psql -X -U codeanalyse -d retro_rag_v2_test -v ON_ERROR_STOP=1 -c "
+SELECT writes_enabled, reason FROM rag_v2.write_gate;
+SELECT
+ (SELECT count(*) FROM rag_v2.document) AS documents,
+ (SELECT count(*) FROM rag_v2.document_version) AS versions,
+ (SELECT count(*) FROM rag_v2.processing_job) AS jobs;"
+
+docker stop retro-rag-v2-c1-isolated
+```
+
+Die bestehende V2-Testdatenbank muss unverändert sein und das Gate geschlossen.
+**Status:** Repository-Testcode vorhanden, Ausführung und Abnahme auf Poseidon ausstehend.
