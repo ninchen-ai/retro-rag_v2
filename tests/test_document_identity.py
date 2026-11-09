@@ -78,3 +78,64 @@ def test_missing_instance_fails_closed():
     import pytest
     with pytest.raises(ValueError, match="Instanzkennung"):
         plan_file(PlanConnection(PlanCursor()), remote("", "777"), b"data")
+
+
+def test_stage_collision_persists_review_without_job(monkeypatch, tmp_path):
+    from retro_rag.importer import staging
+
+    monkeypatch.setattr(staging, "archive_original",
+                        lambda *args: "file:///tmp/original.pdf")
+    queries = []
+
+    class Cursor:
+        def __init__(self):
+            self.last = None
+
+        def execute(self, sql, params=None):
+            queries.append((sql, params))
+            if "SELECT id, document_id FROM rag_v2.document_source" in sql:
+                self.last = None
+            elif "SELECT DISTINCT v.document_id" in sql:
+                self.last = [("existing-doc",)]
+            elif "INSERT INTO rag_v2.document (title" in sql:
+                self.last = ("new-doc",)
+            elif "SELECT COALESCE(MAX(version_no)" in sql:
+                self.last = (1,)
+            elif "INSERT INTO rag_v2.document_version" in sql:
+                self.last = ("new-version",)
+            elif "INSERT INTO rag_v2.review_batch" in sql:
+                self.last = ("new-batch",)
+            else:
+                self.last = None
+
+        def fetchone(self):
+            return self.last
+
+        def fetchall(self):
+            return self.last
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return False
+
+    class Connection:
+        @contextmanager
+        def transaction(self):
+            yield
+
+        def cursor(self):
+            return Cursor()
+
+    result = stage_file(Connection(), remote("nc-B", "777"), b"same data", tmp_path)
+    assert result.action == "review"
+    sql = "\n".join(statement for statement, _ in queries)
+    assert "assert_import_write_gate" in sql
+    assert "INSERT INTO rag_v2.review_item" in sql
+    assert "INSERT INTO rag_v2.processing_job" not in sql
+    assert "INSERT INTO rag_v2.document_source" in sql
+    import json
+    proposal = next(params[1] for statement, params in queries
+                    if "INSERT INTO rag_v2.review_item" in statement)
+    assert json.loads(proposal)["candidate_document_ids"] == ["existing-doc"]
