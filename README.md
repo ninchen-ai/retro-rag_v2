@@ -292,3 +292,5 @@ Der Entwicklungsbranch `feat/document-identity-review` führt mit Migration `000
 ### Integrationstests Dokumentidentität (09.11.2026)
 
 Vier rollback-basierte PostgreSQL-Integrationstests sind als `tests/test_document_identity_integration.py` implementiert. Sie überprüfen Instanztrennung, Hash-Kollision mit Review, Job-Unterdrückung und idempotentes Wiederholen gegen den echten Python-Stagingpfad. **Noch nicht auf Poseidon ausgeführt; keine bestandene DB-Integration behauptet.** Die dedizierte Testanleitung und Ergebnismatrix stehen in [docs/DOCUMENT_IDENTITY_INTEGRATION_TESTS.md](docs/DOCUMENT_IDENTITY_INTEGRATION_TESTS.md). Gate bleibt außerhalb der äußeren Testtransaktion unverändert geschlossen.
+
+**Integrationstests am 09.11.2026:** Auf Poseidon wurden vier Datenbanktests über den Container-Netzwerk-Namespace mit `4 passed in 0.14s` bestanden (Instanzidentität, Hash-Review, Job-Sperre und Idempotenz). Die HBA-Regeln blieben unverändert. Der unabhängige Nachcheck des persistenten Write-Gates und der Tabellenzähler steht noch aus. Siehe [Integrationstest-Nachweis](docs/DOCUMENT_IDENTITY_INTEGRATION_TESTS.md).
