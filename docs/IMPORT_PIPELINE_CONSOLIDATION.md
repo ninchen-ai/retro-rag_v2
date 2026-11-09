@@ -66,3 +66,42 @@ Einzelbranches erfolgreich durchgeführt, aber **nicht erneut auf dem
 Integrationsbranch**. Ein übersprungener Test gilt nicht als bestanden.
 Keine Freigabe für produktiven oder schreibenden Vollimport; das Write-Gate
 bleibt geschlossen.
+
+## Gemeinsame PostgreSQL-Abnahme auf Poseidon – 09.11.2026
+
+Die Betreiberin hat auf `integration/import-pipeline-2026-11-09` beide
+realen DB-Testsuiten mit dem dedizierten `rag_v2_migrator_login`
+im Netzwerk-Namespace des bestehenden PostgreSQL-Containers ausgeführt.
+`RETRO_V2_IDENTITY_TEST_DSN` und `RETRO_V2_C1_TEST_DSN` waren gesetzt;
+die Tests wurden nicht übersprungen.
+
+```text
+.......... [100%]
+10 passed in 0.23s
+```
+
+Anschließend wurde unabhängig lesend im bestehenden Container
+`codeanalyse-postgres` gegen `retro_rag_v2_test` kontrolliert:
+
+```text
+writes_enabled = f
+reason = Parallelitätstest erfolgreich; Freigabe ausstehend
+documents = 0
+sources   = 0
+versions  = 0
+reviews   = 0
+jobs      = 0
+```
+
+**Ergebnis:** Die vier Identitätstests und sechs C1-Aktivierungstests
+sind auf dem konsolidierten Branch bestanden; die synthetischen Daten
+wurden zurückgerollt und die persistente Schreibsperre blieb geschlossen.
+Zusammen mit dem zuvor dokumentierten gemeinsamen Lauf
+(`24 passed, 11 skipped`) sind nun 24 Unit-Tests sowie 10 echte
+PostgreSQL-Integrationstests auf dem Integrationsbranch bestätigt.
+
+Der elfte zuvor übersprungene Test, der isolierte C1-Konkurrenztest,
+wurde auf diesem Integrationsbranch **noch nicht erneut ausgeführt**.
+Er ist nur auf dem vorgelagerten C1-Branch abgenommen. Ein echter
+WebDAV-End-to-End-`--apply`-Import und Worker-/Embedding-Verarbeitung
+stehen ebenfalls aus; keine produktive Schreibfreigabe.
