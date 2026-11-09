@@ -42,3 +42,27 @@ Die Datenbank `retro_rag_v2_test` bleibt gesperrt, bis der
 schreibende Import separat freigegeben wird. Keine Migration, keine
 WebDAV-Änderung, kein Gate-Öffnen und kein `--apply` durch diese
 Konsolidierung. Original-Feature-Branches bleiben erhalten.
+
+## Gemeinsamer Testlauf auf Poseidon – 09.11.2026
+
+Betreiberseitige Terminalausgabe auf dem Integrationsbranch nach
+`python -m pip install -e '.[dev]'`:
+
+```text
+24 passed, 11 skipped in 0.18s
+All checks passed!
+```
+
+- 24 lokal ausgeführte Tests bestanden; 0 fehlgeschlagen.
+- Vier Dokumentidentitäts-DB-Tests übersprungen: `RETRO_V2_IDENTITY_TEST_DSN` nicht gesetzt.
+- Sechs C1-DB-Tests übersprungen: `RETRO_V2_C1_TEST_DSN` nicht gesetzt.
+- Ein isolierter C1-Konkurrenztest übersprungen: `RETRO_V2_C1_ISOLATED_DSN` nicht gesetzt.
+- Ruff-Prüfung für `markdown.py`, `metadata.py` und `test_import_metadata.py`: `All checks passed!`.
+- `git diff --check` ohne Ausgabe.
+
+**Einordnung:** Der gemeinsame Unit-Testlauf und die Metadatenintegration sind
+bestätigt. Die sieben C1- und vier Identitäts-DB-Tests wurden zuvor auf den
+Einzelbranches erfolgreich durchgeführt, aber **nicht erneut auf dem
+Integrationsbranch**. Ein übersprungener Test gilt nicht als bestanden.
+Keine Freigabe für produktiven oder schreibenden Vollimport; das Write-Gate
+bleibt geschlossen.
