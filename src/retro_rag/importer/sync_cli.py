@@ -21,25 +21,30 @@ def main() -> None:
     endpoint = os.environ.get("RETRO_V2_WEBDAV_URL")
     user = os.environ.get("RETRO_V2_WEBDAV_USER")
     password = os.environ.get("RETRO_V2_WEBDAV_APP_PASSWORD")
+    instance_id = os.environ.get("RETRO_V2_NEXTCLOUD_INSTANCE_ID")
     dsn = os.environ.get("RETRO_V2_DATABASE_DSN")
-    if not all((endpoint, user, password, dsn)):
-        parser.error("RETRO_V2_WEBDAV_URL/USER/APP_PASSWORD und DATABASE_DSN fehlen")
+    if not all((endpoint, user, password, dsn, instance_id)):
+        parser.error("RETRO_V2_WEBDAV_URL/USER/APP_PASSWORD, NEXTCLOUD_INSTANCE_ID und DATABASE_DSN fehlen")
     if args.apply and args.archive_root is None:
         parser.error("--apply erfordert --archive-root")
     if args.apply and "retro_rag_v2_test" not in dsn:
         parser.error("Vorerst nur retro_rag_v2_test für --apply freigegeben")
 
-    client = WebDAV(endpoint, user, password)
+    client = WebDAV(endpoint, user, password, instance_id=instance_id)
     files = client.list_files()
     if not files:
         raise RuntimeError("Leere WebDAV-Dateiliste: keine Verarbeitung")
     print(f"Gefundene Dateien: {len(files)}")
     with psycopg.connect(dsn, autocommit=False) as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT current_database(), to_regclass('rag_v2.write_gate')")
+            cur.execute("SELECT current_database(), to_regclass('rag_v2.document_source')")
             dbname, gate_table = cur.fetchone()
         if dbname != "retro_rag_v2_test" or gate_table is None:
             raise RuntimeError("Es wird ausschließlich das vorhandene V2-Testschema verwendet")
+        with conn.cursor() as cur:
+            cur.execute("SELECT EXISTS (SELECT 1 FROM rag_v2.schema_migration WHERE version=5)")
+            if not cur.fetchone()[0]:
+                raise RuntimeError("Migration 0005 für Dokumentidentität fehlt")
         # Ein ROLLBACK beendet die lesende Planungstransaktion.
         conn.rollback()
         for file in files:
