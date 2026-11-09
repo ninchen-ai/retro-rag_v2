@@ -331,3 +331,22 @@ PostgreSQL-Rollback und Wiederanlauf.
 
 Siehe
 [WebDAV- und Archivabsicherung](docs/IMPORT_ARCHIVE_HARDENING_2026-11-09.md).
+
+
+### Recovery-Nachtrag (09.11.2026)
+
+Zusätzliche manuelle Tests auf Poseidon bestätigten die Wiederverwendung einer
+Archivdatei nach simuliertem Fehler, die Erkennung und kontrollierte
+Bereinigung verwaister Dateien sowie einen **echten PostgreSQL-Rollback
+mit temporärer SQL-Tabelle und bereits publizierter Archivdatei**.
+Das Audit meldete in den beiden verwaisten Zuständen jeweils
+`Verwaiste Dateien: 1`, `Integritätsprobleme: 0` und Exit-Code `1`
+(wie erwartet). Die Testdateien wurden jeweils kontrolliert entfernt.
+
+Dies **ist noch kein vollständiger `stage_file()`-Rollback-Test**.
+Echter Einzeldatei-WebDAV-Apply, gesonderte Transferabbruchtests und
+abschließende DB-/Dateisystem-Abnahme bleiben offen. Der zuvor
+gemeldete Teststand bleibt `28 passed, 11 skipped`.
+
+Details und exakte SHA-256-Werte:
+[Recovery- und Rollback-Nachtrag](docs/IMPORT_ARCHIVE_HARDENING_2026-11-09.md#12-nachtrag-recovery--und-rollback-nachweise-09112026).
