@@ -8,7 +8,7 @@ from retro_rag.importer.webdav import WebDAV
 
 def test_http_must_be_loopback():
     with pytest.raises(ValueError, match="Loopback"):
-        WebDAV("http://nextcloud.example/remote.php/dav/files/u/", "u", "p")
+        WebDAV("http://nextcloud.example/remote.php/dav/files/u/", "u", "p", instance_id="test-nc")
 
 
 def test_archive_is_content_addressed_and_immutable(tmp_path):
@@ -29,7 +29,7 @@ def test_webdav_requests_explicit_nextcloud_fileid():
     """Nextcloud liefert oc:fileid nicht zwangsläufig bei allprop."""
     from retro_rag.importer.webdav import WebDAV
 
-    client = WebDAV("http://127.0.0.1:8080/remote.php/dav/files/nina/Retro-Computing/", "nina", "secret")
+    client = WebDAV("http://127.0.0.1:8080/remote.php/dav/files/nina/Retro-Computing/", "nina", "secret", instance_id="test-nc")
     calls = []
     root = (
         b'<d:multistatus xmlns:d="DAV:" xmlns:oc="http://owncloud.org/ns">'
@@ -49,6 +49,7 @@ def test_webdav_requests_explicit_nextcloud_fileid():
     files = client.list_files()
     assert len(files) == 1
     assert files[0].source_key == "777"
+    assert files[0].instance_id == "test-nc"
     assert b"<oc:fileid/>" in calls[0][2]
     assert b"<d:allprop/>" not in calls[0][2]
 
@@ -67,7 +68,7 @@ def test_excluded_directory_segments_are_case_insensitive():
 def test_excluded_directories_are_not_traversed():
     from retro_rag.importer.webdav import WebDAV
     root = "http://127.0.0.1:8080/remote.php/dav/files/nina/Retro-Computing/"
-    client = WebDAV(root, "nina", "secret")
+    client = WebDAV(root, "nina", "secret", instance_id="test-nc")
     calls = []
     responses = {
         root: (
@@ -141,7 +142,13 @@ def test_stage_checks_write_gate_before_archiving(monkeypatch, tmp_path):
         etag=None,
         byte_size=4,
         content_type="text/markdown",
+        instance_id="test-nc",
     )
     with pytest.raises(PermissionError, match="Schreibsperre"):
         staging.stage_file(Connection(), remote, b"test", tmp_path)
     assert statements == ["SELECT rag_v2.assert_import_write_gate()"]
+
+
+def test_instance_id_is_mandatory():
+    with pytest.raises(ValueError, match="Instanzkennung"):
+        WebDAV("http://127.0.0.1:8080/remote.php/dav/files/u/", "u", "secret")
