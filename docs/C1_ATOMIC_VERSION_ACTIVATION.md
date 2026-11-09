@@ -118,3 +118,34 @@ Transaktion öffnen.
   Worker-End-to-End-Test anhand realer Dokumente bestätigt werden.
 - Kein Merge nach `main` vor erfolgreichem Test und Review.
 - C2 (automatische Archivierung/Löschung) ist nicht Teil dieser Änderung.
+
+
+## Abnahmenachtrag – PostgreSQL-Integrationstests am 09.11.2026
+
+Betreiberseitig auf Poseidon bestätigt (dedizierter `rag_v2_migrator_login`,
+`retro_rag_v2_test`, Python-venv im Netzwerk-Namespace des PostgreSQL-Containers):
+
+```text
+...... [100%]
+6 passed in 0.16s
+```
+
+Anschließende **unabhängige** SQL-Kontrolle über `codeanalyse-postgres`:
+
+```text
+writes_enabled = f
+reason = Parallelitätstest erfolgreich; Freigabe ausstehend
+document = 0
+document_version = 0
+processing_job = 0
+```
+
+Damit sind die sechs C1-Testfälle und der Rollback der synthetischen Daten
+bestätigt; die persistente Schreibsperre ist geschlossen geblieben.
+**C1 ist noch nicht vollständig abgenommen:** Die tatsächliche Serialisierung
+zweier unabhängig verbundener Aktivierer ist noch nicht nachgewiesen. Die
+bestehende Test-Fixture öffnet das Gate nur innerhalb einer uncommitteten
+äußeren Transaktion; ein zweiter Datenbank-Client kann dieses Gate nicht
+als geöffnet lesen. Für einen belastbaren Konkurrenztest ist deshalb ein
+separat isolierter Testaufbau erforderlich, ohne das Gate der bestehenden
+V2-Testumgebung dauerhaft oder allgemein zu öffnen.
