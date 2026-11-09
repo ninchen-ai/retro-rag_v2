@@ -339,3 +339,123 @@ war `false`; in diesen Recovery-Tests wurde das Gate nicht geöffnet.
 Die früheren `28 passed, 11 skipped` betreffen den zuletzt gemeldeten
 pytest-Lauf. Die obigen Recovery-Nachweise sind separate manuelle Testläufe,
 keine zusätzlichen pytest-Fälle.
+
+## 13. Abnahme: isolierter echter `stage_file()`-Rollback und Wiederanlauf (09.11.2026)
+
+**Status: erfolgreich auf Poseidon ausgeführter manueller Integrationstest.**
+Dieser Nachtrag ersetzt den entsprechenden offenen Zwischenstand in Abschnitt 12.D.1,
+nicht aber die noch offenen WebDAV-/Netzwerk- und Produktivabnahmen.
+
+### Isolierte Testumgebung
+
+- Container `retro-rag-v2-staging-isolated`, Image `pgvector/pgvector:pg16`,
+  `--network none`, PostgreSQL-Daten auf `tmpfs`, `--rm`.
+- Datenbank `retro_rag_v2_test`; verpflichtende Identitätsprüfung auf
+  `current_setting('cluster_name') = 'retro-rag-v2-staging-isolated'`
+  und `session_user = 'postgres'`.
+- Schema aus dem vorhandenen V2-Testcluster **nur als DDL** übernommen; im
+  isolierten Cluster wurden Migrationsmarker 1–5 und ein zunächst geschlossenes
+  `write_gate` angelegt.
+- Python-venv auf Poseidon per `nsenter` in den Netzwerk-Namespace **des
+  isolierten Containers** eingebunden; die bestehenden Container-Daten
+  blieben getrennt.
+- Temporäres Dateisystem-Archiv per `tempfile.TemporaryDirectory` unter
+  `/data/retro-rag/v2/staging`, **nicht** im dauerhaften Originalarchiv.
+  Synthetische Markdown-Quelldatei; kein WebDAV-Download.
+- Nur im isolierten Cluster wurde das Gate für den Test temporär geöffnet
+  und danach im `finally`-Block wieder geschlossen.
+
+### Fehler-Injektion und geprüfter Ablauf
+
+Ein ausschließlich im isolierten Cluster installierter PostgreSQL-Trigger
+auf `rag_v2.processing_job` löste beim echten `stage_file()`-Aufruf
+absichtlich die Exception
+`Simulierter SQL-Fehler im Staging` aus. Dies geschieht **nach**
+Erstellung der Archivdatei und nach vorangehenden SQL-Änderungen.
+
+Der erste Versuch erreichte diesen Trigger, brach jedoch im
+**Testskript** bei der Exception-Behandlung ab:
+`AttributeError: module 'psycopg' has no attribute 'RaiseException'`.
+Korrektur im Testaufruf:
+`psycopg.errors.RaiseException`. Das Gate wurde bereits beim
+fehlerhaften ersten Testlauf durch `finally` geschlossen.
+Anschließende Kontrolle: Gate `false`, Dokumente/Versionen/Jobs `0`;
+keine verbliebenen Test-Trigger bzw. Test-Funktionen.
+
+Der korrigierte Wiederholungslauf wurde vollständig erfolgreich ausgeführt:
+
+```text
+PASS: SQL-Fehler ausgelöst
+PASS: DB-Transaktion vollständig zurückgerollt
+PASS: Archivdatei trotz Rollback vorhanden
+PASS: Wiederanlauf erfolgreich
+PASS: DB-Datensätze konsistent
+PASS: Wiederholter Import idempotent
+PASS: Isoliertes Write-Gate geschlossen
+PASS: Integrationstest vollständig abgeschlossen
+```
+
+Nach erzwungenem Fehler ergab die Zählung der Tabellen
+`document`, `document_source`, `document_version`,
+`processing_job` und `processing_artifact` jeweils **0**.
+Die Archivdatei bestand unverändert weiter und entsprach den
+synthetischen Quelldaten. Nach Entfernen des Fehler-Triggers
+lieferte `stage_file()` `action = 'new'` und alle fünf
+Tabellen enthielten jeweils **1** Eintrag. Ein erneuter
+`stage_file()`-Aufruf lieferte `action = 'unchanged'`;
+die Tabellenzähler blieben unverändert bei jeweils **1**.
+
+### Unabhängige Nachkontrolle und Bereinigung
+
+Unabhängig über `docker exec codeanalyse-postgres` geprüft:
+
+```text
+writes_enabled = f
+reason = Parallelitätstest erfolgreich; Freigabe ausstehend
+dokumente = 0
+quellen = 0
+versionen = 0
+jobs = 0
+reviews = 0
+```
+
+Unabhängig im isolierten Container geprüft:
+
+```text
+writes_enabled = f
+reason = Isolierter Staging-Test beendet
+dokumente = 1
+versionen = 1
+jobs = 1
+```
+
+Anschließend:
+
+```text
+docker stop retro-rag-v2-staging-isolated
+retro-rag-v2-staging-isolated
+
+docker ps -a --filter 'name=^/retro-rag-v2-staging-isolated$'
+CONTAINER ID   IMAGE   COMMAND   CREATED   STATUS   PORTS   NAMES
+```
+
+Damit sind das geschlossene persistente Gate und die unveränderten
+Tabellenzähler des bestehenden V2-Testclusters sowie das Ende
+des temporären Containers bestätigt.
+
+### Geltungsbereich / weiterhin offen
+
+- Bestanden: tatsächlicher `stage_file()`-Pfad mit absichtlich
+  ausgelöstem SQL-Fehler, DB-Rollback, unveränderter Archivkopie,
+  Wiederanlauf, Idempotenz und separater Nachkontrolle.
+- Der Test benutzte den Datenbank-Superuser **nur im isolierten Container**;
+  die vollständige identische Ausführung mit dem eingeschränkten
+  `rag_v2_importer_login` wurde hier nicht erneut nachgewiesen.
+- Es handelt sich um einen manuell ausgeführten Integrationstest,
+  **nicht** um einen neuen eingecheckten pytest-Test; der letzte
+  bestätigte Suite-Lauf bleibt `28 passed, 11 skipped`.
+- Noch offen: kontrollierter **Einzeldatei**-WebDAV-`--apply`, Abgleich
+  von realem PDF-Hash/DB-Referenz/Originalarchiv, HTTP-Fehler und
+  Verbindungsabbruch, ETag-Rennen und gegebenenfalls weitere
+  Crash-/Mountpoint-Fehlerfälle.
+- **Keine produktive Importfreigabe, kein Merge nach `main`.**
