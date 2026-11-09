@@ -249,3 +249,93 @@ Keine Änderung an den Nextcloud-Originaldateien.
 
 Letzter bestätigter Write-Gate-Zustand:
 writes_enabled = false
+
+
+## 12. Nachtrag: Recovery- und Rollback-Nachweise (09.11.2026)
+
+Die Aussagen in Abschnitt 10 sind der damalige Zwischenstand. Für die hier dokumentierten
+Teilaspekte liegen inzwischen folgende **tatsächlich auf Poseidon ausgeführte** Nachweise vor.
+
+### A. Archivdatei nach simuliertem DB-Fehler wiederverwenden
+
+- Testdaten: Markdown-Bytes mit Titel `Recovery-Test`.
+- SHA-256: `7731afe825d20470f1f579031a732612f0611ffb837735fc84c078f7df2fc851`.
+- `archive_original()` legte das Original auf `/data` an.
+- Wiederholter Aufruf mit identischen Bytes verwendete dieselbe Archivdatei;
+  keine zweite Kopie entstand.
+- Die Datei wurde nach exakter Inhaltsprüfung entfernt.
+- **Grenze:** Bei diesem Test wurde der DB-Fehler nur simuliert, nicht durch
+  `stage_file()` ausgelöst.
+
+### B. Echte Erkennung eines verwaisten Archivartefakts
+
+- Separates `Audit-Orphan-Test`-Markdown wurde im Archiv angelegt.
+- `scripts/audit_original_archive.py` gegen `retro_rag_v2_test` meldete:
+  `Registrierte Archivdateien: 0`,
+  `Verwaiste Dateien: 1`,
+  `Integritätsprobleme: 0`.
+- Gemeldeter Pfad:
+  `/data/retro-rag/v2/originals/af/af9a165758ebcefd1b3d8532cb8b39934e1e6cb346d60aecd4481fcc2f652e20.md`.
+- Exit-Code `1` war als erwartete Negativtest-Antwort korrekt.
+- Die Datei wurde nur nach Prüfung auf Symlinkfreiheit und exakter Bytegleichheit
+  manuell entfernt. Ein anschließendes Audit meldete
+  `0` registrierte Dateien, `0` verwaiste Dateien, `0` Integritätsprobleme
+  und `PASS: Archiv und Datenbank konsistent`.
+
+### C. PostgreSQL-Rollback bei bereits veröffentlichter Archivdatei
+
+Ein realer PostgreSQL-Transaktionskontext wurde verwendet, aber **nicht**
+`stage_file()`: `CREATE TEMP TABLE rollback_probe`, INSERT, Veröffentlichung
+einer Markdown-Testdatei durch `archive_original()` innerhalb der Transaktion
+und ein absichtlich ausgelöster `RuntimeError`, der den Rollback bewirkte.
+
+Ausgaben:
+
+```text
+PASS: Archivdatei innerhalb der DB-Transaktion angelegt
+PASS: PostgreSQL-Transaktion zurückgerollt
+PASS: Archivdatei nach Rollback vorhanden
+PASS: Archivdatei beim Wiederanlauf wiederverwendet
+```
+
+- SHA-256: `74b79e257092b31508c4e0eb8cac41c3312efef466410a3368c9c70c0a893445`.
+- Die Datei blieb unter
+  `/data/retro-rag/v2/originals/74/74b79e257092b31508c4e0eb8cac41c3312efef466410a3368c9c70c0a893445.md`
+  nach Rollback bestehen; Wiederverwendung mit demselben Inhalt funktionierte.
+- Anschließendes Audit:
+  `Registrierte Archivdateien: 0`,
+  `Verwaiste Dateien: 1`, `Integritätsprobleme: 0`;
+  Exit-Code `1` (erwartet).
+- Die Testdatei wurde nach Prüfung von Hash, Pfad, Inhalt und fehlender
+  Symlink-Eigenschaft kontrolliert entfernt:
+  `PASS: SQL-Rollback-Testdatei sicher entfernt`.
+- **Grenze:** Diese Prüfung zeigt die Nicht-Atomarität von Dateisystem und
+  PostgreSQL sowie die Wiedererkennung verwaister Dateien. Sie prüft weder
+  persistente `rag_v2`-Tabellenänderungen noch einen vollständigen
+  `stage_file()`-Rollback. Eine weitere Audit-Ausführung nach dieser letzten
+  Löschung ist in den bereitgestellten Ergebnissen nicht enthalten.
+
+### D. Unverändert offene Punkte
+
+1. Vollständiger `stage_file()`-Integrationstest einschließlich eines
+   erzwungenen SQL-Fehlers mit realem Importer, sicherer Gate-Steuerung,
+   Persistenzprüfung und Wiederanlauf.
+2. Kontrollierter WebDAV-`--apply` für **genau eine** Quell-Datei
+   (`p5ab-107.pdf`, Nextcloud-fileid `175`) und anschließender
+   Abgleich von Datenbankeintrag und Archiv-Hash.
+3. Begrenzung des CLI-Imports auf exakt eine gewählte Quell-ID, bevor
+   `--apply` aktiviert wird; die aktuelle CLI verarbeitet sonst alle
+   gefundenen Dateien unter ihrer konfigurierten Wurzel.
+4. Separate Fehler-Injektion für HTTP-Fehler und abgebrochenen Transfer;
+   ETag-/Inhaltsrennen und Begrenzung des Downloads während des Lesens.
+5. Negativtest bei fehlendem/falschem Mountpoint, Audit unter
+   parallelem Import und sichere Behandlung temporärer Dateien nach hartem
+   Prozessabbruch.
+6. Nach dem späteren Apply: unabhängiger DB-/Archiv-Nachcheck und
+   dokumentierte erneute Schließung des Write-Gates.
+
+**Keine neue Produktivfreigabe.** Der zuletzt direkt gemeldete Write-Gate-Wert
+war `false`; in diesen Recovery-Tests wurde das Gate nicht geöffnet.
+Die früheren `28 passed, 11 skipped` betreffen den zuletzt gemeldeten
+pytest-Lauf. Die obigen Recovery-Nachweise sind separate manuelle Testläufe,
+keine zusätzlichen pytest-Fälle.
