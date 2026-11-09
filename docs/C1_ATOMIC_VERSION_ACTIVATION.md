@@ -262,3 +262,37 @@ docker stop retro-rag-v2-c1-isolated
 
 Die bestehende V2-Testdatenbank muss unverändert sein und das Gate geschlossen.
 **Status:** Repository-Testcode vorhanden, Ausführung und Abnahme auf Poseidon ausstehend.
+
+
+## Abnahme – isolierter C1-Konkurrenztest am 09.11.2026
+
+Die Betreiberin hat auf Poseidon den Test
+`tests/test_version_activation_concurrency.py` mit der lokalen Python-venv
+im Netzwerk-Namespace des separaten Containers
+`retro-rag-v2-c1-isolated` ausgeführt. Vor dem Test wurden der isolierte
+Clustername, die kopierte Schemaversion 5 und das geschlossene Gate geprüft.
+Der Schematransfer aus `retro_rag_v2_test` per `pg_dump --schema-only`
+und `pg_restore` endete mit Exit-Code 0.
+
+**Bestätigte Terminalausgabe:**
+
+```text
+. [100%]
+1 passed in 0.16s
+```
+
+Der Integrationstest erzwingt zwei unabhängige konkurrierende
+Aktivierungen und beobachtet über eine dritte Verbindung einen
+tatsächlichen Blockierer (`pg_blocking_pids()`). Nach Freigabe werden
+die erwarteten drei Zustände geprüft: Version 1 und 2
+`superseded`, Version 3 `active`, genau eine aktive Version.
+Zusammen mit den sechs zuvor erfolgreich getesteten C1-Fällen sind
+**7/7 C1-DB-Tests bestanden**. C1 ist hinsichtlich der vorgesehenen
+atomaren Statuswechsel und des demonstrierten Konkurrenzfalls abgenommen;
+ein späterer echter Import-Worker-End-to-End-Test bleibt offen.
+
+**Noch erforderlich vor Abschluss der isolierten Testumgebung:**
+Unabhängige Lesekontrolle des Write-Gates und der Tabellenzähler im
+bestehenden Container `codeanalyse-postgres`, anschließend
+`docker stop retro-rag-v2-c1-isolated`. Diese beiden Schritte sind
+zum Zeitpunkt dieses Nachtrags noch nicht vom Betreiber bestätigt.
