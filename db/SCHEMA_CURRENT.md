@@ -77,3 +77,8 @@ bleiben für Wiederherstellung/Bootstrap erforderlich.
 
 Nach jeder neuen Migration: Export erneut ausführen, Änderung prüfen und
 Snapshot zusammen mit der Migrationsdatei committen. So wird Schema-Drift sichtbar.
+
+
+## Vorgesehene Migration 0005 (09.11.2026; noch nicht auf Poseidon angewendet)
+
+Der Branch `feat/document-identity-review` enthält `db/migrations/0005_document_identity.sql`. Die Migration ergänzt `document_source.source_instance`, erzwingt eine nichtleere Instanzkennung für Nextcloud und ersetzt die alte Eindeutigkeit `(source_system,source_key)` durch `(source_system,coalesce(source_instance,''),source_key)`. Bei vorhandenen Nextcloud-Zeilen bricht die Migration ohne manuelle Instanzzuordnung ab. Der hier dokumentierte aktuelle Datenbanksnapshot ist bis zur tatsächlichen Anwendung von 0005 **unverändert**; `db/schema/retro_rag_v2_test.sql` darf erst nach der Migration mit `scripts/export_schema_v2.sh` aktualisiert werden.
