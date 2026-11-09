@@ -52,3 +52,7 @@ Die oben als offen markierte Instanz- und Dublettenidentität ist in `feat/docum
 ## Tatsächlicher Datenbankstand 09.11.2026
 
 Die Testdatenbank `retro_rag_v2_test` erhielt Migration **0005** nach einer `pg_dump -Fc`-Sicherung (123 KB; `pg_restore --list` lesbar). `verify_0005.sql` wurde erfolgreich ausgeführt. Kontrolliert wurden die neue Spalte `source_instance text` (nullable, mit Nextcloud-spezifischer CHECK-Regel), der eindeutige Quellidentitätsindex `document_source_identity_idx`, Versionsmarker 5 und das weiterhin geschlossene Write-Gate (`writes_enabled=f`). Der Python-Testlauf vor dem Eingriff meldete **17 Tests bestanden**. `--apply` wurde dabei nicht ausgeführt. Siehe [Dokumentidentität](DOCUMENT_IDENTITY.md) und [Schema-Status](../db/SCHEMA_CURRENT.md).
+
+## Regression/Integration – 09.11.2026
+
+`tests/test_document_identity_integration.py` prüft den echten Staging-SQL-Pfad mit vier Rollback-Testfällen. Noch **nicht auf Poseidon ausgeführt**. Testanleitung und Ergebnismatrix: [DOCUMENT_IDENTITY_INTEGRATION_TESTS.md](DOCUMENT_IDENTITY_INTEGRATION_TESTS.md). Kein realer WebDAV-`--apply`-Test und keine freigegebene Review-Auflösung.
