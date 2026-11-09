@@ -296,3 +296,39 @@ Unabhängige Lesekontrolle des Write-Gates und der Tabellenzähler im
 bestehenden Container `codeanalyse-postgres`, anschließend
 `docker stop retro-rag-v2-c1-isolated`. Diese beiden Schritte sind
 zum Zeitpunkt dieses Nachtrags noch nicht vom Betreiber bestätigt.
+
+
+## Abschließende Betreiberkontrolle und Bereinigung (09.11.2026)
+
+**Nach dem bestandenen Konkurrenztest unabhängig auf Poseidon geprüft:**
+
+```text
+writes_enabled | f
+reason         | Parallelitätstest erfolgreich; Freigabe ausstehend
+
+dokumente | versionen | jobs
+----------+-----------+-----
+0         | 0         | 0
+```
+
+Die Abfrage wurde ausdrücklich gegen den **bestehenden** Container
+`codeanalyse-postgres` und die Datenbank `retro_rag_v2_test` durchgeführt,
+nicht gegen die isolierte Testinstanz. Danach bestätigte der Betreiber:
+
+```text
+docker stop retro-rag-v2-c1-isolated
+retro-rag-v2-c1-isolated
+```
+
+Der isolierte Container wurde mit `--rm` und temporärem `tmpfs`
+gestartet. Der erfolgreiche Stop bestätigt die Beendigung des
+Testcontainers; die Entfernung seiner temporären Daten folgt aus
+dieser Containerkonfiguration. **C1 ist auf der Ebene der getesteten
+atomaren Versionsaktivierung, Rollbacks und konkurrierenden Aktivierungen
+abgenommen (7/7 DB-Tests).**
+
+**Abgrenzung:** Ein vollständiger WebDAV-Import mit echtem `--apply`,
+Produktivworker, realen Embeddings und ein Test der DB-/Dateisystem-
+Konsistenz sind nicht Teil dieser C1-Abnahme. Die bestehende
+Schreibfreigabe wurde nicht dauerhaft geöffnet. Kein Merge nach `main`
+wurde durchgeführt.
