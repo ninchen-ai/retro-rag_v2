@@ -61,3 +61,7 @@ Der Test-DB-Status wurde anhand der vom Betreiber am 09.11.2026 übermittelten T
 ### Abnahmegrenzen und Folgearbeiten
 
 Schema-Migration und statische/unit-basierte Tests sind bestätigt. **Nicht bestätigt** sind der echte Mehrinstanz-Datensatztest, transaktionale Review-Erzeugung in PostgreSQL, gleichzeitiger Doppelimport, die vollständige WebDAV-`--apply`-Pipeline und die manuelle Review-Auflösung. Das Write-Gate bleibt zu. Der bisherige `db/schema/retro_rag_v2_test.sql`-Snapshot wurde **noch nicht** auf Poseidon nach Migration 0005 neu erzeugt; `scripts/export_schema_v2.sh` wurde im Repository auf erwarteten Migrationsstand 5 angehoben und muss auf Poseidon ausgeführt, geprüft und committed werden.
+
+## Integrationstests (09.11.2026 vorbereitet)
+
+Die vier ausführbaren PostgreSQL-Tests und ihre Sicherheitsbedingungen sind unter [DOCUMENT_IDENTITY_INTEGRATION_TESTS.md](DOCUMENT_IDENTITY_INTEGRATION_TESTS.md) dokumentiert. Die Tests sind **noch nicht ausgeführt**: erst die reale Poseidon-Ausgabe `4 passed` ohne `skipped` und die Nachkontrolle des Gate-Zustands erlauben eine Abnahme. Die Suite simuliert lediglich das Originalarchiv, nicht die SQL-Verarbeitung; sie nutzt den dedizierten Migrator-Login und committet keine Gate-Freigabe.
