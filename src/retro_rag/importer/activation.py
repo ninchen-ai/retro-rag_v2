@@ -5,7 +5,6 @@ Diese Funktion veröffentlicht ausschließlich vollständig vorbereitete Version
 """
 
 from dataclasses import dataclass
-from datetime import timedelta
 from uuid import UUID
 
 import psycopg
