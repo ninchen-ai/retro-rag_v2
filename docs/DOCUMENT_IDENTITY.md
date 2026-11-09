@@ -1,6 +1,6 @@
 # Dokumentidentität und Dublettenprüfung (Punkt B)
 
-Stand: 09.11.2026. Implementiert im Branch `feat/document-identity-review`, aufbauend auf `fix/importer-write-gate`. **Nicht auf Poseidon ausgeführt.**
+Stand: 09.11.2026. Implementiert im Branch `feat/document-identity-review`, aufbauend auf `fix/importer-write-gate`. **Migration 0005 auf Poseidon angewendet und lesend geprüft am 09.11.2026; Integrationstests noch offen.**
 
 ## Identitäten
 
@@ -46,4 +46,18 @@ Die Instanz-ID wird nicht aus der WebDAV-URL abgeleitet und muss dauerhaft stabi
 
 ## Grenzen
 
-Der Test-DB-Status ist nur aus dokumentierten Terminalausgaben bekannt, nicht live aus Poseidon bestätigt. Ein End-to-End-DB-Test und die spätere manuelle Review-Auflösung bleiben offen. Vor Apply muss auch die vom Importer zurückgelieferte vollständige Dateimenge geprüft werden.
+Der Test-DB-Status wurde anhand der vom Betreiber am 09.11.2026 übermittelten Terminalausgaben überprüft (kein direkter Datenbankzugriff über den GitHub-Connector). Ein End-to-End-DB-Test und die spätere manuelle Review-Auflösung bleiben offen. Vor Apply muss auch die vom Importer zurückgelieferte vollständige Dateimenge geprüft werden.
+
+## Betriebsnachweis auf Poseidon – 09.11.2026
+
+**Vorab:** `python -m pytest -q` meldete `17 passed in 0.18s`, `git diff --check` blieb ohne Ausgabe. Kontrollabfrage vor Migration 0005: Versionen 1–4 vorhanden, keine `document_source`-Zeilen, `document=0`, `document_version=0`, `review_item=0`; Write-Gate gesperrt.
+
+**Sicherung:** `pg_dump -U codeanalyse -d retro_rag_v2_test -Fc` in `/home/nina/backups/retro-rag-v2/pre_migration_0005.dump`, 123 KB, `-rw-------`. Inhaltsverzeichnis mit `pg_restore --list` erfolgreich gelesen. Der Dump ist **nicht** im Git-Repository; ein erfolgreicher Restore ist damit noch nicht nachgewiesen.
+
+**Schemaänderung:** Nach `docker cp` über `rag_v2_migrator_login` angemeldet, `SET ROLE rag_v2_migrator`, `\\i /tmp/0005_document_identity.sql`. Bestätigte Ausgabe: `BEGIN`, `DO`, `pg_advisory_xact_lock`, drei `ALTER TABLE`, `CREATE INDEX`, `INSERT 0 1`, `COMMIT`. Anschließend `db/checks/verify_0005.sql`: `NOTICE: 0005: Instanzkennung, Identitätsindex, Berechtigungen geprüft` und `DO`. Temporäre SQL-Datei entfernt.
+
+**Nachkontrolle:** `document_source` enthält 10 Spalten. Neue Spalte `source_instance` hat Datentyp `text` und `is_nullable=YES`; für Nextcloud-Quellen gilt die Nichtleer-Pflicht durch `document_source_instance_valid` (durch `verify_0005.sql` geprüft). Drei Indizes: `document_source_pkey`, `document_source_document_idx`, `document_source_identity_idx`; letzterer ist `UNIQUE` auf `(source_system, COALESCE(source_instance, ''::text), source_key)`. Versionsmarker 5 vorhanden. Write-Gate weiterhin `writes_enabled=f` mit Grund `Parallelitätstest erfolgreich; Freigabe ausstehend`.
+
+### Abnahmegrenzen und Folgearbeiten
+
+Schema-Migration und statische/unit-basierte Tests sind bestätigt. **Nicht bestätigt** sind der echte Mehrinstanz-Datensatztest, transaktionale Review-Erzeugung in PostgreSQL, gleichzeitiger Doppelimport, die vollständige WebDAV-`--apply`-Pipeline und die manuelle Review-Auflösung. Das Write-Gate bleibt zu. Der bisherige `db/schema/retro_rag_v2_test.sql`-Snapshot wurde **noch nicht** auf Poseidon nach Migration 0005 neu erzeugt; `scripts/export_schema_v2.sh` wurde im Repository auf erwarteten Migrationsstand 5 angehoben und muss auf Poseidon ausgeführt, geprüft und committed werden.
