@@ -43,3 +43,8 @@ python -m retro_rag.importer.sync_cli --apply --archive-root /srv/retro-rag-v2/o
 - Job-Worker, OCR/PDF, Extraktion, Chunks, Embeddings und Reviews folgen später.
 - Atomare Übernahme neuer Versionen erfolgt erst nach vollständiger technischer Indexierung.
 - Unterbrochene Transfers, ETag-/Hash-Rennen und Validierung des Archiv-Dateityps sind zu härten.
+
+
+## Nachtrag 09.11.2026: Punkt B im Entwicklungsbranch
+
+Die oben als offen markierte Instanz- und Dublettenidentität ist in `feat/document-identity-review` als Migration 0005 plus Code und Unit-Tests vorbereitet. Die Umgebung benötigt zusätzlich `RETRO_V2_NEXTCLOUD_INSTANCE_ID`. Identische Hashes neuer, verschiedener Quellidentitäten werden in `review_item(document_identity)` ohne Processing-Job erfasst. Der Live-Nachweis auf Poseidon und die Review-Auflösung stehen aus. Siehe [DOCUMENT_IDENTITY.md](DOCUMENT_IDENTITY.md). Das ist kein auf Poseidon bestätigter Abschluss.
