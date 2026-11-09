@@ -152,3 +152,33 @@ def test_stage_checks_write_gate_before_archiving(monkeypatch, tmp_path):
 def test_instance_id_is_mandatory():
     with pytest.raises(ValueError, match="Instanzkennung"):
         WebDAV("http://127.0.0.1:8080/remote.php/dav/files/u/", "u", "secret")
+
+
+def test_download_rejects_incomplete_transfer(monkeypatch):
+    from retro_rag.importer.webdav import RemoteFile
+
+    client = WebDAV(
+        "http://127.0.0.1:8080/remote.php/dav/files/nina/",
+        "nina",
+        "test-password",
+        instance_id="poseidon-nextcloud",
+    )
+
+    file = RemoteFile(
+        source_key="999999",
+        uri="http://127.0.0.1:8080/remote.php/dav/files/nina/test.pdf",
+        name="test.pdf",
+        etag=None,
+        byte_size=100,
+        content_type="application/pdf",
+        instance_id="poseidon-nextcloud",
+    )
+
+    monkeypatch.setattr(
+        client, "_request", lambda *args, **kwargs: b"x" * 50
+    )
+
+    with pytest.raises(
+        IOError, match="Unvollständiger oder inkonsistenter Download"
+    ):
+        client.download(file)

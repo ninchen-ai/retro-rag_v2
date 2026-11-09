@@ -309,3 +309,25 @@ Die dauerhaften Originalkopien werden auf Poseidon unter `/data/retro-rag/v2/ori
 Die zugehörigen Archiv- und WebDAV-Staging-Tests ergaben **11 bestandene Tests**. Der echte WebDAV-Apply und die Dateisystem-/DB-Recovery-Prüfungen stehen noch aus.
 
 Details: [Atomares Originalarchiv](docs/ATOMIC_ORIGINAL_ARCHIVE.md).
+
+## WebDAV- und Archivabsicherung (09.11.2026)
+
+Der Archivspeicher auf Poseidon ist eingerichtet und die
+atomare Originalarchivierung implementiert.
+
+Weitere Absicherungen:
+
+- Verbindliche Archivpfadprüfung beim CLI-Apply
+- UUID-basierte Prüfung der vorgesehenen Toshiba-HDD
+- Lesendes Archiv-/Datenbank-Audit
+- Erkennung unvollständiger WebDAV-Downloads
+- Regressionstest für abweichende Downloadgröße
+
+**Teststand:** 28 passed, 11 skipped.
+
+Noch offen sind der kontrollierte WebDAV-Apply,
+Fehlerfälle bei Verbindungsabbrüchen sowie
+PostgreSQL-Rollback und Wiederanlauf.
+
+Siehe
+[WebDAV- und Archivabsicherung](docs/IMPORT_ARCHIVE_HARDENING_2026-11-09.md).

@@ -25,8 +25,16 @@ def main() -> None:
     dsn = os.environ.get("RETRO_V2_DATABASE_DSN")
     if not all((endpoint, user, password, dsn, instance_id)):
         parser.error("RETRO_V2_WEBDAV_URL/USER/APP_PASSWORD, NEXTCLOUD_INSTANCE_ID und DATABASE_DSN fehlen")
-    if args.apply and args.archive_root is None:
-        parser.error("--apply erfordert --archive-root")
+    if args.apply:
+        from retro_rag.importer.archive_mount import (
+            ARCHIVE_ROOT,
+            verify_archive_mount,
+        )
+        if args.archive_root != ARCHIVE_ROOT:
+            parser.error(
+                f"--apply erfordert --archive-root {ARCHIVE_ROOT}"
+            )
+        verify_archive_mount(args.archive_root)
     if args.apply and "retro_rag_v2_test" not in dsn:
         parser.error("Vorerst nur retro_rag_v2_test für --apply freigegeben")
 

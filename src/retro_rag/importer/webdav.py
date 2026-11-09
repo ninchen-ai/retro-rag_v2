@@ -147,6 +147,11 @@ class WebDAV:
         data = self._request(file.uri, "GET")
         if len(data) > max_bytes:
             raise ValueError(f"Datei überschreitet Größenlimit: {file.name}")
+        if file.byte_size is not None and len(data) != file.byte_size:
+            raise IOError(
+                f"Unvollständiger oder inkonsistenter Download: {file.name} "
+                f"({len(data)} statt {file.byte_size} Bytes)"
+            )
         return data
 
 
