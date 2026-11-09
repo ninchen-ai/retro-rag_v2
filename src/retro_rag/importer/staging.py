@@ -51,30 +51,59 @@ def plan_file(conn: psycopg.Connection, file: RemoteFile, data: bytes) -> Planne
 
 
 def archive_original(archive_root: Path, data: bytes, filename: str) -> str:
-    """Inhaltsadressiertes Originalarchiv; vorhandene Kopien auf Hash prüfen."""
+    """Archiviert atomar und ohne bestehende Originale zu überschreiben."""
+    import tempfile
+
     value = digest(data)
     ext = Path(filename).suffix.lower()
     if ext not in (".md", ".pdf"):
         raise ValueError("Nicht unterstütztes Dateiformat")
+
     folder = archive_root / value[:2]
     folder.mkdir(parents=True, exist_ok=True, mode=0o700)
     path = folder / (value + ext)
-    if path.exists():
-        if digest(path.read_bytes()) != value:
-            raise RuntimeError("Vorhandenes Archivartefakt stimmt nicht mit Hash überein")
-    else:
-        # Exklusives Schreiben verhindert Überschreiben unveränderter Rohdaten.
-        try:
-            with path.open("xb") as out:
-                os.chmod(path, 0o600)
-                out.write(data)
-                out.flush()
-                os.fsync(out.fileno())
-        except FileExistsError:
-            if digest(path.read_bytes()) != value:
-                raise RuntimeError("Parallel angelegte Archivkopie hat anderen Hash")
-    return path.resolve().as_uri()
 
+    def verify_existing() -> None:
+        if not path.is_file() or digest(path.read_bytes()) != value:
+            raise RuntimeError(
+                "Vorhandenes Archivartefakt fehlt oder ist beschädigt"
+            )
+
+    if path.exists() or path.is_symlink():
+        verify_existing()
+        return path.resolve().as_uri()
+
+    fd, temporary_name = tempfile.mkstemp(
+        prefix=".archive-", suffix=".tmp", dir=folder
+    )
+    temporary = Path(temporary_name)
+
+    try:
+        with os.fdopen(fd, "wb") as out:
+            os.fchmod(out.fileno(), 0o600)
+            out.write(data)
+            out.flush()
+            os.fsync(out.fileno())
+
+        if digest(temporary.read_bytes()) != value:
+            raise RuntimeError("Temporäre Archivdatei beschädigt")
+
+        try:
+            # Atomare Veröffentlichung ohne Überschreiben.
+            os.link(temporary, path, follow_symlinks=False)
+        except FileExistsError:
+            verify_existing()
+
+        directory_fd = os.open(folder, os.O_RDONLY | os.O_DIRECTORY)
+        try:
+            os.fsync(directory_fd)
+        finally:
+            os.close(directory_fd)
+
+        verify_existing()
+        return path.resolve().as_uri()
+    finally:
+        temporary.unlink(missing_ok=True)
 
 def stage_file(
     conn: psycopg.Connection,

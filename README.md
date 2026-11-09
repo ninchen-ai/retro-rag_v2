@@ -301,3 +301,11 @@ Der Entwicklungsbranch `feature/c1-atomic-version-activation` enthält `src/retr
 Die Validierung bezieht sich auf die atomaren DB-Statuswechsel. Ein vollständiger WebDAV-`--apply`-Durchlauf sowie die Anbindung eines Verarbeitungs-Workers stehen weiter aus. Details und Befehle: [`docs/C1_ATOMIC_VERSION_ACTIVATION.md`](docs/C1_ATOMIC_VERSION_ACTIVATION.md).
 
 **Python-Dependency-Quelle:** `pyproject.toml` ist maßgeblich. `requirements.txt` und `requirements-layout.txt` sind nicht vorhanden; die bisherigen Hinweise darauf waren überholt.
+
+## Atomares Originalarchiv (09.11.2026)
+
+Die dauerhaften Originalkopien werden auf Poseidon unter `/data/retro-rag/v2/originals` abgelegt (Toshiba-HDD, ext4). Die Archivfunktion wurde auf temporäres Schreiben, SHA-256-Prüfung und atomare Veröffentlichung ohne Überschreiben umgestellt.
+
+Die zugehörigen Archiv- und WebDAV-Staging-Tests ergaben **11 bestandene Tests**. Der echte WebDAV-Apply und die Dateisystem-/DB-Recovery-Prüfungen stehen noch aus.
+
+Details: [Atomares Originalarchiv](docs/ATOMIC_ORIGINAL_ARCHIVE.md).
