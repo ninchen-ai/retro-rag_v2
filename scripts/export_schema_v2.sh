@@ -13,8 +13,8 @@ mkdir -p db/schema
 info="$(docker exec "$container" psql -X -A -t -v ON_ERROR_STOP=1 \
     -U codeanalyse -d "$database" -c \
     "SELECT current_database() || '|' || COALESCE((SELECT max(version)::text FROM rag_v2.schema_migration), 'missing')")"
-if [[ "$info" != "retro_rag_v2_test|4" ]]; then
-    echo "Abbruch: erwartet retro_rag_v2_test mit Migration 4, erhalten: $info" >&2
+if [[ "$info" != "retro_rag_v2_test|5" ]]; then
+    echo "Abbruch: erwartet retro_rag_v2_test mit Migration 5, erhalten: $info" >&2
     exit 1
 fi
 
@@ -35,6 +35,14 @@ if ! grep -q '^CREATE TABLE rag_v2\.schema_migration' "$tmp"; then
 fi
 if ! grep -q '^CREATE FUNCTION rag_v2.assert_import_write_gate()' "$tmp"; then
     echo "Abbruch: Gate-Funktion aus Migration 0004 fehlt im Schemaexport" >&2
+    exit 1
+fi
+if ! grep -q '^CREATE UNIQUE INDEX document_source_identity_idx' "$tmp"; then
+    echo "Abbruch: Identitätsindex aus Migration 0005 fehlt im Schemaexport" >&2
+    exit 1
+fi
+if ! grep -q 'source_instance text' "$tmp"; then
+    echo "Abbruch: source_instance aus Migration 0005 fehlt im Schemaexport" >&2
     exit 1
 fi
 if [[ "$(grep -c '^CREATE TABLE rag_v2\.' "$tmp")" -ne 37 ]]; then
