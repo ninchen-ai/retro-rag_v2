@@ -7,6 +7,7 @@ from pathlib import Path
 import yaml
 
 from retro_rag.importer.contract import Chunk, Document, ImportContract, Source
+from retro_rag.importer.metadata import assess_metadata
 
 _HEADING = re.compile(r"^(#{1,6})\s+(.+?)\s*$")
 
@@ -26,7 +27,7 @@ def parse_frontmatter(content: str) -> tuple[dict, str]:
         raise ValueError("YAML-Frontmatter ist nicht abgeschlossen")
     data = yaml.safe_load("".join(lines[1:end]))
     if not isinstance(data, dict):
-        raise ValueError("YAML-Frontmatter muss ein Mapping sein")
+        raise TypeError("YAML-Frontmatter muss ein Mapping sein")
     return data, "".join(lines[end + 1 :])
 
 
@@ -74,12 +75,15 @@ def read_markdown(path: Path, source_id: str, max_chars: int = 4000) -> ImportCo
     raw = path.read_bytes()
     content = raw.decode("utf-8-sig")
     metadata, body = parse_frontmatter(content)
+    assessment = assess_metadata(metadata)
     title = metadata.get("title")
     document_type = metadata.get("document_type")
     if not isinstance(title, str) or not title.strip():
         raise ValueError("YAML-Feld 'title' fehlt oder ist leer")
     if not isinstance(document_type, str) or not document_type.strip():
         raise ValueError("YAML-Feld 'document_type' fehlt oder ist leer")
+    if not assessment.valid:
+        raise ValueError("YAML-Metadaten ungültig: " + "; ".join(assessment.issues))
     return ImportContract(
         source=Source(
             source_id=source_id,
@@ -87,8 +91,11 @@ def read_markdown(path: Path, source_id: str, max_chars: int = 4000) -> ImportCo
             content_hash=sha256(raw),
             kind="markdown",
         ),
-        document=Document(title=title, document_type=document_type, metadata=metadata),
+        document=Document(title=title, document_type=document_type, metadata=assessment.normalized),
         chunks=split_sections(body, max_chars=max_chars),
-        warnings=["Quellenautorisierung, Schema- und Konfliktprüfung sind noch nicht implementiert."],
+        warnings=[
+            "Quellenautorisierung, Schema- und Konfliktprüfung sind noch nicht implementiert.",
+            *assessment.issues,
+        ],
         indexing_allowed=False,
     )
