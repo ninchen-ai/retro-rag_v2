@@ -4,7 +4,6 @@ Requires RETRO_V2_IDENTITY_TEST_DSN for the dedicated V2 migrator LOGIN.
 Never commits an open write gate. No Nextcloud, archive, or V1 writes.
 """
 
-import json
 import os
 from pathlib import Path
 from uuid import uuid4
@@ -80,7 +79,7 @@ def test_same_fileid_in_two_instances_is_distinct(db):
     key = str(uuid4())
     first = source("identity-test-a", key)
     second = source("identity-test-b", key)
-    assert stage(db, first, b"file A") .action == "new"
+    assert stage(db, first, b"file A").action == "new"
     assert stage(db, second, b"file B").action == "new"
     with db.cursor() as cur:
         cur.execute(
