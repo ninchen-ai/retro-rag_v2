@@ -24,17 +24,22 @@ def digest(data: bytes) -> str:
 
 def plan_file(conn: psycopg.Connection, file: RemoteFile, data: bytes) -> PlannedChange:
     """Plant ausschließlich lesend; identische Versionen werden übersprungen."""
+    if not file.instance_id:
+        raise ValueError("Nextcloud-Instanzkennung fehlt")
     hash_value = digest(data)
     with conn.cursor() as cur:
         cur.execute(
             """SELECT s.document_id, s.last_seen_content_hash
                FROM rag_v2.document_source s
-               WHERE s.source_system = 'nextcloud' AND s.source_key = %s""",
-            (file.source_key,),
+               WHERE s.source_system = 'nextcloud' AND s.source_instance = %s AND s.source_key = %s""",
+            (file.instance_id, file.source_key),
         )
         source = cur.fetchone()
         if source is None:
-            return PlannedChange("new", file.source_key, file.name, hash_value)
+            cur.execute("""SELECT 1 FROM rag_v2.document_version v
+                JOIN rag_v2.document_source s ON s.document_id=v.document_id
+                WHERE v.content_hash=%s LIMIT 1""", (hash_value,))
+            return PlannedChange("review" if cur.fetchone() else "new", file.source_key, file.name, hash_value)
         cur.execute(
             """SELECT 1 FROM rag_v2.document_version
                WHERE document_id = %s AND content_hash = %s LIMIT 1""",
@@ -78,6 +83,8 @@ def stage_file(
     archive_root: Path,
 ) -> PlannedChange:
     """Erfordert expliziten Apply-Aufruf und eine offene DB-Schreibfreigabe."""
+    if not file.instance_id:
+        raise ValueError("Nextcloud-Instanzkennung fehlt")
     file_hash = digest(data)
     with conn.transaction():
         with conn.cursor() as cur:
@@ -89,15 +96,24 @@ def stage_file(
             archive_uri = archive_original(archive_root, data, file.name)
             cur.execute(
                 "SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))",
-                ("nextcloud:" + file.source_key,),
+                ("nextcloud:" + file.instance_id + ":" + file.source_key,),
             )
             cur.execute(
                 """SELECT id, document_id FROM rag_v2.document_source
-                   WHERE source_system='nextcloud' AND source_key=%s FOR UPDATE""",
-                (file.source_key,),
+                   WHERE source_system='nextcloud' AND source_instance=%s AND source_key=%s FOR UPDATE""",
+                (file.instance_id, file.source_key),
             )
             row = cur.fetchone()
+            # Serialisiert Erstimporte mit gleichem Inhalt über Quellgrenzen hinweg.
+            cur.execute("SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))",
+                        ("content:" + file_hash,))
+            candidates = []
             if row is None:
+                cur.execute("""SELECT DISTINCT v.document_id
+                    FROM rag_v2.document_version v
+                    JOIN rag_v2.document_source s ON s.document_id=v.document_id
+                    WHERE v.content_hash=%s ORDER BY v.document_id""", (file_hash,))
+                candidates = [str(item[0]) for item in cur.fetchall()]
                 cur.execute(
                     """INSERT INTO rag_v2.document (title, document_type)
                        VALUES (%s, %s) RETURNING id""",
@@ -106,9 +122,9 @@ def stage_file(
                 document_id = cur.fetchone()[0]
                 cur.execute(
                     """INSERT INTO rag_v2.document_source
-                       (document_id,source_system,source_key,source_uri,last_seen_content_hash)
-                       VALUES (%s,'nextcloud',%s,%s,%s)""",
-                    (document_id, file.source_key, file.uri, file_hash),
+                       (document_id,source_system,source_instance,source_key,source_uri,last_seen_content_hash)
+                       VALUES (%s,'nextcloud',%s,%s,%s,%s)""",
+                    (document_id, file.instance_id, file.source_key, file.uri, file_hash),
                 )
                 action = "new"
             else:
@@ -142,6 +158,28 @@ def stage_file(
                  file.content_type, len(data)),
             )
             version_id = cur.fetchone()[0]
+            if candidates:
+                # Inhaltliche Gleichheit ist keine logische Dokumentidentität.
+                # Keine automatische Weiterverarbeitung vor manuellem Review.
+                import json
+                cur.execute("""INSERT INTO rag_v2.review_batch
+                    (document_version_id,title) VALUES (%s,%s) RETURNING id""",
+                    (version_id, "Dokumentidentität prüfen"))
+                batch_id = cur.fetchone()[0]
+                proposal = {
+                    "reason": "same_hash_different_source",
+                    "source_instance": file.instance_id,
+                    "source_key": file.source_key,
+                    "source_uri": file.uri,
+                    "content_hash": file_hash,
+                    "new_document_id": str(document_id),
+                    "candidate_document_ids": candidates,
+                }
+                cur.execute("""INSERT INTO rag_v2.review_item
+                    (review_batch_id,item_kind,proposal)
+                    VALUES (%s,'document_identity',%s::jsonb)""",
+                    (batch_id, json.dumps(proposal)))
+                return PlannedChange("review", file.source_key, file.name, file_hash)
             cur.execute(
                 """INSERT INTO rag_v2.processing_job (document_version_id,job_type)
                    VALUES (%s,'document_import') RETURNING id""",

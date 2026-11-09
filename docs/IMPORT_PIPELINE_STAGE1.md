@@ -43,3 +43,22 @@ python -m retro_rag.importer.sync_cli --apply --archive-root /srv/retro-rag-v2/o
 - Job-Worker, OCR/PDF, Extraktion, Chunks, Embeddings und Reviews folgen später.
 - Atomare Übernahme neuer Versionen erfolgt erst nach vollständiger technischer Indexierung.
 - Unterbrochene Transfers, ETag-/Hash-Rennen und Validierung des Archiv-Dateityps sind zu härten.
+
+
+## Nachtrag 09.11.2026: Punkt B im Entwicklungsbranch
+
+Die oben als offen markierte Instanz- und Dublettenidentität ist in `feat/document-identity-review` als Migration 0005 plus Code und Unit-Tests vorbereitet. Die Umgebung benötigt zusätzlich `RETRO_V2_NEXTCLOUD_INSTANCE_ID`. Identische Hashes neuer, verschiedener Quellidentitäten werden in `review_item(document_identity)` ohne Processing-Job erfasst. Die Schema-Migration 0005 und ihre lesende Verifikation sind auf Poseidon nachgewiesen; der echte mehrquellige Import-/Review-Integrationstest und die Review-Auflösung stehen aus. Siehe [DOCUMENT_IDENTITY.md](DOCUMENT_IDENTITY.md). Das ist eine bestätigte **Schema-Abnahme**, aber noch keine End-to-End-Abnahme.
+
+## Tatsächlicher Datenbankstand 09.11.2026
+
+Die Testdatenbank `retro_rag_v2_test` erhielt Migration **0005** nach einer `pg_dump -Fc`-Sicherung (123 KB; `pg_restore --list` lesbar). `verify_0005.sql` wurde erfolgreich ausgeführt. Kontrolliert wurden die neue Spalte `source_instance text` (nullable, mit Nextcloud-spezifischer CHECK-Regel), der eindeutige Quellidentitätsindex `document_source_identity_idx`, Versionsmarker 5 und das weiterhin geschlossene Write-Gate (`writes_enabled=f`). Der Python-Testlauf vor dem Eingriff meldete **17 Tests bestanden**. `--apply` wurde dabei nicht ausgeführt. Siehe [Dokumentidentität](DOCUMENT_IDENTITY.md) und [Schema-Status](../db/SCHEMA_CURRENT.md).
+
+## Regression/Integration – 09.11.2026
+
+`tests/test_document_identity_integration.py` prüft den echten Staging-SQL-Pfad mit vier Rollback-Testfällen. Noch **nicht auf Poseidon ausgeführt**. Testanleitung und Ergebnismatrix: [DOCUMENT_IDENTITY_INTEGRATION_TESTS.md](DOCUMENT_IDENTITY_INTEGRATION_TESTS.md). Kein realer WebDAV-`--apply`-Test und keine freigegebene Review-Auflösung.
+
+**Integrationstests am 09.11.2026:** Auf Poseidon wurden vier Datenbanktests über den Container-Netzwerk-Namespace mit `4 passed in 0.14s` bestanden (Instanzidentität, Hash-Review, Job-Sperre und Idempotenz). Die HBA-Regeln blieben unverändert. Der unabhängige Nachcheck des persistenten Write-Gates und der Tabellenzähler steht noch aus. Siehe [Integrationstest-Nachweis](DOCUMENT_IDENTITY_INTEGRATION_TESTS.md).
+
+## Punkt B: abschließende Datenbankabnahme (09.11.2026)
+
+**Abnahme 09.11.2026:** Vier Integrationstests bestanden (`4 passed in 0.14s`). Anschließende unabhängige SQL-Kontrolle: `writes_enabled=f`, Grund `Parallelitätstest erfolgreich; Freigabe ausstehend`; `document=0`, `document_source=0`, `document_version=0`, `review_item=0`, `processing_job=0`. Damit sind Test-Rollback und unveränderter persistenter Gate-Zustand nachgewiesen. Kein echter WebDAV-`--apply`-Test und keine Review-Auflösung durchgeführt.

@@ -282,3 +282,19 @@ Alle 13 Entscheidungen sind in [`conventions.md`](conventions.md#16-architekture
 ## Lizenz
 
 Noch festzulegen. Fremde Dokumente wie Datenblätter und Handbücher gehören nicht ins Repository (Urheberrecht).
+
+### Punkt B – Dokumentidentität (09.11.2026)
+
+Der Entwicklungsbranch `feat/document-identity-review` führt mit Migration `0005_document_identity.sql` eine stabile Nextcloud-Instanzkennung zusätzlich zu `oc:fileid` ein. Inhaltsgleiche Dateien unterschiedlicher Quellen werden nicht anhand des Hashes zusammengeführt, sondern als eigene vorläufige Dokumente mit `document_identity`-Review ohne Importjob erfasst. Eine spätere Auflösung des Reviews ist noch nicht implementiert. Die Migration wurde am 09.11.2026 auf Poseidon in `retro_rag_v2_test` erfolgreich angewendet und mit `verify_0005.sql` geprüft; End-to-End-Tests stehen noch aus. Details: [Dokumentidentität](docs/DOCUMENT_IDENTITY.md).
+
+**Abnahme 09.11.2026:** Vor dem Schemaeingriff: 17 Python-Tests erfolgreich (`17 passed in 0.18s`), `git diff --check` ohne Ausgabe. Backup `~/backups/retro-rag-v2/pre_migration_0005.dump` (123 KB, Modus `0600`); `pg_restore --list` lesbar, kein vollständiger Restore-Test. Migration 0005 über `rag_v2_migrator_login` mit `SET ROLE rag_v2_migrator`, Ausgabe `COMMIT`; `verify_0005.sql` erfolgreich. Anschließende lesende Kontrolle bestätigte `source_instance`, den eindeutigen Identitätsindex und den Marker 5. Write-Gate weiterhin geschlossen (`false`, Grund: „Parallelitätstest erfolgreich; Freigabe ausstehend“). Der eingecheckte SQL-Schema-Snapshot ist noch nicht neu exportiert. Weitere Details: [Dokumentidentität](docs/DOCUMENT_IDENTITY.md).
+
+### Integrationstests Dokumentidentität (09.11.2026)
+
+Vier rollback-basierte PostgreSQL-Integrationstests sind als `tests/test_document_identity_integration.py` implementiert. Sie überprüfen Instanztrennung, Hash-Kollision mit Review, Job-Unterdrückung und idempotentes Wiederholen gegen den echten Python-Stagingpfad. **Noch nicht auf Poseidon ausgeführt; keine bestandene DB-Integration behauptet.** Die dedizierte Testanleitung und Ergebnismatrix stehen in [docs/DOCUMENT_IDENTITY_INTEGRATION_TESTS.md](docs/DOCUMENT_IDENTITY_INTEGRATION_TESTS.md). Gate bleibt außerhalb der äußeren Testtransaktion unverändert geschlossen.
+
+**Integrationstests am 09.11.2026:** Auf Poseidon wurden vier Datenbanktests über den Container-Netzwerk-Namespace mit `4 passed in 0.14s` bestanden (Instanzidentität, Hash-Review, Job-Sperre und Idempotenz). Die HBA-Regeln blieben unverändert. Der unabhängige Nachcheck des persistenten Write-Gates und der Tabellenzähler steht noch aus. Siehe [Integrationstest-Nachweis](docs/DOCUMENT_IDENTITY_INTEGRATION_TESTS.md).
+
+### Punkt B – abschließender Datenbanknachweis (09.11.2026)
+
+**Abnahme 09.11.2026:** Vier Integrationstests bestanden (`4 passed in 0.14s`). Anschließende unabhängige SQL-Kontrolle: `writes_enabled=f`, Grund `Parallelitätstest erfolgreich; Freigabe ausstehend`; `document=0`, `document_source=0`, `document_version=0`, `review_item=0`, `processing_job=0`. Damit sind Test-Rollback und unveränderter persistenter Gate-Zustand nachgewiesen. Kein echter WebDAV-`--apply`-Test und keine Review-Auflösung durchgeführt. Der tatsächlich exportierte Schema-Snapshot wurde in Commit `04b9c98` versioniert. Frühere Statusvermerke weiter oben sind historische Zwischenstände.

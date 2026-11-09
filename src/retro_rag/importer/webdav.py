@@ -36,12 +36,13 @@ class RemoteFile:
     etag: str | None
     byte_size: int | None
     content_type: str | None
+    instance_id: str = ""
 
 
 class WebDAV:
     """Kein Schreibzugriff auf die Nextcloud; Basic Auth nur über HTTPS oder Loopback."""
 
-    def __init__(self, url: str, username: str, app_password: str, timeout: int = 30):
+    def __init__(self, url: str, username: str, app_password: str, timeout: int = 30, *, instance_id: str = ""):
         parts = urlsplit(url)
         if parts.scheme not in ("http", "https") or not parts.netloc:
             raise ValueError("Ungültige WebDAV-URL")
@@ -49,6 +50,9 @@ class WebDAV:
             raise ValueError("WebDAV über HTTP ist nur auf Loopback erlaubt")
         if parts.username or parts.password or parts.query or parts.fragment:
             raise ValueError("Keine Zugangsdaten, Query oder Fragmente in der URL verwenden")
+        if not instance_id or not instance_id.strip() or any(c.isspace() for c in instance_id):
+            raise ValueError("Stabile Nextcloud-Instanzkennung (--instance-id / RETRO_V2_NEXTCLOUD_INSTANCE_ID) erforderlich")
+        self.instance_id = instance_id
         self.root = url.rstrip("/") + "/"
         self.timeout = timeout
         token = base64.b64encode(f"{username}:{app_password}".encode()).decode()
@@ -127,7 +131,7 @@ class WebDAV:
                     raise RuntimeError(f"Nextcloud-fileid fehlt für {uri}")
                 raw_size = prop.findtext(DAV + "getcontentlength")
                 results.append(RemoteFile(
-                    source_key=str(key), uri=uri, name=name,
+                    source_key=str(key), uri=uri, name=name, instance_id=self.instance_id,
                     etag=prop.findtext(DAV + "getetag"),
                     byte_size=int(raw_size) if raw_size else None,
                     content_type=prop.findtext(DAV + "getcontenttype"),

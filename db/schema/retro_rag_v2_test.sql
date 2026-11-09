@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict UvIh4u6guXtleAbxwJee7RyzroXtxbtbN3Yd3ICCVern0805UalReiqhJ7RNLEm
+\restrict pdVmmSQerRX1UeNtWahktfan5v9MU15zViJEPMG4pPZqe1dZmzA2MQ63DKL9xzN
 
 -- Dumped from database version 16.15 (Debian 16.15-1.pgdg12+2)
 -- Dumped by pg_dump version 16.15 (Debian 16.15-1.pgdg12+2)
@@ -23,6 +23,30 @@ SET row_security = off;
 --
 
 CREATE SCHEMA rag_v2;
+
+
+--
+-- Name: assert_import_write_gate(); Type: FUNCTION; Schema: rag_v2; Owner: -
+--
+
+CREATE FUNCTION rag_v2.assert_import_write_gate() RETURNS void
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'pg_catalog', 'rag_v2'
+    AS $$
+DECLARE
+    v_enabled boolean;
+BEGIN
+    SELECT writes_enabled INTO v_enabled
+    FROM rag_v2.write_gate
+    WHERE id = true
+    FOR SHARE;
+
+    IF v_enabled IS DISTINCT FROM true THEN
+        RAISE EXCEPTION 'V2-Schreibsperre ist geschlossen'
+            USING ERRCODE = '42501';
+    END IF;
+END;
+$$;
 
 
 --
@@ -487,6 +511,8 @@ CREATE TABLE rag_v2.document_source (
     is_available boolean DEFAULT true NOT NULL,
     first_seen_at timestamp with time zone DEFAULT now() NOT NULL,
     last_seen_at timestamp with time zone DEFAULT now() NOT NULL,
+    source_instance text,
+    CONSTRAINT document_source_instance_valid CHECK (((source_system <> 'nextcloud'::text) OR ((source_instance IS NOT NULL) AND (btrim(source_instance) <> ''::text)))),
     CONSTRAINT document_source_last_seen_content_hash_check CHECK (((last_seen_content_hash IS NULL) OR (last_seen_content_hash ~ '^[0-9a-f]{64}$'::text))),
     CONSTRAINT document_source_source_key_check CHECK ((btrim(source_key) <> ''::text)),
     CONSTRAINT document_source_source_system_check CHECK ((btrim(source_system) <> ''::text)),
@@ -1095,14 +1121,6 @@ ALTER TABLE ONLY rag_v2.document_source
 
 
 --
--- Name: document_source document_source_source_system_source_key_key; Type: CONSTRAINT; Schema: rag_v2; Owner: -
---
-
-ALTER TABLE ONLY rag_v2.document_source
-    ADD CONSTRAINT document_source_source_system_source_key_key UNIQUE (source_system, source_key);
-
-
---
 -- Name: document_version document_version_document_id_version_no_key; Type: CONSTRAINT; Schema: rag_v2; Owner: -
 --
 
@@ -1445,6 +1463,13 @@ CREATE UNIQUE INDEX document_one_current_version_idx ON rag_v2.document_version 
 --
 
 CREATE INDEX document_source_document_idx ON rag_v2.document_source USING btree (document_id);
+
+
+--
+-- Name: document_source_identity_idx; Type: INDEX; Schema: rag_v2; Owner: -
+--
+
+CREATE UNIQUE INDEX document_source_identity_idx ON rag_v2.document_source USING btree (source_system, COALESCE(source_instance, ''::text), source_key);
 
 
 --
@@ -1952,5 +1977,5 @@ ALTER TABLE ONLY rag_v2.unit_condition_history
 -- PostgreSQL database dump complete
 --
 
-\unrestrict UvIh4u6guXtleAbxwJee7RyzroXtxbtbN3Yd3ICCVern0805UalReiqhJ7RNLEm
+\unrestrict pdVmmSQerRX1UeNtWahktfan5v9MU15zViJEPMG4pPZqe1dZmzA2MQ63DKL9xzN
 
