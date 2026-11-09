@@ -1,6 +1,6 @@
 # PostgreSQL-Integrationstests: Dokumentidentität (Punkt B)
 
-**Stand 09.11.2026. Status: Vier PostgreSQL-Integrationstests auf Poseidon erfolgreich ausgeführt; abschließende Gate-/Datenzählerkontrolle noch ausstehend.**
+**Stand 09.11.2026. Status: Vier PostgreSQL-Integrationstests auf Poseidon erfolgreich ausgeführt; abschließende Gate-/Datenzählerkontrolle erfolgreich.**
 
 ## Zweck und Testfälle
 
@@ -70,7 +70,7 @@ Erwartung für den bisherigen leeren Testbestand: `writes_enabled=f`, alle fünf
 | Hash-Kollision und Review (PostgreSQL) | **bestanden** | Poseidon: `4 passed in 0.14s` (Gesamtsuite) |
 | Kein Job für Review-Dokument (PostgreSQL) | **bestanden** | Poseidon: `4 passed in 0.14s` (Gesamtsuite) |
 | Wiederholbarkeit ohne Duplikate (PostgreSQL) | **bestanden** | Poseidon: `4 passed in 0.14s` (Gesamtsuite) |
-| Rollback-/Write-Gate-Nachkontrolle | **ausstehend** | keine Testlauf-Ausgabe |
+| Rollback-/Write-Gate-Nachkontrolle | **bestanden** | Post-Test SQL: `writes_enabled=f`; alle fünf Zähler 0 |
 
 Erst nach Vorliegen der Terminalausgaben werden die Ergebnisse auf `bestanden` oder `fehlgeschlagen` aktualisiert. Es wurde **kein** automatischer Merge oder produktiver Rollout vorgenommen.
 
@@ -127,4 +127,8 @@ Die Betreiberin führte die vier Tests auf Poseidon in der vorhandenen virtuelle
 
 Damit sind sämtliche vier oben aufgeführten fachlichen Testfälle **bestanden**. Der zuvor beobachtete HBA-Verbindungsfehler ist durch die Ausführung im Container-Netzwerk-Namespace umgangen worden, **ohne die HBA-Regeln zu lockern**. Das Passwort wurde nach dem Lauf mit `unset PGPASSWORD RETRO_V2_IDENTITY_TEST_DSN` aus der Shell-Umgebung entfernt. Aus dem erfolgreichen Fixture-/Testdurchlauf ergibt sich außerdem, dass der Gate-Zustand **zu Beginn jedes Tests** geschlossen war, wie von der Fixture geprüft.
 
-**Noch kein separater Nachweis nach dem Lauf:** Lesende Kontrolle von `rag_v2.write_gate` und Anzahl der Dokument-, Quell-, Versions-, Review- und Job-Datensätze. Das Testdesign benutzt `ROLLBACK` im `finally`, jedoch darf der gespeicherte Zustand erst nach der Nachkontrolle als unabhängig verifiziert gelten. Die alten `ausstehend`-Hinweise oben beziehen sich auf den Stand vor diesem Wiederholungslauf, soweit sie durch diesen Nachtrag nicht ausdrücklich ersetzt wurden.
+**Separater Nachweis nach dem Lauf erbracht:** Die lesende SQL-Kontrolle bestätigt `writes_enabled=f` und je 0 Zeilen in Dokument-, Quell-, Versions-, Review- und Job-Tabellen. Die Testdaten und die temporäre Gate-Freigabe wurden vollständig zurückgerollt. Die alten `ausstehend`-Hinweise oben beziehen sich auf den Stand vor diesem Wiederholungslauf, soweit sie durch diesen Nachtrag nicht ausdrücklich ersetzt wurden.
+
+## Abschlussprüfung auf Poseidon (09.11.2026)
+
+**Abnahme 09.11.2026:** Vier Integrationstests bestanden (`4 passed in 0.14s`). Anschließende unabhängige SQL-Kontrolle: `writes_enabled=f`, Grund `Parallelitätstest erfolgreich; Freigabe ausstehend`; `document=0`, `document_source=0`, `document_version=0`, `review_item=0`, `processing_job=0`. Damit sind Test-Rollback und unveränderter persistenter Gate-Zustand nachgewiesen. Kein echter WebDAV-`--apply`-Test und keine Review-Auflösung durchgeführt.
