@@ -1,6 +1,6 @@
 # PostgreSQL-Integrationstests: Dokumentidentität (Punkt B)
 
-**Stand 09.11.2026. Status: Testcode ins Repository aufgenommen; Ausführung auf Poseidon noch nicht nachgewiesen.**
+**Stand 09.11.2026. Status: Vier PostgreSQL-Integrationstests auf Poseidon erfolgreich ausgeführt; abschließende Gate-/Datenzählerkontrolle noch ausstehend.**
 
 ## Zweck und Testfälle
 
@@ -66,10 +66,10 @@ Erwartung für den bisherigen leeren Testbestand: `writes_enabled=f`, alle fünf
 |---|---|---|
 | Vorheriger Unit-Lauf | **bestanden** | Betreiber-Ausgabe: `17 passed in 0.18s` |
 | Migration 0005 / `verify_0005.sql` | **bestanden** | Betreiber-Ausgabe: `COMMIT`, `NOTICE`, `DO` |
-| Echte Instanztrennung (PostgreSQL) | **ausstehend** | keine Testlauf-Ausgabe |
-| Hash-Kollision und Review (PostgreSQL) | **ausstehend** | keine Testlauf-Ausgabe |
-| Kein Job für Review-Dokument (PostgreSQL) | **ausstehend** | keine Testlauf-Ausgabe |
-| Wiederholbarkeit ohne Duplikate (PostgreSQL) | **ausstehend** | keine Testlauf-Ausgabe |
+| Echte Instanztrennung (PostgreSQL) | **bestanden** | Poseidon: `4 passed in 0.14s` (Gesamtsuite) |
+| Hash-Kollision und Review (PostgreSQL) | **bestanden** | Poseidon: `4 passed in 0.14s` (Gesamtsuite) |
+| Kein Job für Review-Dokument (PostgreSQL) | **bestanden** | Poseidon: `4 passed in 0.14s` (Gesamtsuite) |
+| Wiederholbarkeit ohne Duplikate (PostgreSQL) | **bestanden** | Poseidon: `4 passed in 0.14s` (Gesamtsuite) |
 | Rollback-/Write-Gate-Nachkontrolle | **ausstehend** | keine Testlauf-Ausgabe |
 
 Erst nach Vorliegen der Terminalausgaben werden die Ergebnisse auf `bestanden` oder `fehlgeschlagen` aktualisiert. Es wurde **kein** automatischer Merge oder produktiver Rollout vorgenommen.
@@ -113,3 +113,18 @@ unset PGPASSWORD RETRO_V2_IDENTITY_TEST_DSN
 **Vorsicht:** Nicht `docker exec` für Python voraussetzen; die PostgreSQL-Image-Laufzeit enthält nicht notwendigerweise Projekt-venv und Python-Abhängigkeiten. Den Netzwerk-Namespace nicht für andere Prozesse/Anwendungen unkontrolliert verwenden. Falls `sudo --preserve-env` lokal untersagt ist, nicht durch ein offenes HBA-Netz ersetzen.
 
 Nach dem Test die im Abschnitt „Ausführung auf Poseidon“ dokumentierte lesende Kontrolle von `write_gate` und Tabellenzählern durchführen. Erst **4 passed**, **0 skipped** und ein nachweislich weiterhin geschlossenes Gate erfüllen die Abnahme.
+
+## Erfolgreicher Wiederholungslauf (09.11.2026)
+
+Die Betreiberin führte die vier Tests auf Poseidon in der vorhandenen virtuellen Python-Umgebung aus, mit `nsenter --target "$container_pid" --net` im Netzwerk-Namespace von `codeanalyse-postgres` und `setpriv` zur Rückkehr auf die reguläre Benutzer-ID. Der PostgreSQL-Zugang erfolgte über Container-Loopback `127.0.0.1` als `rag_v2_migrator_login` gegen `retro_rag_v2_test`.
+
+**Bestätigte Terminalausgabe:**
+
+```text
+.... [100%]
+4 passed in 0.14s
+```
+
+Damit sind sämtliche vier oben aufgeführten fachlichen Testfälle **bestanden**. Der zuvor beobachtete HBA-Verbindungsfehler ist durch die Ausführung im Container-Netzwerk-Namespace umgangen worden, **ohne die HBA-Regeln zu lockern**. Das Passwort wurde nach dem Lauf mit `unset PGPASSWORD RETRO_V2_IDENTITY_TEST_DSN` aus der Shell-Umgebung entfernt. Aus dem erfolgreichen Fixture-/Testdurchlauf ergibt sich außerdem, dass der Gate-Zustand **zu Beginn jedes Tests** geschlossen war, wie von der Fixture geprüft.
+
+**Noch kein separater Nachweis nach dem Lauf:** Lesende Kontrolle von `rag_v2.write_gate` und Anzahl der Dokument-, Quell-, Versions-, Review- und Job-Datensätze. Das Testdesign benutzt `ROLLBACK` im `finally`, jedoch darf der gespeicherte Zustand erst nach der Nachkontrolle als unabhängig verifiziert gelten. Die alten `ausstehend`-Hinweise oben beziehen sich auf den Stand vor diesem Wiederholungslauf, soweit sie durch diesen Nachtrag nicht ausdrücklich ersetzt wurden.
