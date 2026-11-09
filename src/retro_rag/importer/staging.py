@@ -104,6 +104,9 @@ def stage_file(
                 (file.instance_id, file.source_key),
             )
             row = cur.fetchone()
+            # Serialisiert Erstimporte mit gleichem Inhalt über Quellgrenzen hinweg.
+            cur.execute("SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))",
+                        ("content:" + file_hash,))
             candidates = []
             if row is None:
                 cur.execute("""SELECT DISTINCT v.document_id
