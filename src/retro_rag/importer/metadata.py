@@ -4,7 +4,7 @@ Quellautorisierung wird bewusst nicht aus YAML abgeleitet.
 """
 
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import date
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
@@ -40,7 +40,7 @@ class DocumentMetadata(BaseModel):
     def valid_tags(cls, value: list[str]) -> list[str]:
         if any(not isinstance(tag, str) or not tag.strip() for tag in value):
             raise ValueError("Tags müssen nichtleere Zeichenketten sein")
-        if len(set(tag.casefold() for tag in value)) != len(value):
+        if len({tag.casefold() for tag in value}) != len(value):
             raise ValueError("Tags dürfen nicht doppelt vorkommen")
         return value
 
