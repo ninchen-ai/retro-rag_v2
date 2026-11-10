@@ -52,7 +52,7 @@ def normalize_detections(result, width: int, height: int) -> list[dict]:
     ))
 
 
-def prepare_inputs(root: Path, maximum: int) -> list[Path]:
+def prepare_inputs(root: Path, maximum: int, cases: list[str] | None = None) -> list[Path]:
     if maximum < 0:
         raise ValueError("max-images muss >= 0 sein")
     if not root.is_dir():
@@ -60,6 +60,18 @@ def prepare_inputs(root: Path, maximum: int) -> list[Path]:
     paths = sorted(root.glob("*/page.png"))
     if not paths:
         raise ValueError("Keine Goldstandard-PNG-Dateien gefunden")
+    if cases:
+        chosen = []
+        seen = set()
+        for prefix in cases:
+            matches = [path for path in paths if path.parent.name.startswith(prefix)]
+            if len(matches) != 1:
+                raise ValueError(f"Fallfilter {prefix!r}: {len(matches)} Treffer statt genau einem")
+            if matches[0] in seen:
+                raise ValueError(f"Doppelter Fallfilter: {prefix}")
+            seen.add(matches[0])
+            chosen.append(matches[0])
+        paths = chosen
     return paths[:maximum] if maximum else paths
 
 
@@ -75,6 +87,8 @@ def main() -> int:
     parser.add_argument("--imgsz", type=int, default=1024)
     parser.add_argument("--conf", type=float, default=0.2)
     parser.add_argument("--max-images", type=int, default=0)
+    parser.add_argument("--case", action="append", default=[],
+                        help="Eindeutiges Fallverzeichnis-Präfix; mehrfach möglich")
     parser.add_argument("--annotate", action="store_true",
                         help="Lokal annotierte Vorschau speichern")
     args = parser.parse_args()
@@ -85,7 +99,7 @@ def main() -> int:
     weights = args.weights.expanduser().resolve(strict=True)
     if not weights.is_file() or weights.suffix != ".pt":
         parser.error("Gewichte müssen eine vorhandene lokale .pt-Datei sein")
-    images = prepare_inputs(args.input, args.max_images)
+    images = prepare_inputs(args.input, args.max_images, args.case)
     weights_hash = sha256(weights)
 
     # Modelle/weights können beim Laden Code ausführen: ausschließlich
