@@ -18,8 +18,15 @@ deactivate
 ## Separate Python-Umgebung
 
 ```bash
-python3.11 -m venv ~/.venvs/retro-doclayout
+# Python 3.11 ist auf Debian 13 nicht zwingend systemweit vorhanden.
+# uv separat installieren, falls noch nicht vorhanden:
+# curl -LsSf https://astral.sh/uv/install.sh | sh
+# Alternativ erst das Installationsskript prüfen statt direkt auszuführen.
+uv python install 3.11
+uv venv --python 3.11 ~/.venvs/retro-doclayout
 source ~/.venvs/retro-doclayout/bin/activate
+python --version
+python -m ensurepip --upgrade
 python -m pip install --upgrade pip
 ```
 
