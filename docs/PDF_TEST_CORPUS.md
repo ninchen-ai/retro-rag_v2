@@ -91,3 +91,18 @@ Quelle: schreibfreier PDF-Survey auf Poseidon. Die vollständige JSON-Datei mit 
 5. 1.000-Seiten-Limit und Kategorisierung auf Poseidon erneut testen; Ressourcenbedarf messen.
 
 Diese Erweiterungen sind noch nicht auf Poseidon getestet. Write-Gate bleibt geschlossen.
+
+## Validierung auf Poseidon (10.11.2026)
+
+Nach den Korrekturen auf Commit `fbeb040` wurden die beiden PDF-Testmodule erneut auf Poseidon geprüft:
+
+```text
+python -m pytest -q tests/test_pdf_extraction.py tests/test_pdf_survey.py
+............. [100%]
+13 passed in 0.16s
+
+python -m ruff check src/retro_rag/importer/pdf.py src/retro_rag/importer/pdf_survey.py tests/test_pdf_extraction.py tests/test_pdf_survey.py
+All checks passed!
+```
+
+**Status:** Unit-Tests und Ruff erfolgreich; der Nextcloud-PDF-Survey wurde bereits an 29 Dateien (322 Stichprobenseiten) durchgeführt. Eine vollständige seitenweise Analyse aller 5.064 Seiten, OCR, Layout-Validierung und die Einbindung in die produktive Import-Pipeline wurden damit noch **nicht** abgenommen. V2-Write-Gate bleibt geschlossen.
