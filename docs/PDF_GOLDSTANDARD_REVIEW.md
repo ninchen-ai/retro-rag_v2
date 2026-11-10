@@ -166,3 +166,60 @@ Die lokal überarbeiteten `review.json`-Dateien enthalten
 nicht geprüfte Leseordnungs-/Tabellenfelder bleiben `null`.
 Originale Seitenbilder und Review-Artefakte wurden nicht ins
 öffentliche Repository übernommen. V2-Write-Gate bleibt geschlossen.
+
+
+## Visuell validierte Layout- und Chunking-Fälle (10.11.2026)
+
+Aus dem lokalen Archiv `retro-v2-layout-review.tar.gz` wurden für folgende
+drei Seiten jeweils `page.png`, `metrics.json`, `review.json` und
+`extracted.txt` gemeinsam ausgewertet. Die Originalartefakte bleiben lokal.
+
+| PDF / Seite (1-basiert) | Prüfung | Ergebnis |
+|---|---|---|
+| `usb_20.pdf` / 601 | zweispaltiger alphabetischer Index | `sort=True` verflicht linke und rechte Spalte zeilenweise. Die fachlich korrekte Reihenfolge ist **linke Spalte vollständig, dann rechte**. OCR nicht nötig; Lesereihenfolge **nicht korrekt** |
+| `usb_20.pdf` / 606 | fortgesetzter zweispaltiger Index | Dasselbe Problem, zum Beispiel `ClearHubFeature()` gefolgt von `clock model (continued)` in derselben extrahierten Textzeile. OCR nicht nötig; Lesereihenfolge **nicht korrekt** |
+| `MGA-G200_199811.pdf` / 522 | `Table A-3: PCI Pinout Legend (Bottom View)` | Breite Pin-Matrix, Zeilenbuchstaben, nummerierte Spalten und Signalkürzel. PyMuPDF-Textrepräsentation kann Pinpositionen nicht zuverlässig an ihre Signale binden; **Tabellenstruktur nicht korrekt**. Kein genereller OCR-Fall, sondern Koordinaten-/Strukturanalyse nötig |
+
+### Tatsächliche Text-/Chunking-Messungen
+
+Der V2-Algorithmus `split_page(text, max_chars=4000)` wurde
+auf allen drei `extracted.txt`-Dateien mit der aktuellen Implementierung
+nachgerechnet (einschließlich exakter Zeichenverkettung):
+
+| PDF-Seite | Rohtext-Zeichen | Chunk-Längen | Exakte Rekonstruktion |
+|---|---:|---|---|
+| USB 2.0 S. 601 | 4.584 | 3.925 + 659 | ja |
+| USB 2.0 S. 606 | 4.718 | 3.969 + 749 | ja |
+| Matrox G200 S. 522 | 19.711 | 3.257 + 2.607 + 2.653 + 3.872 + 3.886 + 3.436 | ja |
+
+**Wichtig:** Exakte Rekonstruktion bestätigt nur, dass beim Teilen keine
+Zeichen verloren gingen. Die USB-Chunks enthalten weiterhin semantisch
+vermischte Spalten; die G200-Chunks enthalten keine verlässlich auslesbare
+Pin-zu-Signal-Zuordnung. Der `pdf_quality`-Bericht für G200 S. 522
+zeigt 19.686 Zeichen nach `strip()`, dagegen enthält die tatsächlich
+extrahierte Rohtextdatei 19.711 Zeichen. Davon sind ca. **90,7 %**
+Whitespace-Zeichen (Leerzeichen und Zeilenumbrüche).
+
+### Konsequenzen für Stufe 3
+
+1. Bei gesicherter Mehrspaltigkeit Textblöcke mit Koordinaten auswerten:
+   zuerst Spalten segmentieren, dann innerhalb jeder Spalte in
+   Leserichtung sortieren. Indexseiten nicht als normaler Fließtext behandeln.
+2. Technische Matrizen als **strukturiertes 2D-Artefakt mit Zellkoordinaten**
+   führen (inklusive überprüfbarer Originalseiten-Referenz), **nicht**
+   in normale zeichenbasierte RAG-Chunks umwandeln.
+3. Bis zur validierten Matrixrekonstruktion keine Fakten wie
+   „Pin X entspricht Signal Y“ automatisch aus den G200-Textchunks
+   übernehmen.
+4. Leseordnung und Tabellenstruktur künftig getrennt von
+   `split_page` testen. Eine bestandene Verlustfreiheitsprüfung ist
+   keine Retrieval- oder Faktengenauigkeitsfreigabe.
+5. Die drei lokal ausgegebenen `review.json` wurden als
+   `reviewed` mit **negativen** Befunden zu Leseordnung/Matrix
+   vorbereitet. Andere, nicht geprüfte Aspekte bleiben `null`.
+
+Damit sind nun **7 von 14 Goldstandard-Seiten** visuell geprüft
+(4 OCR-/Leerseitenfälle und 3 Layout-/Chunking-Fälle). Weitere
+7 Seiten und die Korrekturalgorithmen sind offen. Keine vollständigen
+Seitenbilder oder Extraktionstexte in GitHub übertragen; Write-Gate
+bleibt geschlossen.
