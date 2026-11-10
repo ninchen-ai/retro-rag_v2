@@ -211,3 +211,65 @@ den Lauf, anstatt still ein beliebiges Dokument zu wählen.
 
 **Weitere Nachweise ausstehend:** neue `--case`-Unit-Tests und Ruff auf
 Poseidon, annotierte Bilder visuell prüfen, gezielte USB-/Matrox-Inferenz.
+
+
+## Gezielter Goldstandard-Test: USB und Matrox (10.11.2026)
+
+Vom Poseidon-Benutzer bereitgestellter `manifest.json`-Bericht und
+drei gerenderte Originalseiten. Inferenz `completed=true`,
+`approved=false`, alle drei `status=ok`.
+
+| PDF-Seite | Zeit `predict()` | Erkennung | Visueller Abgleich |
+|---|---:|---|---|
+| USB 2.0 S. 601 | 1,8840 s | 8 Boxen; 3 plain text, 3 title, 2 abandon | Zwei Hauptspalten räumlich erkannt; linker Text auf zwei Regionen verteilt. Dokumentkopf als `abandon` und `title` mit identischer Box; Review |
+| USB 2.0 S. 606 | 0,7302 s | 4 Boxen; 2 plain text, 2 abandon | Beide Indexspalten einzeln und nahezu vollständig erkannt; Header und Seitenzahl separat |
+| Matrox G200 S. 522 | 0,7220 s | 7 Boxen; table, figure, table_caption, title, 3 abandon | Gesamte Pinmatrix als **beide** Klassen `table` (0,64387) und `figure` (0,32940) mit exakt derselben Box; Caption zugleich `title` (0,71718) und `table_caption` (0,22448) mit derselben Box |
+
+Gesamt gemessene `predict()`-Zeit: **3,3362 s**.
+Ohne Modell-Ladezeit oder vorgelagerte Rendering-/Nachbearbeitungszeit.
+Modellgewichts-SHA-256 wie im ersten Smoke-Test:
+`9a2ee0220fe3d9ad31b47e1d9f1282f46959a54e4618fce9cffcc9715b8286e2`.
+
+### Fachliches Ergebnis und Grenzen
+
+- Bei USB S. 601/606 stimmen die Boxen hinreichend mit den sichtbaren
+  Spalten überein, um einen **proposed** regionsbasierten
+  Lesereihenfolge-Adapter zu testen. **Das YOLO-Manifest enthält noch
+  keine rekonstruierte Textfolge.** Die zuvor belegten `sort=True`-
+  Fehler sind deshalb **noch nicht behoben**.
+- Die linke Spalte auf USB S. 601 besteht aus mehreren Regionen
+  einschließlich Index-Überschriften. Diese müssen in der
+  Spaltenhierarchie zusammengeführt und korrekt sortiert werden.
+- Für die Matrox-Pinmatrix liegt ein geometrischer
+  `FIGURE_TABLE_CLASS_CONFLICT` mit **IoU = 1,0** vor. Das ist exakt
+  ein Konflikttyp aus dem V1-Experiment
+  `pdf_layout_conflict_review.py`. Der Titelbereich hat ebenfalls
+  zwei konkurrierende Klassen bei identischer Box.
+- Obwohl die große Region als Tabelle markiert ist, fehlen
+  überprüfte Zellmatrix, Pinpositionen, Rotation und Signalzuordnung.
+  **Keine Pinout-Fakten daraus übernehmen.**
+- `abandon` kennzeichnet im Modell einzelne Header-/Fußbereiche,
+  die als nicht zum Haupttext gehörend vorgeschlagen werden.
+  Dies darf noch keine irreversible Entfernung von Quellelementen
+  auslösen.
+- Alle Detections bleiben auf `proposed`; die visuelle Prüfung der
+  Regionen bestätigt nicht die nachfolgende Lesereihenfolge oder
+  die inhaltliche Tabellenextraktion.
+
+### Nächster Entwicklungsschritt
+
+1. V1-Layoutkonfliktlogik als isolierten V2-Bericht portieren:
+   Konflikt `table` vs. `figure`, ebenso `title` vs.
+   `table_caption` sichtbar machen, **ohne automatische Klassenwahl**.
+2. Über Bild-/PDF-Hash, Seite, Bildgröße und Rotation die geometrische
+   Region an den richtigen Text-/Span-Quellenstand binden.
+3. USB-Indexseiten mit Koordinatensortierung **spaltenweise**
+   rekonstruieren und gegen den vorhandenen Goldstandard prüfen.
+4. G200-Pinmatrix getrennt als strukturiertes 2D-Artefakt
+   behandeln. Keine Freigabe vor Zellpositionsprüfung.
+5. Nach Revision erneut `pytest`, `ruff` und Realtests auf Poseidon.
+
+Dieser Bericht enthält ausschließlich abgeleitete Kennzahlen,
+keine privaten Seitenbilder oder vollständigen Seitentexte.
+Die Layoutinferenz ist erfolgreich; die Strukturextraktion
+bleibt weiterhin Review-pflichtig. V2-Write-Gate geschlossen.
