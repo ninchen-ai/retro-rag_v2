@@ -8,7 +8,7 @@ from pathlib import Path
 from retro_rag.importer.contract import Chunk, Document, ImportContract, Source
 
 DEFAULT_MAX_BYTES = 50 * 1024 * 1024
-DEFAULT_MAX_PAGES = 500
+DEFAULT_MAX_PAGES = 1000
 
 
 def split_page(text: str, max_chars: int = 4000) -> list[str]:
