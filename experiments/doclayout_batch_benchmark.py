@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 import platform
 import sys
 import time
@@ -33,7 +34,7 @@ def normalize_detections(result, width: int, height: int) -> list[dict]:
         cls = int(box.cls[0].item())
         confidence = float(box.conf[0].item())
         coords = [float(value) for value in box.xyxy[0].tolist()]
-        if len(coords) != 4 or not all(__import__("math").isfinite(v) for v in coords):
+        if len(coords) != 4 or not all(math.isfinite(v) for v in coords):
             raise ValueError("Nicht-endliche Modell-Bounding-Box")
         x0, y0, x1, y1 = coords
         if not (0 <= x0 < x1 <= width and 0 <= y0 < y1 <= height):
