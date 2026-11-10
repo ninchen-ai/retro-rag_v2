@@ -80,7 +80,7 @@ und Hashwerten gehören nicht ins öffentliche Repository.
 ## Nachweislage
 
 12 ursprüngliche Tests und die echte Drei-Seiten-Manifest-Auswertung wurden
-auch auf Poseidon erfolgreich ausgeführt; Ruff meldete einen inzwischen im Branch korrigierten Typfehler. Die Korrektur ist noch nicht auf Poseidon erneut geprüft. Der
+auch auf Poseidon erfolgreich ausgeführt; Ruff meldete einen inzwischen im Branch korrigierten Typfehler. Die Ruff-Korrektur ist inzwischen auf Poseidon erneut erfolgreich geprüft. Der
 V2-Write-Gate bleibt geschlossen; keine Import-/DB-Integration erfolgt.
 
 
@@ -124,3 +124,20 @@ python -m ruff check experiments/pdf_layout_conflicts_v2.py tests/test_pdf_layou
 Das vorhandene `conflicts-review.json` muss nicht überschrieben werden.
 Der echte Ergebnisnachweis ist unabhängig von dieser Typkorrektur gültig.
 Write-Gate weiterhin geschlossen.
+
+## Bestätigte Abnahme nach Ruff-Korrektur (10.11.2026)
+
+Auf Poseidon nach `git pull --ff-only` bis Commit `7c62bde` ausgeführt:
+
+```text
+python -m pytest -q tests/test_pdf_layout_conflicts_v2.py
+................ [100%]
+16 passed in 0.02s
+
+python -m ruff check experiments/pdf_layout_conflicts_v2.py tests/test_pdf_layout_conflicts_v2.py
+All checks passed!
+```
+
+**Status:** Die Layout-Konflikterkennung hat alle 16 automatisierten Tests und die Ruff-Prüfung bestanden. Der reale CLI-Lauf auf den drei DocLayout-YOLO-Seiten wurde zuvor erfolgreich geprüft. Der neue Testlauf ist kein erneuter Real-PDF-Durchlauf, und die beobachteten Konflikte sind weiterhin nur **Review-Hinweise**, keine automatisch bestätigten Inhalts- oder Strukturzuordnungen.
+
+Nächste getrennte Arbeit: Validierte Verknüpfung von Detektorregionen mit PyMuPDF-Textblockkoordinaten und spaltenweise Lesereihenfolge an USB S. 601/606. Die 2D-Pinmatrix von G200 S. 522 bleibt ein separater Tabellenpfad. V2-Write-Gate geschlossen.
