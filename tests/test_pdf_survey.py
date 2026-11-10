@@ -1,7 +1,7 @@
 """Schreibfreie Auswahl- und Analysefunktionen für Nextcloud-PDFs."""
 
+from retro_rag.importer.pdf_survey import category, inspect_pdf, select_candidates, size_class
 from retro_rag.importer.webdav import RemoteFile
-from retro_rag.importer.pdf_survey import category, select_candidates, size_class, inspect_pdf
 
 
 def file(key, name, size=1000):
@@ -56,7 +56,9 @@ def test_pdf_inspection_with_bookmarks():
     assert result["page_count"] == 2
     assert result["bookmarks"] == 1
     assert result["sampled_pages"] == [1, 2]
-    assert result["sampled_low_text_pages"] == 1
+    assert result["sampled_low_text_pages"] == 2
+    assert result["sampled_empty_text_pages"] == 1
+    assert result["sampled_characters"] == [9, 0]
 
 
 
