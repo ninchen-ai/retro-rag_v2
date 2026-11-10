@@ -12,26 +12,49 @@ DEFAULT_MAX_PAGES = 500
 
 
 def split_page(text: str, max_chars: int = 4000) -> list[str]:
-    """Lange Seiten an Absatz-, Zeilen- oder Wortgrenzen aufteilen."""
+    """Text verlustfrei an Absatz-, Zeilen- oder Wortgrenzen teilen."""
     if max_chars <= 0:
         raise ValueError("max_chars muss positiv sein")
-    text = text.replace("\x00", "").replace("\r\n", "\n").strip()
-    result: list[str] = []
-    while text:
-        if len(text) <= max_chars:
-            result.append(text)
-            break
-        limit = max_chars
-        cut = text.rfind("\n\n", 1, limit + 1)
+    if not text or not text.strip():
+        return []
+    parts: list[str] = []
+    remaining = text
+    while len(remaining) > max_chars:
+        window = remaining[:max_chars]
+        cut = -1
+        for delimiter in ("\n\n", "\n", " "):
+            pos = window.rfind(delimiter, max_chars // 2)
+            if pos >= 0:
+                cut = pos + len(delimiter)
+                break
         if cut <= 0:
-            cut = text.rfind("\n", 1, limit + 1)
-        if cut <= 0:
-            cut = text.rfind(" ", 1, limit + 1)
-        if cut <= 0:
-            cut = limit
-        result.append(text[:cut].strip())
-        text = text[cut:].lstrip()
-    return [part for part in result if part]
+            cut = max_chars
+        parts.append(remaining[:cut])
+        remaining = remaining[cut:]
+    if remaining:
+        parts.append(remaining)
+    return parts
+
+
+def outline_by_page(toc: list[list], page_count: int) -> dict[int, list[str]]:
+    """Bookmark-Hierarchie als Seitenhinweis; keine verifizierte Abschnittsgrenze."""
+    result: dict[int, list[str]] = {}
+    stack: list[str] = []
+    for entry in toc:
+        if len(entry) < 3:
+            continue
+        level, title, page = entry[:3]
+        if not isinstance(level, int) or level < 1 or not isinstance(page, int):
+            continue
+        if not 1 <= page <= page_count:
+            continue
+        title = str(title).strip()
+        if not title:
+            continue
+        stack = stack[:max(0, level - 1)]
+        stack.append(title)
+        result[page] = stack.copy()
+    return result
 
 
 def read_pdf(
@@ -67,7 +90,11 @@ def read_pdf(
             raise ValueError("PDF überschreitet die Seitenbegrenzung")
         metadata = pdf.metadata or {}
         page_count = len(pdf)
+        bookmarks = outline_by_page(pdf.get_toc(), page_count)
+        heading_path: list[str] = []
         for page_number, page in enumerate(pdf, start=1):
+            if page_number in bookmarks:
+                heading_path = bookmarks[page_number]
             text = page.get_text("text", sort=True)
             parts = split_page(text, max_chars)
             if not parts:
@@ -79,6 +106,7 @@ def read_pdf(
                         text=part,
                         chunk_hash=hashlib.sha256(part.encode("utf-8")).hexdigest(),
                         page=page_number,
+                        heading_path=heading_path.copy(),
                     )
                 )
 
@@ -101,6 +129,8 @@ def read_pdf(
                 "author": metadata.get("author"),
                 "extraction_engine": "PyMuPDF",
                 "ocr_performed": False,
+                "chunker_version": "pdf-outline-v1",
+                "outline_headings_are_hints": True,
             },
         ),
         chunks=chunks,
