@@ -85,3 +85,22 @@ def test_sha256_streaming(tmp_path):
     path = tmp_path / "weights.pt"
     path.write_bytes(b"known test bytes")
     assert benchmark.sha256(path) == hashlib.sha256(b"known test bytes").hexdigest()
+
+
+def test_explicit_case_selection_and_uniqueness(tmp_path):
+    for name in ("usb_20-abcd-p0601", "usb_20-abcd-p0606", "MGA-G200-abcd-p0522"):
+        folder = tmp_path / name
+        folder.mkdir()
+        (folder / "page.png").write_bytes(b"png")
+    selected = benchmark.prepare_inputs(
+        tmp_path, 0, ["usb_20-abcd-p0606", "MGA-G200"]
+    )
+    assert [p.parent.name for p in selected] == [
+        "usb_20-abcd-p0606", "MGA-G200-abcd-p0522"
+    ]
+    with pytest.raises(ValueError, match="Treffer"):
+        benchmark.prepare_inputs(tmp_path, 0, ["usb_20"])
+    with pytest.raises(ValueError, match="Doppelter"):
+        benchmark.prepare_inputs(
+            tmp_path, 0, ["MGA-G200", "MGA-G200-abcd"]
+        )
