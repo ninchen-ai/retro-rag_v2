@@ -76,13 +76,11 @@ def propose_page(page: pymupdf.Page, image: Path, run: dict, *,
     """Keep every PyMuPDF text line; ambiguous lines remain explicitly unassigned."""
     if page.rotation or page.cropbox != page.mediabox:
         raise ValueError("Rotation oder Cropbox erfordert spezielle Transformation")
-    from PIL import Image
-
     image_data = image.read_bytes()
     if sha256(image_data) != run["image_sha256"]:
         raise ValueError("Bild-SHA-256 stimmt nicht mit YOLO überein")
-    with Image.open(image) as img:
-        width, height = img.size
+    pixmap = pymupdf.Pixmap(str(image))
+    width, height = pixmap.width, pixmap.height
     if (width, height) != (run["image_width"], run["image_height"]):
         raise ValueError("Bilddimensionen stimmen nicht überein")
     rect = page.rect
