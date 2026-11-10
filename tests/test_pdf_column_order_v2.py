@@ -21,10 +21,10 @@ def sample(tmp_path, *, both=True):
     page.insert_text((50, 250), "Left second paragraph")
     page.insert_text((350, 255), "Right second paragraph")
     page.insert_text((240, 45), "Header")
+    image = tmp_path / "page.png"
+    page.get_pixmap(matrix=pymupdf.Matrix(2, 2), alpha=False).save(image)
     data = doc.tobytes()
     doc.close()
-    image = tmp_path / "page.png"
-    Image.new("RGB", (1200, 1600), "white").save(image)
     digest = hashlib.sha256(image.read_bytes()).hexdigest()
     detections = [{
         "class_name": "plain text", "confidence": 0.95,
