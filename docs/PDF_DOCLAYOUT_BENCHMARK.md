@@ -81,6 +81,25 @@ spätere Lizenzbewertung bei Produktintegration bleiben erforderlich.
 Quellen: https://pytorch.org/get-started/previous-versions/ und
 https://pypi.org/project/doclayout-yolo/ .
 
+## Poseidon: CPU-Abhängigkeiten erfolgreich validiert (10.11.2026)
+
+Vom Poseidon-Terminal bestätigte Ergebnisse der isolierten Umgebung `~/.venvs/retro-doclayout`:
+
+```text
+uv pip check
+Checked 53 packages in 0.68ms
+All installed packages are compatible
+
+PyTorch: 2.5.1+cpu
+Torchvision: 0.20.1+cpu
+CUDA verfügbar: False
+DocLayout-YOLO: Import OK
+```
+
+Python 3.11.18 ist bestätigt. Die Bibliothek `doclayout_yolo.YOLOv10`
+lässt sich importieren. Es wurde **noch kein Modell geladen und keine
+Inferenz durchgeführt**; kompatible Gewichte und reale Laufzeit bleiben offen.
+
 ## Modellgewichte
 
 Vorher Quelle, Lizenz und Sicherheit prüfen. PyTorch-.pt-Dateien können beim Laden Code ausführen. Modellgewicht unter ~/models/doclayout-yolo ablegen, SHA-256 protokollieren und für reproduzierbare Folgeläufe die konkrete HuggingFace-Revision fixieren. Der Benchmark lädt **keine** Gewichte automatisch.
