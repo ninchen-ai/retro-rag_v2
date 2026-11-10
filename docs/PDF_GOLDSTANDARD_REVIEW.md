@@ -136,3 +136,33 @@ geprüft. PDFs, Bilder und Text wurden nicht in GitHub veröffentlicht.
 Nächster Schritt: OCR mit vorab festgelegten Referenztexten auf S. 111
 isoliert evaluieren; auf S. 112 OCR auslassen. Danach getrennte Prüfungen
 der Texterkennung und der Layout-/Lesereihenfolgequalität.
+
+
+## Weitere visuell geprüfte Goldstandard-Fälle (10.11.2026)
+
+Zusätzlich wurden die aus Nextcloud exportierten Seitenbilder von `3C905CX.pdf`
+(S. 1) und `directx-demystified-a-comprehensive-guide-to-game-development-essentials.pdf`
+(S. 2) unabhängig vom PDF-Textextraktor visuell bewertet.
+
+| PDF-Seite | Beobachteter Inhalt | PDF-Analyse | Urteil |
+|---|---|---|---|
+| `3C905CX.pdf` S. 1 | Rasterbasierte Titelseite: „EtherLink PCI Network Interface Cards – User Guide“; Modellbezeichnungen 3C905C-TX-M, 3C905B und 3C900B | 0 Zeichen, 1 Bildobjekt, geschätzte Bildabdeckung 100 %, `ocr_candidate=true` | **OCR erforderlich**, um Titel und Modellbezug aus dieser Seite zu gewinnen |
+| DirectX-Guide S. 2 | Bildbasiertes Buchcover mit „DIRECTX DEMYSTIFIED“, Untertitel „A Comprehensive Guide to Game Development Essentials“, „1ST EDITION“ und Autoren Frahaan Hussain / Kameron Hussain | 0 Zeichen, 1 Bildobjekt, geschätzte Bildabdeckung 58,72 %, `ocr_candidate=true` | **OCR sinnvoll** zur Erfassung von Titel, Ausgabe und Autoren, sofern keine zuverlässigen Metadaten anderweitig vorliegen |
+
+**Abgrenzung:** Beide Seiten sind bildbasiert; ein tatsächlicher Papierscan
+wird daraus nicht abgeleitet. Fehlende Überschriftenerkennung ohne
+Textlayer ist bestätigt. Eine OCR-Textausgabe wurde **noch nicht**
+durchgeführt; Erkennungsgenauigkeit, Lesereihenfolge und Tabellenstruktur
+sind weiterhin nicht bewertet.
+
+Zusammen mit dem CUBX-Anzeigenblatt S. 111 und der Leerseite S. 112
+liegen damit **vier visuell geprüfte Seiten** vor:
+drei mit begründetem OCR-Bedarf und eine ohne. Die restlichen
+zehn der 14 Goldstandard-Prüffälle sind ungeprüft. Diese kleine, gezielt
+ausgewählte Stichprobe ergibt keine allgemeine Precision/Recall-Schätzung.
+
+Die lokal überarbeiteten `review.json`-Dateien enthalten
+`review_status=reviewed` und die bestätigten OCR-Entscheidungen;
+nicht geprüfte Leseordnungs-/Tabellenfelder bleiben `null`.
+Originale Seitenbilder und Review-Artefakte wurden nicht ins
+öffentliche Repository übernommen. V2-Write-Gate bleibt geschlossen.
