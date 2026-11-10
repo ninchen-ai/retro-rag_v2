@@ -15,17 +15,23 @@ from retro_rag.importer.webdav import RemoteFile, WebDAV
 MAX_PDF_BYTES = 50 * 1024 * 1024
 
 KEYWORDS = {
-    "standards": ("agp", "pci", "specification", "standard", "design guide", "usb", "ata"),
-    "datasheets": ("datasheet", "data-sheet", "chipset", "processor", "cpu", "controller"),
+    "datasheets": ("datasheet", "data-sheet", "data sheet", "chipset", "processor", "cpu"),
+    "standards": ("agp", "specification", "standard", "design guide", "usb", "ehci", "xhci"),
     "manuals": ("manual", "user guide", "mainboard", "motherboard", "bios", "asus", "msi"),
 }
 
 
 def category(file: RemoteFile) -> str:
-    """Heuristische Kategorie aus Pfad/Dateinamen, nicht aus dem PDF-Inhalt."""
-    name = file.uri.casefold()
+    """Vorrang für Datenblätter; keine Teiltreffer wie 'ata' in 'datasheet'."""
+    from urllib.parse import unquote, urlsplit
+
+    path = unquote(urlsplit(file.uri).path).casefold()
+    filename = file.name.casefold()
+    # Datenblattnamen haben Vorrang vor Begriffen im übergeordneten Verzeichnis.
+    if any(word in filename for word in ("datasheet", "data-sheet", "data sheet")):
+        return "datasheets"
     for group, terms in KEYWORDS.items():
-        if any(term in name for term in terms):
+        if any(term in path for term in terms):
             return group
     return "other"
 
