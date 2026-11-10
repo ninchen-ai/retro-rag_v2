@@ -189,19 +189,6 @@ USB- und Matrox-Seiten. Der Benchmark bietet dafür jetzt wiederholbare
 
 ### Gezielt: USB 2.0 und Matrox G200 (neuer Test)
 
-```bash
-cd ~/projects/retro-rag_v2
-git pull --ff-only
-source ~/.venvs/retro-doclayout/bin/activate
-
-python experiments/doclayout_batch_benchmark.py \
-  --input /tmp/retro-v2-pdf-goldstandard \
-  --weights ~/models/doclayout-yolo/doclayout_yolo_docstructbench_imgsz1024.pt \
-  --device cpu --imgsz 1024 --conf 0.2 --annotate \
-  --case 'usb_20-' --max-images 1 \
-  --out /tmp/retro-v2-doclayout-usb-first
-```
-
 Für beide USB-Seiten und die Matrox-Seite im selben Lauf eindeutige
 Fallpräfixe verwenden, beispielsweise:
 
