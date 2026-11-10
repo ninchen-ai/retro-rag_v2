@@ -100,3 +100,39 @@ Originalseiten in GitHub übertragen. Der Goldstandard gilt derzeit als
 **vorbereitet, nicht visuell bewertet**.
 
 Write-Gate geschlossen lassen. Keine DB-/Embedding-/OCR-Operationen.
+
+
+## Erste visuell geprüfte Goldstandard-Fälle (10.11.2026)
+
+Die **gerenderten Seitenbilder** und die zugehörigen Seitenmetriken von
+`cubx-103.pdf` wurden unabhängig vom automatischen Qualitätsklassifikator
+visuell betrachtet. Die geprüften lokalen `review.json`-Dateien werden nicht
+in das öffentliche GitHub-Repository übernommen.
+
+| PDF-Seite (1-basiert) | Visueller Befund | Klassifikation | OCR-Bedarf | Ergebnis gegenüber PDF-Heuristik |
+|---|---|---|---|---|
+| 111 | Bildbasierte, vollflächige ASUS-AGP-V6800-Series-/GeForce-256-DDR-Werbeanzeige mit eingebetteten Texten und Leistungsangaben | `scan` (im Sinne von bildbasiert, kein belegter physischer Scan) | **ja** für Texterfassung | `ocr_candidate=true` bestätigt |
+| 112 | Vollständig weiße gerenderte Seite ohne sichtbaren Inhalt | `blank` | **nein** | `ocr_candidate=false` bestätigt |
+
+Zu S. 111: PyMuPDF lieferte 0 Zeichen, 0 Textblöcke, 1 Bildobjekt und
+94,26 % geschätzte Bildabdeckung. Visuell erkennbare Überschriften sind
+`AGP-V6800 Series` und `Span the Graphics Globe with DDR Intelligence`;
+die automatische Überschriftenerkennung ohne Text-Layer hat hier einen
+erwarteten Fehlfall. **Die Reihenfolge eines OCR-Ergebnisses ist noch nicht
+beurteilt** und wird nicht als korrekt eingetragen.
+
+Zu S. 112: 0 Zeichen, 0 Textblöcke, 0 Bildobjekte und 0 % Bildabdeckung.
+Das gerenderte PNG wurde zudem als durchgehend weiß überprüft. Es gibt
+keine OCR-relevanten Inhalte. Nicht anwendbare oder bislang nicht
+evaluierte Review-Felder verbleiben ausdrücklich auf `null`.
+
+Diese Referenzfälle belegen die **beiden OCR-Klassifikationen für diese
+konkreten PDF-Seiten**. Daraus folgt noch kein allgemeiner Precision-/
+Recall-Wert für die OCR-Heuristik und keine freigegebene OCR-Pipeline.
+Auch eine Seitenanzeige mit sonstigen Vektoroperationen bleibt grundsätzlich
+möglich; hier wurde nur die gerenderte Darstellung und der PyMuPDF-Bericht
+geprüft. PDFs, Bilder und Text wurden nicht in GitHub veröffentlicht.
+
+Nächster Schritt: OCR mit vorab festgelegten Referenztexten auf S. 111
+isoliert evaluieren; auf S. 112 OCR auslassen. Danach getrennte Prüfungen
+der Texterkennung und der Layout-/Lesereihenfolgequalität.
