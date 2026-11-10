@@ -43,7 +43,7 @@ def _validate_run(run: dict) -> None:
     if not isinstance(height, int) or isinstance(height, bool) or height <= 0:
         raise ValueError("Ungültige Bildhöhe")
     if not isinstance(run.get("detections"), list):
-        raise ValueError("Detektionsliste fehlt")
+        raise TypeError("Detektionsliste fehlt oder hat falschen Typ")
     for detection in run["detections"]:
         bbox = detection.get("bbox_pixels")
         if (not isinstance(bbox, list) or len(bbox) != 4
