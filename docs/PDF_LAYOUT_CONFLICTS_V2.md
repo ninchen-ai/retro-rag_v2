@@ -79,6 +79,48 @@ und Hashwerten gehören nicht ins öffentliche Repository.
 
 ## Nachweislage
 
-12 synthetische Tests und eine echte 3-Seiten-Manifest-Auswertung wurden
-lokal erfolgreich ausgeführt. **Poseidon-Tests stehen noch aus.** Der
+12 ursprüngliche Tests und die echte Drei-Seiten-Manifest-Auswertung wurden
+auch auf Poseidon erfolgreich ausgeführt; Ruff meldete einen inzwischen im Branch korrigierten Typfehler. Die Korrektur ist noch nicht auf Poseidon erneut geprüft. Der
 V2-Write-Gate bleibt geschlossen; keine Import-/DB-Integration erfolgt.
+
+
+## Poseidon-Validierung und Ruff-Korrektur (10.11.2026)
+
+Vom Nutzer auf Poseidon auf Branch `feat/pdf-extraction-stage3` (Stand `3049ea5`) ausgeführt:
+
+```text
+python -m pytest -q tests/test_pdf_layout_conflicts_v2.py
+12 passed in 0.02s
+
+python -m ruff check experiments/pdf_layout_conflicts_v2.py tests/test_pdf_layout_conflicts_v2.py
+TRY004 Prefer TypeError exception for invalid type
+  experiments/pdf_layout_conflicts_v2.py:46
+Found 1 error.
+```
+
+Der reale, schreibfreie Konfliktlauf war erfolgreich und erzeugte
+`/tmp/retro-v2-doclayout-layout-cases/conflicts-review.json`:
+
+```text
+usb_20-d39698a33486-p0601: ['ABANDON_CONTENT_CONFLICT']
+usb_20-d39698a33486-p0606: keine geometrischen Konflikte
+MGA-G200_199811-1ecb7fbc228d-p0522:
+  ['TITLE_CAPTION_CLASS_CONFLICT', 'FIGURE_TABLE_CLASS_CONFLICT']
+```
+
+Der einzige Ruff-Befund ist inzwischen im Quellcode korrigiert:
+Für eine Detektionsliste mit falschem Typ wird nun `TypeError` statt
+`ValueError` ausgelöst. Ein zusätzlicher parametrisierter Test prüft
+vier ungültige Typen. Diese Korrekturen **wurden noch nicht erneut auf
+Poseidon ausgeführt**.
+
+Nach `git pull --ff-only` bitte erneut prüfen:
+
+```bash
+python -m pytest -q tests/test_pdf_layout_conflicts_v2.py
+python -m ruff check experiments/pdf_layout_conflicts_v2.py tests/test_pdf_layout_conflicts_v2.py
+```
+
+Das vorhandene `conflicts-review.json` muss nicht überschrieben werden.
+Der echte Ergebnisnachweis ist unabhängig von dieser Typkorrektur gültig.
+Write-Gate weiterhin geschlossen.
