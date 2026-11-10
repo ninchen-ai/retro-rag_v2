@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 import argparse
-from collections import Counter, defaultdict
-from datetime import datetime, timezone
 import getpass
 import json
 import os
+from collections import Counter, defaultdict
+from datetime import UTC, datetime
 from pathlib import Path
 
 from retro_rag.importer.webdav import RemoteFile, WebDAV
@@ -111,6 +111,7 @@ def inspect_pdf(data: bytes, max_pages: int = 12) -> dict:
             "sampled_characters": chars,
             "sampled_images": image_counts,
             "sampled_low_text_pages": sum(c < 40 for c in chars),
+            "sampled_empty_text_pages": sum(c == 0 for c in chars),
             "sampled_heading_size_candidates": large_font_spans,
             "note": "Stichprobenwerte, keine vollständige OCR-/Layoutbewertung",
         }
@@ -139,7 +140,7 @@ def main() -> int:
              if f.name.casefold().endswith(".pdf")]
     selected = select_candidates(files, len(files) if args.analyze_all else args.sample)
     report = {
-        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": datetime.now(UTC).isoformat(),
         "mode": "read_only_no_db_writes",
         "pdf_count": len(files),
         "category_counts": dict(Counter(category(f) for f in files)),
@@ -164,7 +165,7 @@ def main() -> int:
             # Nur bei vorher bekannter, begrenzter Größe herunterladen.
             data = dav.download(file, max_bytes=MAX_PDF_BYTES)
             entry.update(inspect_pdf(data))
-        except Exception as exc:
+        except (OSError, ValueError, RuntimeError) as exc:
             entry.update(status="error", error=f"{type(exc).__name__}: {exc}")
         report["analysis"].append(entry)
         print(f"[{index}/{len(selected)}] {file.name}: {entry['status']}", flush=True)
