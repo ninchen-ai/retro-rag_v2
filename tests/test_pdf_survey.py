@@ -57,3 +57,10 @@ def test_pdf_inspection_with_bookmarks():
     assert result["bookmarks"] == 1
     assert result["sampled_pages"] == [1, 2]
     assert result["sampled_low_text_pages"] == 1
+
+
+
+def test_datasheet_not_confused_with_standard():
+    assert category(file("8", "Core_2_Duo_Datasheet.pdf")) == "datasheets"
+    assert category(file("9", "DGE-528T_Datasheet.pdf")) == "datasheets"
+    assert category(file("10", "agp30.pdf")) == "standards"
