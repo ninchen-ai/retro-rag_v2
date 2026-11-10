@@ -110,16 +110,16 @@ All checks passed!
 
 ## Vollständige Seitenqualitätsanalyse (neues Entwicklungsmodul)
 
-\`src/retro_rag/importer/pdf_quality.py\` untersucht **jede Seite** der gefundenen
+`src/retro_rag/importer/pdf_quality.py` untersucht **jede Seite** der gefundenen
 PDFs und schreibt ausschließlich einen lokalen JSON-Bericht. Kein Datenbankzugriff,
 keine Nextcloud-Änderungen, keine Embeddings und kein OCR-Aufruf. Der bestehende
 WebDAV-Client mit dessen ausgeschlossenen Verzeichnissen wird wiederverwendet.
 
 **Durchführung auf Poseidon**, wenn die drei bereits verwendeten
-\`RETRO_V2_NEXTCLOUD_URL\`, \`RETRO_V2_NEXTCLOUD_USER\` und
-\`RETRO_V2_NEXTCLOUD_INSTANCE_ID\` gesetzt sind:
+`RETRO_V2_NEXTCLOUD_URL`, `RETRO_V2_NEXTCLOUD_USER` und
+`RETRO_V2_NEXTCLOUD_INSTANCE_ID` gesetzt sind:
 
-\`\`\`bash
+```bash
 cd ~/projects/retro-rag_v2
 git pull --ff-only
 source .venv/bin/activate
@@ -133,9 +133,9 @@ python -m retro_rag.importer.pdf_quality --max-files 2 --no-tables \
 # Danach: alle gefundenen PDFs, inklusive geometrischer Tabellenanalyse.
 python -m retro_rag.importer.pdf_quality \
   --report /tmp/retro-v2-pdf-quality.json
-\`\`\`
+```
 
-Fehlt \`RETRO_V2_NEXTCLOUD_APP_PASSWORD\`, wird das Nextcloud-App-Passwort
+Fehlt `RETRO_V2_NEXTCLOUD_APP_PASSWORD`, wird das Nextcloud-App-Passwort
 interaktiv abgefragt. Die JSON-Datei enthält Dateinamen, Quell-IDs, Hashwerte und
 Seitenkennzahlen; **nicht ins öffentliche Repository einchecken**.
 
@@ -146,18 +146,18 @@ häufigste Schriftgröße, auffällig größere Textspannen, mögliche Mehrspalt
 durch PyMuPDF erkannte Tabellen. Der Bericht enthält keine extrahierten
 Textpassagen oder Bilder; das ursprüngliche PDF wird nicht verändert.
 
-**Einschränkungen:** \`ocr_candidate\` ist nur ein Hinweis. Ein Scan mit kleiner
+**Einschränkungen:** `ocr_candidate` ist nur ein Hinweis. Ein Scan mit kleiner
 Bildfläche, eine Vektorzeichnung oder ein fehlerhaft extrahierter Text kann
-unentdeckt bleiben. \`heading_size_candidates\` erkennt keine geprüften
-Kapitelgrenzen. \`possible_multicolumn\` beweist keine falsche Lesereihenfolge.
-\`table_candidates\` ist geometrische PyMuPDF-Erkennung; randlose Tabellen
+unentdeckt bleiben. `heading_size_candidates` erkennt keine geprüften
+Kapitelgrenzen. `possible_multicolumn` beweist keine falsche Lesereihenfolge.
+`table_candidates` ist geometrische PyMuPDF-Erkennung; randlose Tabellen
 können übersehen werden. Bildflächen können sich überschneiden, weshalb ihre
 Summe auf 100 % gekappt wird und keine genaue Abdeckungsberechnung darstellt.
 
 **Betriebssicherheit:** Maximal 50 MiB pro PDF und standardmäßig 1.000 Seiten,
 maximale WebDAV-Verzeichnistiefe wird über den bestehenden Client beschränkt.
 Nach jedem Dokument wird die JSON-Datei atomar aktualisiert; bei Abbruch
-bleibt \`completed=false\` und es können die bereits untersuchten PDFs
+bleibt `completed=false` und es können die bereits untersuchten PDFs
 nachgelesen werden. Ein erneuter Lauf beginnt aktuell von vorn; echtes
 Resume/Cache ist noch nicht implementiert. Teilfehler und nicht auswertbare
 PDFs werden sichtbar protokolliert. Bei Fehlerstatus liefert der CLI-Aufruf
