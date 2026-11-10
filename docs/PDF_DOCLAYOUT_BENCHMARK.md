@@ -157,3 +157,70 @@ Das lokal erzeugte manifest.json enthält pro Seite Pixelgrößen und SHA-256 de
 Pixel-zu-PDF-Punkte muss anschließend mit Originalseitengröße, Rotation und Renderidentität aus dem V1-Geometrieadapter angepasst werden. Confidence ist keine fachliche Freigabe. Write-Gate bleibt geschlossen.
 
 **Status:** Skript und Unit-Tests im GitHub-Branch vorhanden; noch nicht auf Poseidon mit echtem YOLO-Modell getestet.
+
+
+## Erster CPU-Smoke-Test auf Poseidon – erfolgreich (10.11.2026)
+
+Quelle: lokaler, vom Nutzer bereitgestellter `manifest.json`-Bericht.
+Alle drei Inferenzläufe mit `status=ok`, `completed=true`,
+`approved=false`; keine bestätigte Layoutfreigabe.
+
+- Python 3.11.18, PyTorch 2.5.1+cpu, Gerät `cpu`, imgsz 1024, conf 0.2
+- DocStructBench-Gewichts-SHA-256:
+  `9a2ee0220fe3d9ad31b47e1d9f1282f46959a54e4618fce9cffcc9715b8286e2`
+- `3C905CX.pdf` S. 1: 1,7403 s, sechs Regionen
+  (3 title, 1 plain text, 1 figure, 1 abandon);
+  zwei Titelboxen überlappen deutlich. Visuelle Bewertung offen.
+- `507700.pdf` S. 24: 0,6583 s, eine figure-Region.
+- `AMD K6-2 data sheet_Feb00.pdf` S. 326: 0,6993 s,
+  23 Regionen (11 plain text, 6 title, 6 abandon);
+  einige Titelboxen sind extrem schmal. Visuelle Bewertung offen.
+
+Summe gemessener `predict`-Zeiten 3,0979 s; Mittel 1,0326 s/Seite,
+ohne separat vermessene Modell-Ladezeit, PNG-Vorbereitung oder JSON-Ausgabe.
+Dass der erste Aufruf langsamer ist, **kann** ein Warmup-Effekt sein;
+mit drei Seiten ist dies noch nicht belegt.
+
+**Achtung Auswahl:** `--max-images 3` nimmt die ersten drei
+alphabetisch sortierten Fallverzeichnisse. Daher enthält dieser
+Smoke-Test **nicht** die für Leseordnung/Pinmatrix priorisierten
+USB- und Matrox-Seiten. Der Benchmark bietet dafür jetzt wiederholbare
+`--case`-Filter (eindeutige Verzeichnispräfixe).
+
+### Gezielt: USB 2.0 und Matrox G200 (neuer Test)
+
+```bash
+cd ~/projects/retro-rag_v2
+git pull --ff-only
+source ~/.venvs/retro-doclayout/bin/activate
+
+python experiments/doclayout_batch_benchmark.py \
+  --input /tmp/retro-v2-pdf-goldstandard \
+  --weights ~/models/doclayout-yolo/doclayout_yolo_docstructbench_imgsz1024.pt \
+  --device cpu --imgsz 1024 --conf 0.2 --annotate \
+  --case 'usb_20-' --max-images 1 \
+  --out /tmp/retro-v2-doclayout-usb-first
+```
+
+Für beide USB-Seiten und die Matrox-Seite im selben Lauf eindeutige
+Fallpräfixe verwenden, beispielsweise:
+
+```bash
+python experiments/doclayout_batch_benchmark.py \
+  --input /tmp/retro-v2-pdf-goldstandard \
+  --weights ~/models/doclayout-yolo/doclayout_yolo_docstructbench_imgsz1024.pt \
+  --device cpu --imgsz 1024 --conf 0.2 --annotate \
+  --case 'usb_20-d39698a33486-p0601' \
+  --case 'usb_20-d39698a33486-p0606' \
+  --case 'MGA-G200_199811-1ecb7fbc228d-p0522' \
+  --out /tmp/retro-v2-doclayout-layout-cases
+```
+
+Die zuletzt angegebenen Fallpräfixe sind an die bereits exportierten
+lokalen Goldstandard-Verzeichnisse gebunden. Vor Verwendung mit
+`find /tmp/retro-v2-pdf-goldstandard -mindepth 1 -maxdepth 1 -type d`
+prüfen. Bei unklaren oder mehrfachen Treffern verweigert `--case`
+den Lauf, anstatt still ein beliebiges Dokument zu wählen.
+
+**Weitere Nachweise ausstehend:** neue `--case`-Unit-Tests und Ruff auf
+Poseidon, annotierte Bilder visuell prüfen, gezielte USB-/Matrox-Inferenz.
