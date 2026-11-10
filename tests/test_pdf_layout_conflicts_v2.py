@@ -129,3 +129,11 @@ def test_cli_writes_derived_report_not_input(tmp_path, monkeypatch):
     assert result["runs"][0]["review_findings"][0]["iou"] == 1.0
     with pytest.raises(SystemExit):
         conflicts.main()
+
+
+@pytest.mark.parametrize("invalid_detections", [None, {}, "not-a-list", 42])
+def test_wrong_detection_list_type_raises_type_error(invalid_detections):
+    raw = manifest()
+    raw["runs"][0]["detections"] = invalid_detections
+    with pytest.raises(TypeError, match="Detektionsliste"):
+        conflicts.review_manifest(raw)
