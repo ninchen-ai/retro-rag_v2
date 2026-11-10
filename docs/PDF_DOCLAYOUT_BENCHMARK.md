@@ -32,6 +32,55 @@ python -m pip install --upgrade pip
 
 Installiere in dieser separaten Umgebung doclayout_yolo, PyTorch, Pillow und huggingface_hub nach deren kompatiblen Projektanleitungen. Eine feste Torch/CUDA-Version für die GTX 1060 wird bewusst nicht behauptet. CPU zuerst, GPU nach eigener Kompatibilitätsprüfung. Unveränderte V2-.venv und pyproject.toml.
 
+## Poseidon: bestätigte Python-Umgebung (10.11.2026)
+
+Die Einrichtung wurde auf Poseidon erfolgreich ausgeführt:
+
+```text
+uv python install 3.11
+Installed Python 3.11.18
+uv venv --python 3.11 ~/.venvs/retro-doclayout
+Using CPython 3.11.18
+python --version
+Python 3.11.18
+```
+
+Die separate Umgebung existiert; die V2-Umgebung mit Python 3.13 bleibt bestehen.
+**Dies bestätigt noch nicht, dass Torch, DocLayout-YOLO oder Modellgewichte installiert sind.**
+
+### Reproduzierbarer CPU-Installationsvorschlag (noch nicht auf Poseidon geprüft)
+
+```bash
+uv pip install --python ~/.venvs/retro-doclayout/bin/python \\
+  --index-url https://download.pytorch.org/whl/cpu \\
+  "torch==2.5.1" "torchvision==0.20.1"
+
+uv pip install --python ~/.venvs/retro-doclayout/bin/python \\
+  "doclayout-yolo==0.0.4" "huggingface-hub" "numpy<2"
+
+source ~/.venvs/retro-doclayout/bin/activate
+uv pip check
+python - <<'PY'
+import torch
+import torchvision
+from doclayout_yolo import YOLOv10
+print("PyTorch:", torch.__version__)
+print("Torchvision:", torchvision.__version__)
+print("CUDA verfügbar:", torch.cuda.is_available())
+print("DocLayout-YOLO: Import OK")
+PY
+```
+
+Die CPU-Versionen Torch 2.5.1 / Torchvision 0.20.1 sind in der offiziellen
+PyTorch-Versionsübersicht dokumentiert. Sie dienen als anfänglicher
+V1-Kompatibilitätsvergleich, **nicht als dauerhafte Sicherheits-/Versionsfreigabe**.
+DocLayout-YOLO 0.0.4 hat laut PyPI die AGPL-3.0-Lizenz; das alte
+DocStructBench-Modell ist separat lizenziert. Gewichtsprüfung sowie eine
+spätere Lizenzbewertung bei Produktintegration bleiben erforderlich.
+
+Quellen: https://pytorch.org/get-started/previous-versions/ und
+https://pypi.org/project/doclayout-yolo/ .
+
 ## Modellgewichte
 
 Vorher Quelle, Lizenz und Sicherheit prüfen. PyTorch-.pt-Dateien können beim Laden Code ausführen. Modellgewicht unter ~/models/doclayout-yolo ablegen, SHA-256 protokollieren und für reproduzierbare Folgeläufe die konkrete HuggingFace-Revision fixieren. Der Benchmark lädt **keine** Gewichte automatisch.
