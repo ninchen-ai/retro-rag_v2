@@ -72,11 +72,14 @@ tests/test_pdf_ocr.py` mit **All checks passed!** abgeschlossen.
 Dies sind Regressionstests mit Mock-OCR, kein Nachweis über die Erkennungsqualität
 von Tesseract auf realen Scans.
 
-**Noch ausstehend:** echter Tesseract-Test mit mindestens einer visuell
-verifizierten Scan-Seite und fachliche Kontrolle des erkannten Texts. Die bekannte Qualitätsbaseline nennt `cubx-103.pdf`
-Seite 111, `507700.pdf` Seite 24 und weitere Kandidaten. Ohne diese
-Durchläufe ist die OCR-Implementierung fertig als Vorschlag, nicht als
-produktiv abgenommene Stufe. Das V2-Write-Gate bleibt geschlossen.
+**Tesseract-End-to-End-Test auf Poseidon erfolgreich (11.11.2026):**
+- Nextcloud-WebDAV lieferte `cubx-103.pdf`; Verarbeitung aus einem lokalen temporären Verzeichnis, ohne Schreiben nach Nextcloud oder in PostgreSQL.
+- PDF-Seite 111: **0 Zeichen nativer PDF-Text**, OCR mit Tesseract 5.5.0 über PyMuPDF, `ocr_mode="auto"`, `ocr_pages={111}`, `ocr_language="eng+deu"`, `ocr_dpi=200`.
+- Rückgabe: `ocr_pages=[111]`, `ocr_failed_pages=[]`, **1723 Zeichen** OCR-Ausgabe, `indexing_allowed=False`, keine Warnung zur Seite 111.
+- Erkennbare Textteile: „AGP-V6800“, „300MHz DDR video memory“, „32MB DDR SGRAM“, „OpenGL“. Der Kopfbereich enthält deutlich fehlerhafte Zeichenfolgen und durch die Gestaltung verursachte Artefakte.
+- **Einordnung:** technischer Durchlauf erfolgreich, keine fachliche Qualitätsfreigabe. Die OCR-Ergebnisse wurden anhand der Textausgabe betrachtet, aber noch nicht systematisch mit einer visuellen Ground-Truth-Transkription verglichen. 1723 Zeichen und fehlende Laufzeitfehler sind keine Aussage über OCR-Präzision.
+
+**Noch offen vor Qualitätsabnahme:** visuell geprüfte Referenztranskription und Vergleich technischer Bezeichnungen/Zahlen, Wiederholung auf anderen Scan-Typen (`507700.pdf` S. 24), ggf. Bildvorverarbeitung oder Bereichs-OCR bei grafisch gestalteten Seiten. Fehlerhaften OCR-Text nicht als bestätigten Fakt übernehmen; die Gate-Sperre bleibt geschlossen.
 
 ## Grenzen
 
