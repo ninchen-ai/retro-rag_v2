@@ -101,4 +101,20 @@ Betreiberseitig auf Poseidon bestätigt:
   `processing_job=0`, `review_item=0`.
 - Das ist ein echter Read-only-WebDAV-Nachweis, **noch kein** `sync_cli --source-key`-Planungslauf mit dem Importer-Login, kein `--apply`, keine Gate-Freigabe und kein realer Crash-Test.
 
+## Importer-Login und SQL-Vorplanung – 11.11.2026
+
+Vom Betreiber auf Poseidon via `docker exec -it codeanalyse-postgres psql -X -W -h 127.0.0.1 -U rag_v2_importer_login -d retro_rag_v2_test` ausgeführt:
+
+```text
+BEGIN
+current_user       = rag_v2_importer_login
+current_database   = retro_rag_v2_test
+planned_action     = new
+COMMIT
+```
+
+Die `BEGIN READ ONLY`-Abfrage prüfte zunächst, ob die ausgewählte Nextcloud-Quelle mit `source_instance='poseidon-nextcloud'`, `source_key='480'` vorhanden ist und ob der zuvor verifizierte SHA-256 bereits bei einer anderen Quelle existiert. Beide Prüfungen waren negativ; die erwartete Aktion ist `new`. Keine DB-Änderung. **Ein erfolgreicher `plan_file()`-Aufruf mit der Anwendungsrolle ist damit noch nicht nachgewiesen.**
+
+**Vor dem schreibenden End-to-End-Test:** Die aktuelle `sync_cli` setzt gleichzeitige Erreichbarkeit von Nextcloud-WebDAV und der V2-Datenbank in einem Prozess voraus. Der WebDAV-URL-Loopback `127.0.0.1:8080` wurde auf dem Host getestet; der Importer-Login hingegen im PostgreSQL-Container auf `127.0.0.1:5432` (gesonderte HBA-Regeln). Ein gemeinsamer, sicherer Netzwerkpfad der Anwendung ist noch zu ermitteln; keinesfalls Datenbank-HBA oder Docker-Portfreigaben für den Test pauschal öffnen. Backup, geprüftes Archivverzeichnis und isolierter Anwendungspfad müssen vor `--apply` nachgewiesen werden. Das Write-Gate bleibt geschlossen.
+
 **Hinweis:** Ein hartes Ausschalten der gesamten Maschine kann selbst nach `fsync` je nach Storage-/Controller-Cache zusätzliche Risiken haben. Das hier beschriebene Verfahren behandelt Anwendungskonflikte und Prozessabbrüche; ein Restore-Test bleibt notwendig.
