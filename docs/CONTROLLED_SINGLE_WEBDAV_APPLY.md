@@ -165,4 +165,16 @@ Das bestehende Infrastruktur-Backupskript wird durch diese Dokumentation
 validierter, separater `pg_dump`-Sicherungsstand notwendig; eine
 vollständige Borg-V2-Abnahme ist weiterhin offen. Gate bleibt geschlossen.
 
+## Validierung des lokalen V2-Dumps und Originalarchivs – 11.11.2026
+
+Aus der auf Poseidon vom Betreiber übermittelten Terminalausgabe:
+
+- Backup `/home/nina/backups/retro-rag-v2/pre-single-apply.dump`: `-rw-------`, Eigentümer `nina:nina`, Größe **123K**, Zeitstempel 11.11.2026 13:20 (Host-Anzeige). `pg_restore -l` im PostgreSQL-Container: Custom-Format 1.15, gzip, **268 TOC-Einträge**, Quelle `retro_rag_v2_test`, `pg_dump` und PostgreSQL jeweils **16.15**.
+- Vollständiges lesendes Durchlaufen mit `docker exec -i codeanalyse-postgres pg_restore -f /dev/null < "$BACKUP"` ergab **`BACKUP-LESETEST ERFOLGREICH`**. Dies ist **kein vollständiger Restore** in eine getrennte Testdatenbank.
+- `findmnt -T /data/retro-rag/v2/originals`: **`/dev/sda1`, ext4, `rw,noatime`, Mountpoint `/data`**.
+- `df -h`: 916G gesamt, 3,6G belegt, **866G frei**, 1 % Nutzung.
+- `stat`: `nina:nina`, Modus **0700**; `test -w` ergab **`ARCHIV BESCHREIBBAR`**, ohne eine Testdatei anzulegen.
+- Lokaler Vor-Apply-Dump und unveränderliches Originalarchiv sind damit für den **kontrollierten Einzeldatei-Test** vorbereitet. Die bestehende Borg-Rotation sichert **V2-DB und V2-Originalarchiv noch nicht nachweislich**, und ein echter V2-Restore bleibt ausständig.
+- Weiter offen: echte `rag_v2_importer_login`-Verbindung **vom Host** (Docker-Port-Weiterleitung/HBA), `plan_file()`-Aufruf, Integrationstests des Feature-Branches und kontrollierter `--apply`. Schreibsperre bleibt geschlossen.
+
 **Hinweis:** Ein hartes Ausschalten der gesamten Maschine kann selbst nach `fsync` je nach Storage-/Controller-Cache zusätzliche Risiken haben. Das hier beschriebene Verfahren behandelt Anwendungskonflikte und Prozessabbrüche; ein Restore-Test bleibt notwendig.
