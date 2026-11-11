@@ -7,7 +7,6 @@ from urllib.parse import unquote, urljoin, urlsplit
 from urllib.request import Request
 from xml.etree import ElementTree as ET
 
-
 DAV = "{DAV:}"
 
 # Verzeichnisse mit Eingangsdateien, Vorlagen oder automatischen Uploads.
