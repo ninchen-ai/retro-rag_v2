@@ -193,4 +193,29 @@ Damit ist der notwendige PostgreSQL-Zugriff per TCP-Loopback **ohne HBA-Änderun
 
 **Noch offen:** Der konfigurierte WebDAV-Endpunkt `http://127.0.0.1:8080` zeigt in diesem Namespace nicht auf den Host-Loopback. Die gemeinsame Erreichbarkeit von WebDAV und PostgreSQL in der CLI ist daher **noch nicht** belegt. HTTP-Basic-Auth nicht ungeschützt auf eine Docker-Bridge-Adresse umstellen. Vor einem echten Import entweder einen abgesicherten End-to-End-Zugang nachweisen oder den WebDAV-Abruf auf dem Host und das transaktionale Staging in der DB-Netz-Namespace technisch sauber trennen.
 
+## Netzwerk-Namespace: beide TCP-Ports erreichbar (11.11.2026)
+
+Betreiberseitig auf Poseidon per `nsenter --target <PID> --net` und
+`setpriv` mit der Projekt-`.venv` erfolgreich geprüft:
+
+```text
+OK: PostgreSQL unter 127.0.0.1:5432 erreichbar
+OK: Nextcloud-Port unter 172.19.0.1:8080 erreichbar
+```
+
+Dies ist ein **reiner TCP-Reachability-Test**, kein WebDAV-Auth-Test über das
+Gateway. Der zuvor bestätigte echte DB-Login als
+`rag_v2_importer_login` per Container-Loopback bleibt unabhängig gültig.
+
+**Sicherheitsentscheidung:** Das Nextcloud-App-Passwort nicht per HTTP-Basic-Auth
+über `172.19.0.1:8080` auf der Docker-Bridge übertragen. Der WebDAV-Abruf
+soll weiterhin gegen `127.0.0.1:8080` im Host-Netz-Namespace erfolgen;
+anschließend wird der vollständig heruntergeladene und SHA-256-verifizierte
+Einzeldatei-Inhalt mit Quellmetadaten in `/data/retro-rag/v2/staging`
+(nur lokal, nur Nutzer `nina` lesbar) für die DB-Vorschau bereitgestellt.
+Das lesende `plan_file()` und später das geschützte `stage_file()` laufen
+als Nutzer `nina` im PostgreSQL-Netz-Namespace gegen `127.0.0.1:5432`.
+Vor `--apply` sind Integrität, Identitätsdaten und Rollenzugriff erneut
+zu prüfen. Keine HBA-Änderung und keine automatische Gate-Freigabe.
+
 **Hinweis:** Ein hartes Ausschalten der gesamten Maschine kann selbst nach `fsync` je nach Storage-/Controller-Cache zusätzliche Risiken haben. Das hier beschriebene Verfahren behandelt Anwendungskonflikte und Prozessabbrüche; ein Restore-Test bleibt notwendig.
