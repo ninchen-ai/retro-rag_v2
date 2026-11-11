@@ -91,3 +91,78 @@ Für technische Pin-Matrizen bleibt ein vollständig getrennter
 
 **Write-Gate bleibt geschlossen.** Weder der YOLO-Confidence-Wert
 noch die geometrische Spaltenzuordnung bewirken eine Freigabe.
+
+
+## Echte Adapterausgaben USB S. 601/606 ausgewertet (11.11.2026)
+
+Vom Benutzer auf Poseidon erzeugte Dateien:
+`retro-v2-usb-column-order-p601.json` und
+`retro-v2-usb-column-order-p606.json`. Beide berichten
+`status=REVIEW_REQUIRED`, `approved=false` und dieselbe PDF-SHA-256
+`d39698a33486c399124af92bd02e4f978fd9a836b5cf4e52e6e4633eb1d89f61`.
+
+| Kriterium | S. 601 | S. 606 |
+|---|---:|---:|
+| Quellzeilen | 103 | 114 |
+| Links zugeordnet | 50 | 56 |
+| Rechts zugeordnet | 50 | 56 |
+| Nicht zugeordnet | 3 | 2 |
+| Zugeordnet gesamt | 100 (97,09 %) | 112 (98,25 %) |
+| Referenzintegrität (eindeutige IDs, Quellhash, vollständige Abdeckung) | bestanden | bestanden |
+| Reihenfolge (links vollständig vor rechts, innerhalb jeder Spalte y-sortiert) | bestanden | bestanden |
+
+In Summe sind **212/217 (97,70 %) Zeilen** zugeordnet; **fünf
+Zeilen sind nicht klassifiziert, aber in `source_lines` vollständig
+erhalten**. Die gespeicherten SHA-256-Werte von konkatenierten
+`source_text`-Zeilen wurden nachgerechnet; `proposed_text` stimmt
+exakt mit `ordered_line_ids` überein. Keine doppelt zugeordneten
+Quellzeilen und keine fehlenden Zeilen-IDs.
+
+**S. 601, nicht zugeordnete Zeilen:**
+- `0:0`: laufende Dokumentüberschrift
+  `Universal Serial Bus Specification Revision 2.0`;
+- `1:0`: gedruckte Seitenzahl `573` (PDF-Seite 601);
+- `2:0`: **inhaltliche Abschnittsüberschrift `Index`**,
+  im `proposed_text` noch nicht enthalten. Der Abschnittsbuchstabe
+  `A` (`4:0`) ist dagegen korrekt in der linken Spalte enthalten.
+
+**S. 606, nicht zugeordnete Zeilen:**
+- `0:0`: laufende Dokumentüberschrift;
+- `1:0`: gedruckte Seitenzahl `578` (PDF-Seite 606).
+
+**Beobachtete Lesereihenfolge:** S. 601 endet links mit
+`visible device state table, 9.1.1 Table 9-1` und beginnt rechts
+mit `addresses`; S. 606 endet links mit
+`overview, 5.12.2` und beginnt rechts mit
+`clock model (continued)`. Die ursprüngliche zeilenweise
+Spaltenvermischung von PyMuPDF `sort=True` ist für diese zwei
+Testseiten in `proposed_text` behoben.
+
+**Grenze der Bestätigung:** Geprüft sind Zeilenidentität,
+geometrische Spaltenreihenfolge und markante Indexübergänge,
+**nicht** die semantische Auflösung sämtlicher Indexeinträge
+oder ihrer Fortsetzungszeilen. Die Quote ist eine
+**Zuordnungsquote**, keine allgemeine Accuracy des Layoutmodells.
+Insbesondere dürfen die fünf unzugeordneten Zeilen nicht
+als in den endgültigen Text übernommen betrachtet werden.
+
+### Konkrete Folgerungen
+
+1. Separaten Review-Pfad für vorangestellte Abschnittsüberschriften
+   (wie `Index`) implementieren: `heading` vor dem
+   Spaltenhaupttext, mit Quellzeilen-ID und geometrischem Beleg;
+   `abandon`-Kopf-/Fußzeilen bleiben erhalten, aber nicht automatisch
+   in den Retrieval-Text übernommen.
+2. Einen verlustfreien **Dokumentstruktur-Output** ergänzen, der
+   `headings`, `columns`, `unassigned` und `source_lines`
+   ausdrücklich trennt; `proposed_text` allein ist nicht
+   vollständig.
+3. Regressionstest mit den echten Fällen
+   S. 601 (`Index`, `A`) und S. 606
+   (`ClearHubFeature()` vor `clock model (continued)`).
+4. `REVIEW_REQUIRED` und `approved=false` beibehalten, bis
+   Überschriften und Restzeilen geprüft sowie die semantische
+   Segmentierung des alphabetischen Index verifiziert sind.
+
+Keine extrahierten Volltexte oder Seitenbilder in GitHub abgelegt.
+Der V2-Write-Gate bleibt geschlossen.
