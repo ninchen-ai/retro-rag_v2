@@ -186,3 +186,74 @@ nachgetestet. Die oben angegebenen Zahlen gelten **für die vorherige
 Heuristik**, nicht als Ergebnis dieser Korrektur. Fachliche
 Erkennungsqualität benötigt weiterhin manuell bewertete Labels,
 insbesondere für tiefe Untereinträge. Write-Gate geschlossen.
+
+
+## Reale Poseidon-Indexausgabe V03 verifiziert (11.11.2026)
+
+Die vom Nutzer erzeugte Datei
+`retro-v2-usb-index-entries-v03.json` wurde zusammen mit den
+beiden **bytegenau referenzierten** Eingabe-JSONs für die PDF-Seiten
+601 und 606 ausgewertet. Die beiden `source_json_sha256`-Werte
+`cff1e05334f7f1f9bf141e82f01c717581004d1c17be9ef686697c099c72d49a`
+und `45d62e950316239f40f8477666275895f512073ce10f15a4e365858ddcf28cb7`
+stimmen mit den jeweiligen tatsächlichen Quelldatei-Bytes überein.
+Die Ausgabedatei selbst hat SHA-256
+`c518b1014084fb020e61f0660dc90b8fdcfd5e2229d83b325e9bf1ba08181d2b`.
+
+| Kennzahl | Erste Heuristik | V03 (reale JSON-Ausgabe) |
+|---|---:|---:|
+| Quellzeilen gesamt | 217 | 217 |
+| Indexzeilen | 212 | 212 |
+| Eintragsvorschläge | 194 | **193** |
+| `headword` | 63 | **62** |
+| `alphabet_section` | 0 | **1** |
+| `subentry` | 122 | **122** |
+| `deep_subentry` | 9 | **8** |
+| Mehrzeilige Einträge / zusammengeführte Folgezeilen | 18 | **19** |
+| `DEEP_INDENT_REVIEW` | 9 | **8** |
+
+**Integritätskontrollen (bestanden):**
+- 212/212 ursprüngliche `ordered_line_ids` in `entries`
+  exakt einmal wiedergefunden, ohne zusätzliche Zeilen.
+- Alle 212 `text_parts` stimmen bytegenau mit den Texten
+  der referenzierten `source_lines` überein.
+- Beide Eingabe-`source_lines_sha256` verifiziert;
+  zusammen mit den fünf außerhalb der Indexspalten
+  getrennt erhaltenen Strukturzeilen sind 217/217
+  Quellzeilen nachvollziehbar.
+- Alle nichtleeren `parent_id`- und `continuation_of`-
+  Referenzen zeigen auf existierende Eintrags-IDs.
+- Ausgabe und jeder Eintrag bleiben
+  `status=REVIEW_REQUIRED`, `approved=false`.
+
+**Vier reale Regressionen erfüllt:**
+1. `p601-4:0` (`A`) hat `kind=alphabet_section` und
+   keinen Elternknoten.
+2. `p601-10:3` führt die beiden Originalzeilen
+   `adding devices. See dynamic insertion and` und `removal`
+   unter einem Eintrag zusammen.
+3. `p601-16:0` und die folgenden sieben tief eingerückten
+   Zeilen verweisen auf `p601-15:2` (`assignment`),
+   nicht auf den übergeordneten Knoten `addresses`
+   (`p601-13:0`). Alle acht bleiben explizit im Review.
+4. `p606-12:0` (`clock model (continued)`) verweist
+   auf `p606-9:11` (`clock model`); Untereinträge
+   der rechten Spalte hängen an `p606-12:0`.
+
+**Neuer fachlicher Prüfpunkt:** Der reguläre Ausdruck für
+`reference_candidates` behandelt beispielsweise in
+`defined, 2.0 glossary` den Wert `2.0` als numerischen
+Verweiskandidaten. Solche Kandidaten sind noch nicht als
+Kapitelziele validiert; die spätere Verweisnormalisierung sollte
+`glossary`, `Table`, Seiten-/Kapitelbereiche und echte
+Abschnittsanker typisiert unterscheiden. Die neun/acht
+Review-Hinweise sind keine Fehlerquote, sondern explizite
+Unschärfe-Meldungen.
+
+Die reale CLI-Ausgabe belegt die Funktion des eingecheckten
+V03-Algorithmus anhand der bereitgestellten Testdaten.
+**Separate pytest- und Ruff-Konsolenausgaben liegen nicht vor**;
+deren erfolgreichen Lauf daher nicht behaupten. Eine fachliche
+Goldstandard-Abnahme, semantische Precision/Recall und Freigabe
+zum Schreiben in die DB sind ebenfalls noch ausstehend.
+Das V2-Write-Gate bleibt geschlossen.
