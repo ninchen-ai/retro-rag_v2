@@ -166,3 +166,70 @@ als in den endgültigen Text übernommen betrachtet werden.
 
 Keine extrahierten Volltexte oder Seitenbilder in GitHub abgelegt.
 Der V2-Write-Gate bleibt geschlossen.
+
+
+## Erweiterung: Überschriften und Seitenmetadaten (11.11.2026)
+
+Die bisherigen echten USB-Ausgaben belegen eine fehlende
+`Index`-Abschnittsüberschrift vor der linken Spalte auf PDF-Seite 601.
+Das Modul `experiments/pdf_column_order_v2.py` erzeugt daher zusätzlich
+eine **strukturierte, weiterhin review-pflichtige Ansicht**:
+
+- `structure.headings`: geometrisch belegte, vor beiden Textspalten
+  liegende `title`-Zeilen ohne `abandon`-Überschneidung. Auf S. 601
+  wird hier `Index` erwartet; der Buchstabe `A` bleibt Teil der
+  linken Spalte.
+- `structure.running_headers`: Zeilen oberhalb der Spalten mit
+  `abandon`-Region. Bei gleichzeitiger `title`-Detektion bleibt
+  `status=REVIEW_REQUIRED`, damit der Klassenkonflikt nicht verdeckt wird.
+- `structure.page_numbers`: rein numerische, unter den Spalten liegende
+  Zeilen mit `abandon`-Beleg.
+- `structure.unresolved`: weiterhin nicht sicher zuordenbare Zeilen.
+  Alle Elemente besitzen `line_id`, Quelltext, PDF-Punkte-BBox und
+  Detektionsreferenzen.
+- `proposed_text_with_headings`: vorgeschlagene Überschriften vor dem
+  bisherigen links-dann-rechts-`proposed_text`, ohne Seitenmöbel.
+  Das vorhandene `proposed_text` wird aus Kompatibilitätsgründen nicht
+  verändert. `unassigned_line_ids` enthält weiterhin **alle** Zeilen
+  außerhalb der Hauptspalten, auch wenn eine strukturelle Rolle
+  vorgeschlagen wurde; `unresolved_line_ids` enthält nur echte
+  Restfälle.
+
+Die Zuordnung verwendet geometrische Regeln, **keine harte Sonderregel
+für das Wort `Index`**. Ein Titel, der zugleich als `abandon`
+erkannt wird, darf nicht ohne manuelle Prüfung als fachliche
+Abschnittsüberschrift freigegeben werden.
+
+Neue Regressionstests prüfen die getrennten Rollen, den Konfliktfall
+`title`/`abandon`, unverändert erhaltene IDs und einen Fall, in dem
+eine Überschrift mangels Detektornachweis ausdrücklich ungeklärt bleibt.
+Die Testdatei wurde außerdem von einer versehentlichen Pillow-Importabhängigkeit
+bereinigt.
+
+### Test und reale Wiederholung auf Poseidon
+
+```bash
+cd ~/projects/retro-rag_v2
+git pull --ff-only
+source .venv/bin/activate
+python -m pytest -q tests/test_pdf_column_order_v2.py
+python -m ruff check experiments/pdf_column_order_v2.py tests/test_pdf_column_order_v2.py
+
+for page in 601 606; do
+  python experiments/pdf_column_order_v2.py \
+    --quality-report /tmp/retro-v2-pdf-quality.json \
+    --goldstandard /tmp/retro-v2-pdf-goldstandard \
+    --manifest /tmp/retro-v2-doclayout-layout-cases/manifest.json \
+    --name usb_20.pdf --page "$page" \
+    --out "/tmp/retro-v2-usb-column-order-structure-p${page}.json"
+done
+```
+
+**Wichtig:** Neue Ausgabeziele verwenden, damit die vorherigen
+`p601.json`/`p606.json` als Vergleichsreferenz erhalten bleiben.
+Die erneut erzeugten Inhalte dürfen erst nach echtem Lauf und visueller
+Gegenprüfung als bestätigt markiert werden.
+
+Bis dahin gilt: **Implementiert und dokumentiert, aber noch nicht
+auf Poseidon erneut getestet oder fachlich freigegeben.**
+Write-Gate geschlossen.
