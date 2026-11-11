@@ -103,9 +103,9 @@ def classify_outside_columns(lines: list[dict], regions: list[dict],
         outside_below = box[1] > bottom
         evidence = sorted(set(title_indices + abandon_indices))
         role = "unresolved"
-        if abandon_indices and not title_indices and outside_above:
+        if abandon_indices and outside_above:
             role = "running_headers"
-        elif abandon_indices and not title_indices and outside_below:
+        elif abandon_indices and outside_below:
             if line["source_text"].strip().isdecimal():
                 role = "page_numbers"
         elif title_indices and not abandon_indices and outside_above:
@@ -115,7 +115,9 @@ def classify_outside_columns(lines: list[dict], regions: list[dict],
             "source_text": line["source_text"],
             "bbox_pdf_points": box,
             "source_detection_indices": evidence,
-            "status": "proposed" if role != "unresolved" else "REVIEW_REQUIRED",
+            "status": ("proposed" if role != "unresolved"
+                       and not (title_indices and abandon_indices)
+                       else "REVIEW_REQUIRED"),
         })
     for values in groups.values():
         values.sort(key=lambda item: (
