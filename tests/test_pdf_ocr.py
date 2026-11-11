@@ -74,8 +74,7 @@ def test_read_pdf_keeps_gate_closed_and_tracks_ocr(tmp_path, monkeypatch):
     with pymupdf.open() as doc:
         _page_with_image(doc)
         doc.save(path)
-    from retro_rag.importer import pdf_ocr
-    def fail(**kwargs):
+    def fail(self, **kwargs):
         raise RuntimeError("OCR missing")
     monkeypatch.setattr(pymupdf.Page, "get_textpage_ocr", fail)
     result = read_pdf(path, "nc:scan", ocr_mode="auto")
