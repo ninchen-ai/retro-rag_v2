@@ -71,6 +71,61 @@ def columns_from_regions(regions: list[dict], width: float) -> list[dict]:
     return result
 
 
+
+def classify_outside_columns(lines: list[dict], regions: list[dict],
+                             cols: list[dict]) -> dict[str, list[dict]]:
+    """Suggest structural roles only with geometric evidence; never drop a line.
+
+    A conflicting title/abandon detection is NOT automatically a heading.
+    The section heading must precede both column text regions.
+    """
+    top = min(col["bbox_pdf_points"][1] for col in cols)
+    bottom = max(col["bbox_pdf_points"][3] for col in cols)
+    groups: dict[str, list[dict]] = {
+        "headings": [], "running_headers": [], "page_numbers": [],
+        "unresolved": [],
+    }
+    for line in lines:
+        if line["column"] is not None:
+            continue
+        box = line["bbox_pdf_points"]
+        title_indices = [
+            region["index"] for region in regions
+            if region["class_name"] == "title"
+            and overlap_fraction(box, region["bbox_pdf_points"]) >= 0.5
+        ]
+        abandon_indices = [
+            region["index"] for region in regions
+            if region["class_name"] == "abandon"
+            and overlap_fraction(box, region["bbox_pdf_points"]) >= 0.5
+        ]
+        outside_above = box[3] < top
+        outside_below = box[1] > bottom
+        evidence = sorted(set(title_indices + abandon_indices))
+        role = "unresolved"
+        if abandon_indices and not title_indices and outside_above:
+            role = "running_headers"
+        elif abandon_indices and not title_indices and outside_below:
+            if line["source_text"].strip().isdecimal():
+                role = "page_numbers"
+        elif title_indices and not abandon_indices and outside_above:
+            role = "headings"
+        groups[role].append({
+            "line_id": line["line_id"],
+            "source_text": line["source_text"],
+            "bbox_pdf_points": box,
+            "source_detection_indices": evidence,
+            "status": "proposed" if role != "unresolved" else "REVIEW_REQUIRED",
+        })
+    for values in groups.values():
+        values.sort(key=lambda item: (
+            item["bbox_pdf_points"][1],
+            item["bbox_pdf_points"][0],
+            item["line_id"],
+        ))
+    return groups
+
+
 def propose_page(page: pymupdf.Page, image: Path, run: dict, *,
                  pdf_sha256: str, page_number: int) -> dict:
     """Keep every PyMuPDF text line; ambiguous lines remain explicitly unassigned."""
@@ -117,6 +172,20 @@ def propose_page(page: pymupdf.Page, image: Path, run: dict, *,
                                         item["bbox_pdf_points"][0], item["line_id"]))
     ordered = sorted_column("left") + sorted_column("right")
     unassigned = [line for line in lines if line["column"] is None]
+    structure = classify_outside_columns(lines, regions, cols)
+    structured_ids = [
+        item["line_id"] for kind in ("headings", "running_headers", "page_numbers",
+                                    "unresolved")
+        for item in structure[kind]
+    ]
+    if set(structured_ids) != {line["line_id"] for line in unassigned}:
+        raise ValueError("Strukturzuordnung ist nicht vollständig")
+    if len(structured_ids) != len(set(structured_ids)):
+        raise ValueError("Doppelte Strukturzuordnung")
+    heading_texts = [item["source_text"] for item in structure["headings"]]
+    text_with_headings = "\n".join(heading_texts + [
+        line["source_text"] for line in ordered
+    ])
     assert len(lines) == len(ordered) + len(unassigned)
     assert {l["line_id"] for l in lines} == {
         l["line_id"] for l in ordered + unassigned
@@ -132,10 +201,15 @@ def propose_page(page: pymupdf.Page, image: Path, run: dict, *,
         "unassigned_line_ids": [l["line_id"] for l in unassigned],
         "proposed_text": "\n".join(l["source_text"] for l in ordered),
         "source_lines": lines,
+        "structure": structure,
+        "structured_line_ids": [item["line_id"] for item in structure["headings"]],
+        "unresolved_line_ids": [item["line_id"] for item in structure["unresolved"]],
+        "proposed_text_with_headings": text_with_headings,
         "limitations": [
             "All original PyMuPDF lines retained; possible unassigned headers or footers",
             "Reading order and text correctness require manual verification",
             "No automatic approval or suppression of source text",
+            "Heading/header/page-number roles are geometric proposals only",
         ],
     }
 
