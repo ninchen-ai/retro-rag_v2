@@ -253,4 +253,30 @@ Als nächstes den Negativtest `stage_file()` bei geschlossenem Gate
 durchführen und Archiv/DB-Zähler unabhängig kontrollieren; erst danach
 über einen bewusst freigegebenen positiven Einzeldatei-Apply entscheiden.
 
+## Echter negativer stage_file-Gate-Test (11.11.2026)
+
+Die Betreiberin hat `stage_file(conn, file, data, Path('/data/retro-rag/v2/originals'))` mit der tatsächlichen `rag_v2_importer_login`-Rolle im PostgreSQL-Netz-Namespace von Poseidon aufgerufen. Die Datei- und Metadatenintegrität aus dem geschützten Staging für Nextcloud-`source_key=480` wurden vorab gegen den SHA-256 `70e1b0ce4dc3d7cc3497763c4e907f1f3df65843cb3b5cef7c38bf8ee66efab6` geprüft.
+
+Operator-Ausgabe:
+
+```text
+OK: Schreibsperre hat den Import abgewiesen
+OK: Archivzustand unverändert
+NEGATIVTEST BESTANDEN
+```
+
+Die Testlogik wertete ausschließlich die erwartete PostgreSQL-Fehlermeldung `V2-Schreibsperre ist geschlossen` als Erfolg und verglich die Existenz des inhaltsadressierten Archivzielpfads vor/nach dem Versuch. Die anschließend unabhängig als `codeanalyse` vorgenommene SQL-Kontrolle ergab:
+
+```text
+writes_enabled = f
+reason = Parallelitätstest erfolgreich; Freigabe ausstehend
+document = 0
+document_source = 0
+document_version = 0
+processing_job = 0
+review_item = 0
+```
+
+**Abgenommen:** Echter Negativtest der geschlossenen Gate-Prüfung in `stage_file()` und unveränderte fünf Tabellenzähler. Archivprüfung bezieht sich auf den ausgewählten inhaltsadressierten Zielpfad; sie ist kein vollständiger Vergleich des gesamten Verzeichnisbaums. **Noch offen:** kontrollierter positiver Einzeldatei-Apply, echte Idempotenzprüfung nach Commit, unabhängige Archivhash-Nachkontrolle sowie zusätzliche Crash-/Netz-Fehlerabnahmen. Das Gate wurde nicht geöffnet.
+
 **Hinweis:** Ein hartes Ausschalten der gesamten Maschine kann selbst nach `fsync` je nach Storage-/Controller-Cache zusätzliche Risiken haben. Das hier beschriebene Verfahren behandelt Anwendungskonflikte und Prozessabbrüche; ein Restore-Test bleibt notwendig.
