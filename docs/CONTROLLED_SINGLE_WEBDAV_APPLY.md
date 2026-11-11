@@ -218,4 +218,39 @@ als Nutzer `nina` im PostgreSQL-Netz-Namespace gegen `127.0.0.1:5432`.
 Vor `--apply` sind Integrität, Identitätsdaten und Rollenzugriff erneut
 zu prüfen. Keine HBA-Änderung und keine automatische Gate-Freigabe.
 
+## Echter read-only-Planungslauf mit geschütztem Staging (11.11.2026)
+
+Die Betreiberin hat im Host-Netz-Namespace die ausgewählte Datei
+`test-mainboard.md`, Nextcloud-`source_key=480` mit `WebDAV.download()`
+erneut abgerufen, den zuvor bestätigten SHA-256
+`70e1b0ce4dc3d7cc3497763c4e907f1f3df65843cb3b5cef7c38bf8ee66efab6`
+verifiziert und die Originalbytes sowie Metadaten unter
+`/data/retro-rag/v2/staging/webdav-480-fW05gNAF/` gesichert.
+Die Verzeichnisrechte wurden auf `0700`, die zwei Dateien auf
+`0600` gesetzt. Die Ausgabe bestätigte `Datei: test-mainboard.md`
+und `Keine Datenbankänderung`.
+
+Im PostgreSQL-Netz-Namespace wurde die Metadatendatei samt Inhalt geprüft
+(Quelle 480, `instance_id='poseidon-nextcloud'`, Größe, SHA-256), als
+`RemoteFile` rekonstruiert und per echter
+`rag_v2_importer_login`-Verbindung zu `retro_rag_v2_test` mit
+`SET TRANSACTION READ ONLY` durch `plan_file(conn,file,data)`
+verarbeitet. Rückgabe:
+
+```text
+Geplante Aktion: new
+Source-Key: 480
+SHA-256: 70e1b0ce4dc3d7cc3497763c4e907f1f3df65843cb3b5cef7c38bf8ee66efab6
+READ ONLY – keine Datenbankänderung
+```
+
+Damit ist `plan_file()` **real mit WebDAV-Originalbytes und echter
+eingeschränkter Loginrolle** erfolgreich getestet. Es handelt sich
+um einen auf zwei Netzwerk-Namespaces aufgeteilten operatorgesteuerten
+Test und **nicht** um einen erfolgreichen End-to-End-Aufruf der
+unveränderten `sync_cli`. Datenbank-Gate wurde nicht geöffnet.
+Als nächstes den Negativtest `stage_file()` bei geschlossenem Gate
+durchführen und Archiv/DB-Zähler unabhängig kontrollieren; erst danach
+über einen bewusst freigegebenen positiven Einzeldatei-Apply entscheiden.
+
 **Hinweis:** Ein hartes Ausschalten der gesamten Maschine kann selbst nach `fsync` je nach Storage-/Controller-Cache zusätzliche Risiken haben. Das hier beschriebene Verfahren behandelt Anwendungskonflikte und Prozessabbrüche; ein Restore-Test bleibt notwendig.
