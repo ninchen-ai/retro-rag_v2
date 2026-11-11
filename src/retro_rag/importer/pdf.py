@@ -1,4 +1,4 @@
-"""Schreibfreier PDF-Adapter für den V2-Importvertrag (ohne OCR)."""
+"""Schreibfreier PDF-Adapter mit optionaler seitenweiser OCR."""
 
 from __future__ import annotations
 
@@ -6,6 +6,7 @@ import hashlib
 from pathlib import Path
 
 from retro_rag.importer.contract import Chunk, Document, ImportContract, Source
+from retro_rag.importer.pdf_ocr import extract_page_text
 
 DEFAULT_MAX_BYTES = 50 * 1024 * 1024
 DEFAULT_MAX_PAGES = 1000
@@ -64,8 +65,18 @@ def read_pdf(
     max_bytes: int = DEFAULT_MAX_BYTES,
     max_pages: int = DEFAULT_MAX_PAGES,
     max_chars: int = 4000,
+    ocr_mode: str = "off",
+    ocr_pages: set[int] | None = None,
+    ocr_language: str = "eng+deu",
+    ocr_dpi: int = 200,
 ) -> ImportContract:
     """PDF nur lesen und Vorschlagsdaten erzeugen; keine Indexierung oder DB-Schreibzugriffe."""
+    if ocr_mode not in ("off", "auto"):
+        raise ValueError("ocr_mode muss off oder auto sein")
+    if not 100 <= ocr_dpi <= 300:
+        raise ValueError("ocr_dpi muss zwischen 100 und 300 liegen")
+    if ocr_pages and (ocr_mode != "auto" or min(ocr_pages) < 1):
+        raise ValueError("ocr_pages benötigt ocr_mode=auto und positive Seitenzahlen")
     if not source_id.strip():
         raise ValueError("source_id darf nicht leer sein")
     if min(max_bytes, max_pages, max_chars) <= 0:
@@ -83,11 +94,15 @@ def read_pdf(
 
     chunks: list[Chunk] = []
     warnings: list[str] = []
+    ocr_done: list[int] = []
+    ocr_failed: list[int] = []
     with pymupdf.open(stream=raw, filetype="pdf") as pdf:
         if pdf.needs_pass:
             raise ValueError("Passwortgeschützte PDFs benötigen einen gesonderten Review")
         if len(pdf) > max_pages:
             raise ValueError("PDF überschreitet die Seitenbegrenzung")
+        if ocr_pages and max(ocr_pages) > len(pdf):
+            raise ValueError('ocr_pages außerhalb des PDFs')
         metadata = pdf.metadata or {}
         page_count = len(pdf)
         bookmarks = outline_by_page(pdf.get_toc(), page_count)
@@ -95,8 +110,16 @@ def read_pdf(
         for page_number, page in enumerate(pdf, start=1):
             if page_number in bookmarks:
                 heading_path = bookmarks[page_number]
-            text = page.get_text("text", sort=True)
-            parts = split_page(text, max_chars)
+            extracted = extract_page_text(
+                page, mode=ocr_mode, force=page_number in (ocr_pages or ()),
+                language=ocr_language, dpi=ocr_dpi,
+            )
+            if extracted.status == "ocr":
+                ocr_done.append(page_number)
+            elif extracted.status == "ocr_failed":
+                ocr_failed.append(page_number)
+                warnings.append(f"Seite {page_number}: {extracted.warning}")
+            parts = split_page(extracted.text, max_chars)
             if not parts:
                 warnings.append(f"Seite {page_number}: kein extrahierbarer Text; OCR erforderlich")
             for part in parts:
@@ -128,7 +151,13 @@ def read_pdf(
                 "producer": metadata.get("producer"),
                 "author": metadata.get("author"),
                 "extraction_engine": "PyMuPDF",
-                "ocr_performed": False,
+                "ocr_performed": bool(ocr_done),
+                "ocr_mode": ocr_mode,
+                "ocr_pages": ocr_done,
+                "ocr_failed_pages": ocr_failed,
+                "ocr_engine": "Tesseract/PyMuPDF" if ocr_done else None,
+                "ocr_language": ocr_language if ocr_done else None,
+                "ocr_dpi": ocr_dpi if ocr_done else None,
                 "chunker_version": "pdf-outline-v1",
                 "outline_headings_are_hints": True,
             },
