@@ -44,7 +44,7 @@ print("OCR-Seiten:", contract.document.metadata["ocr_pages"])
 print("OCR-Fehler:", contract.document.metadata["ocr_failed_pages"])
 print("Warnungen:", contract.warnings)
 print("Indexierung erlaubt:", contract.indexing_allowed)
-print("OCR-Seite 111:", "\\n".join(c.text for c in contract.chunks if c.page == 111)[:1500])
+print("OCR-Seite 111:", "\n".join(c.text for c in contract.chunks if c.page == 111)[:1500])
 PY
 ```
 
@@ -63,9 +63,17 @@ PY
 - Die neue OCR-Testsuite verwendet synthetische PDFs und Mock-OCR; sie prüft
   Kontrollfluss und Rückfall, **nicht** die Qualität echter Tesseract-Erkennung.
 
-**Abnahme noch ausstehend:** pytest/Ruff auf Poseidon, echter Tesseract-Test
-mit mindestens einer visuell verifizierten Scan-Seite und fachliche Kontrolle
-des erkannten Texts. Die bekannte Qualitätsbaseline nennt `cubx-103.pdf`
+**Automatisierte Abnahme auf Poseidon erfolgreich (11.11.2026):** Auf dem Branch
+`feat/pdf-ocr-stage4` nach Korrektur des gebundenen Test-Mocks (`9b1dd4b`)
+wurden `python -m pytest -q tests/test_pdf_extraction.py tests/test_pdf_ocr.py`
+mit **17 passed in 0.15s** und `python -m ruff check
+src/retro_rag/importer/pdf.py src/retro_rag/importer/pdf_ocr.py
+tests/test_pdf_ocr.py` mit **All checks passed!** abgeschlossen.
+Dies sind Regressionstests mit Mock-OCR, kein Nachweis über die Erkennungsqualität
+von Tesseract auf realen Scans.
+
+**Noch ausstehend:** echter Tesseract-Test mit mindestens einer visuell
+verifizierten Scan-Seite und fachliche Kontrolle des erkannten Texts. Die bekannte Qualitätsbaseline nennt `cubx-103.pdf`
 Seite 111, `507700.pdf` Seite 24 und weitere Kandidaten. Ohne diese
 Durchläufe ist die OCR-Implementierung fertig als Vorschlag, nicht als
 produktiv abgenommene Stufe. Das V2-Write-Gate bleibt geschlossen.
