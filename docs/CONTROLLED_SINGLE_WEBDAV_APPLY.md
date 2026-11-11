@@ -88,4 +88,17 @@ Die 11 auf diesem Branch **noch nicht ausgeführten** DB-Integrationstests entfa
 
 Weiter offen: echter WebDAV-Read-only-Planungslauf, alle elf DB-Tests auf diesem Branch, kontrollierter Einzeldatei-Apply mit echtem Importer und expliziter Gate-Freigabe sowie Wiederanlauf-/Crash- und unabhängige Nachkontrolle. Das Gate wird durch diesen Nachtrag nicht verändert.
 
+## Echter WebDAV-Einzelabruf und unabhängige Datenbankkontrolle – 11.11.2026
+
+Betreiberseitig auf Poseidon bestätigt:
+
+- WebDAV-Listing mit Nextcloud-`oc:fileid`, Größen und ETags erfolgreich.
+- Exakt eine Datei ausgewählt: `test-mainboard.md`, `source_key=480`, `byte_size=371`, ETag `"64dc6d1675b067a81554c913a48685ea"`.
+- Konditionaler Einzeldatei-GET über `WebDAV.download(..., max_bytes=1_000_000)` erfolgreich: 371 Bytes, SHA-256 `70e1b0ce4dc3d7cc3497763c4e907f1f3df65843cb3b5cef7c38bf8ee66efab6`.
+- Unabhängige lesende DB-Kontrolle via `docker exec codeanalyse-postgres psql -X -U codeanalyse -d retro_rag_v2_test`:
+  `writes_enabled=f`, Grund `Parallelitätstest erfolgreich; Freigabe ausstehend`.
+  Tabellenzähler: `document=0`, `document_source=0`, `document_version=0`,
+  `processing_job=0`, `review_item=0`.
+- Das ist ein echter Read-only-WebDAV-Nachweis, **noch kein** `sync_cli --source-key`-Planungslauf mit dem Importer-Login, kein `--apply`, keine Gate-Freigabe und kein realer Crash-Test.
+
 **Hinweis:** Ein hartes Ausschalten der gesamten Maschine kann selbst nach `fsync` je nach Storage-/Controller-Cache zusätzliche Risiken haben. Das hier beschriebene Verfahren behandelt Anwendungskonflikte und Prozessabbrüche; ein Restore-Test bleibt notwendig.
