@@ -1,10 +1,10 @@
 """DB-gestütztes, wiederholbares Staging für die V2-Testdatenbank."""
 
-from dataclasses import dataclass
-from pathlib import Path
 import hashlib
 import os
 import tempfile
+from dataclasses import dataclass
+from pathlib import Path
 
 import psycopg
 
@@ -103,122 +103,121 @@ def stage_file(
     if not file.instance_id:
         raise ValueError("Nextcloud-Instanzkennung fehlt")
     file_hash = digest(data)
-    with conn.transaction():
-        with conn.cursor() as cur:
-            # SECURITY DEFINER prüft und hält den FOR SHARE-Row-Lock.
-            # Importer benötigt nur EXECUTE, niemals UPDATE auf write_gate.
-            cur.execute("SELECT rag_v2.assert_import_write_gate()")
-            # Eine bereits geschlossene Schreibsperre darf kein Archiv erzeugen.
-            # Bei einem späteren SQL-Fehler bleibt höchstens eine verwaiste Archivdatei.
-            archive_uri = archive_original(archive_root, data, file.name)
+    with conn.transaction(), conn.cursor() as cur:
+        # SECURITY DEFINER prüft und hält den FOR SHARE-Row-Lock.
+        # Importer benötigt nur EXECUTE, niemals UPDATE auf write_gate.
+        cur.execute("SELECT rag_v2.assert_import_write_gate()")
+        # Eine bereits geschlossene Schreibsperre darf kein Archiv erzeugen.
+        # Bei einem späteren SQL-Fehler bleibt höchstens eine verwaiste Archivdatei.
+        archive_uri = archive_original(archive_root, data, file.name)
+        cur.execute(
+            "SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))",
+            ("nextcloud:" + file.instance_id + ":" + file.source_key,),
+        )
+        cur.execute(
+            """SELECT id, document_id FROM rag_v2.document_source
+               WHERE source_system='nextcloud' AND source_instance=%s AND source_key=%s FOR UPDATE""",
+            (file.instance_id, file.source_key),
+        )
+        row = cur.fetchone()
+        # Serialisiert Erstimporte mit gleichem Inhalt über Quellgrenzen hinweg.
+        cur.execute("SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))",
+                    ("content:" + file_hash,))
+        candidates = []
+        if row is None:
+            cur.execute("""SELECT DISTINCT v.document_id
+                FROM rag_v2.document_version v
+                JOIN rag_v2.document_source s ON s.document_id=v.document_id
+                WHERE v.content_hash=%s ORDER BY v.document_id""", (file_hash,))
+            candidates = [str(item[0]) for item in cur.fetchall()]
             cur.execute(
-                "SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))",
-                ("nextcloud:" + file.instance_id + ":" + file.source_key,),
+                """INSERT INTO rag_v2.document (title, document_type)
+                   VALUES (%s, %s) RETURNING id""",
+                (file.name, "markdown" if file.name.lower().endswith(".md") else "pdf"),
+            )
+            document_id = cur.fetchone()[0]
+            cur.execute(
+                """INSERT INTO rag_v2.document_source
+                   (document_id,source_system,source_instance,source_key,source_uri,last_seen_content_hash)
+                   VALUES (%s,'nextcloud',%s,%s,%s,%s)""",
+                (document_id, file.instance_id, file.source_key, file.uri, file_hash),
+            )
+            action = "new"
+        else:
+            document_id = row[1]
+            cur.execute(
+                """UPDATE rag_v2.document_source SET source_uri=%s,
+                   last_seen_content_hash=%s, last_seen_at=now(), is_available=true
+                   WHERE id=%s""",
+                (file.uri, file_hash, row[0]),
             )
             cur.execute(
-                """SELECT id, document_id FROM rag_v2.document_source
-                   WHERE source_system='nextcloud' AND source_instance=%s AND source_key=%s FOR UPDATE""",
-                (file.instance_id, file.source_key),
+                """SELECT id FROM rag_v2.document_version
+                   WHERE document_id=%s AND content_hash=%s LIMIT 1""",
+                (document_id, file_hash),
             )
-            row = cur.fetchone()
-            # Serialisiert Erstimporte mit gleichem Inhalt über Quellgrenzen hinweg.
-            cur.execute("SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))",
-                        ("content:" + file_hash,))
-            candidates = []
-            if row is None:
-                cur.execute("""SELECT DISTINCT v.document_id
-                    FROM rag_v2.document_version v
-                    JOIN rag_v2.document_source s ON s.document_id=v.document_id
-                    WHERE v.content_hash=%s ORDER BY v.document_id""", (file_hash,))
-                candidates = [str(item[0]) for item in cur.fetchall()]
-                cur.execute(
-                    """INSERT INTO rag_v2.document (title, document_type)
-                       VALUES (%s, %s) RETURNING id""",
-                    (file.name, "markdown" if file.name.lower().endswith(".md") else "pdf"),
-                )
-                document_id = cur.fetchone()[0]
-                cur.execute(
-                    """INSERT INTO rag_v2.document_source
-                       (document_id,source_system,source_instance,source_key,source_uri,last_seen_content_hash)
-                       VALUES (%s,'nextcloud',%s,%s,%s,%s)""",
-                    (document_id, file.instance_id, file.source_key, file.uri, file_hash),
-                )
-                action = "new"
-            else:
-                document_id = row[1]
-                cur.execute(
-                    """UPDATE rag_v2.document_source SET source_uri=%s,
-                       last_seen_content_hash=%s, last_seen_at=now(), is_available=true
-                       WHERE id=%s""",
-                    (file.uri, file_hash, row[0]),
-                )
-                cur.execute(
-                    """SELECT id FROM rag_v2.document_version
-                       WHERE document_id=%s AND content_hash=%s LIMIT 1""",
-                    (document_id, file_hash),
-                )
-                if cur.fetchone():
-                    return PlannedChange("unchanged", file.source_key, file.name, file_hash)
-                action = "changed"
-            cur.execute(
-                """SELECT COALESCE(MAX(version_no),0)+1
-                   FROM rag_v2.document_version WHERE document_id=%s""",
-                (document_id,),
-            )
-            version_no = cur.fetchone()[0]
-            cur.execute(
-                """INSERT INTO rag_v2.document_version
-                   (document_id,version_no,content_hash,source_filename,
-                    archive_uri,mime_type,byte_size)
-                   VALUES (%s,%s,%s,%s,%s,%s,%s) RETURNING id""",
-                (document_id, version_no, file_hash, file.name, archive_uri,
-                 file.content_type, len(data)),
-            )
-            version_id = cur.fetchone()[0]
-            if candidates:
-                # Inhaltliche Gleichheit ist keine logische Dokumentidentität.
-                # Keine automatische Weiterverarbeitung vor manuellem Review.
-                import json
-                cur.execute("""INSERT INTO rag_v2.review_batch
-                    (document_version_id,title) VALUES (%s,%s) RETURNING id""",
-                    (version_id, "Dokumentidentität prüfen"))
-                batch_id = cur.fetchone()[0]
-                proposal = {
-                    "reason": "same_hash_different_source",
-                    "source_instance": file.instance_id,
-                    "source_key": file.source_key,
-                    "source_uri": file.uri,
-                    "content_hash": file_hash,
-                    "new_document_id": str(document_id),
-                    "candidate_document_ids": candidates,
-                }
-                cur.execute("""INSERT INTO rag_v2.review_item
-                    (review_batch_id,item_kind,proposal)
-                    VALUES (%s,'document_identity',%s::jsonb)""",
-                    (batch_id, json.dumps(proposal)))
-                return PlannedChange("review", file.source_key, file.name, file_hash)
-            cur.execute(
-                """INSERT INTO rag_v2.processing_job (document_version_id,job_type)
-                   VALUES (%s,'document_import') RETURNING id""",
-                (version_id,),
-            )
-            job_id = cur.fetchone()[0]
-            cur.execute(
-                """INSERT INTO rag_v2.processing_step
-                   (processing_job_id,step_name,input_hash)
-                   VALUES (%s,'source_archived',%s) RETURNING id""",
-                (job_id, file_hash),
-            )
-            step_id = cur.fetchone()[0]
-            cur.execute(
-                """INSERT INTO rag_v2.processing_artifact
-                   (processing_step_id,artifact_kind,artifact_uri,content_hash)
-                   VALUES (%s,'original',%s,%s)""",
-                (step_id, archive_uri, file_hash),
-            )
-            cur.execute(
-                """UPDATE rag_v2.processing_step SET status='completed',
-                   completed_at=now() WHERE id=%s""",
-                (step_id,),
-            )
+            if cur.fetchone():
+                return PlannedChange("unchanged", file.source_key, file.name, file_hash)
+            action = "changed"
+        cur.execute(
+            """SELECT COALESCE(MAX(version_no),0)+1
+               FROM rag_v2.document_version WHERE document_id=%s""",
+            (document_id,),
+        )
+        version_no = cur.fetchone()[0]
+        cur.execute(
+            """INSERT INTO rag_v2.document_version
+               (document_id,version_no,content_hash,source_filename,
+                archive_uri,mime_type,byte_size)
+               VALUES (%s,%s,%s,%s,%s,%s,%s) RETURNING id""",
+            (document_id, version_no, file_hash, file.name, archive_uri,
+             file.content_type, len(data)),
+        )
+        version_id = cur.fetchone()[0]
+        if candidates:
+            # Inhaltliche Gleichheit ist keine logische Dokumentidentität.
+            # Keine automatische Weiterverarbeitung vor manuellem Review.
+            import json
+            cur.execute("""INSERT INTO rag_v2.review_batch
+                (document_version_id,title) VALUES (%s,%s) RETURNING id""",
+                (version_id, "Dokumentidentität prüfen"))
+            batch_id = cur.fetchone()[0]
+            proposal = {
+                "reason": "same_hash_different_source",
+                "source_instance": file.instance_id,
+                "source_key": file.source_key,
+                "source_uri": file.uri,
+                "content_hash": file_hash,
+                "new_document_id": str(document_id),
+                "candidate_document_ids": candidates,
+            }
+            cur.execute("""INSERT INTO rag_v2.review_item
+                (review_batch_id,item_kind,proposal)
+                VALUES (%s,'document_identity',%s::jsonb)""",
+                (batch_id, json.dumps(proposal)))
+            return PlannedChange("review", file.source_key, file.name, file_hash)
+        cur.execute(
+            """INSERT INTO rag_v2.processing_job (document_version_id,job_type)
+               VALUES (%s,'document_import') RETURNING id""",
+            (version_id,),
+        )
+        job_id = cur.fetchone()[0]
+        cur.execute(
+            """INSERT INTO rag_v2.processing_step
+               (processing_job_id,step_name,input_hash)
+               VALUES (%s,'source_archived',%s) RETURNING id""",
+            (job_id, file_hash),
+        )
+        step_id = cur.fetchone()[0]
+        cur.execute(
+            """INSERT INTO rag_v2.processing_artifact
+               (processing_step_id,artifact_kind,artifact_uri,content_hash)
+               VALUES (%s,'original',%s,%s)""",
+            (step_id, archive_uri, file_hash),
+        )
+        cur.execute(
+            """UPDATE rag_v2.processing_step SET status='completed',
+               completed_at=now() WHERE id=%s""",
+            (step_id,),
+        )
     return PlannedChange(action, file.source_key, file.name, file_hash)
