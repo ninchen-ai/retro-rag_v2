@@ -177,4 +177,20 @@ Aus der auf Poseidon vom Betreiber übermittelten Terminalausgabe:
 - Lokaler Vor-Apply-Dump und unveränderliches Originalarchiv sind damit für den **kontrollierten Einzeldatei-Test** vorbereitet. Die bestehende Borg-Rotation sichert **V2-DB und V2-Originalarchiv noch nicht nachweislich**, und ein echter V2-Restore bleibt ausständig.
 - Weiter offen: echte `rag_v2_importer_login`-Verbindung **vom Host** (Docker-Port-Weiterleitung/HBA), `plan_file()`-Aufruf, Integrationstests des Feature-Branches und kontrollierter `--apply`. Schreibsperre bleibt geschlossen.
 
+## Erfolgreicher Importer-Loopback-Test im PostgreSQL-Netz-Namespace (11.11.2026)
+
+Auf Poseidon hat die Betreiberin mittels
+`docker inspect -f '{{.State.Pid}}' codeanalyse-postgres`,
+`sudo nsenter --target "$PG_PID" --net -- setpriv --reuid "$(id -u)" --regid "$(id -g)" --init-groups`
+und der vorhandenen `.venv/bin/python` eine echte `psycopg`-Verbindung als
+`rag_v2_importer_login` hergestellt. Ergebnis:
+
+```text
+('rag_v2_importer_login', 'retro_rag_v2_test', IPv4Address('127.0.0.1'))
+```
+
+Damit ist der notwendige PostgreSQL-Zugriff per TCP-Loopback **ohne HBA-Änderung** nachgewiesen. Die Anwendungs-Python-Umgebung lief als unprivilegierter Nutzer im Netzwerk-Namespace des Datenbankcontainers; die Datenbankaktion war ausschließlich ein `SELECT`. Kein `--apply`, keine Gate-Freigabe und keine DB-Änderungen.
+
+**Noch offen:** Der konfigurierte WebDAV-Endpunkt `http://127.0.0.1:8080` zeigt in diesem Namespace nicht auf den Host-Loopback. Die gemeinsame Erreichbarkeit von WebDAV und PostgreSQL in der CLI ist daher **noch nicht** belegt. HTTP-Basic-Auth nicht ungeschützt auf eine Docker-Bridge-Adresse umstellen. Vor einem echten Import entweder einen abgesicherten End-to-End-Zugang nachweisen oder den WebDAV-Abruf auf dem Host und das transaktionale Staging in der DB-Netz-Namespace technisch sauber trennen.
+
 **Hinweis:** Ein hartes Ausschalten der gesamten Maschine kann selbst nach `fsync` je nach Storage-/Controller-Cache zusätzliche Risiken haben. Das hier beschriebene Verfahren behandelt Anwendungskonflikte und Prozessabbrüche; ein Restore-Test bleibt notwendig.
