@@ -121,3 +121,68 @@ und keine Retrieval-Gewichtung. V1s `index=0.65` ist nur ein
 historischer Vergleichswert, keine V2-Konfiguration.
 
 Das V2-Write-Gate bleibt unverändert geschlossen.
+
+
+## Reale USB-Quellen erneut geprüft und drei Randfälle korrigiert (11.11.2026)
+
+Die erneut hochgeladenen **originalen Struktur-JSONs** von
+`usb_20.pdf` S. 601 und 606 wurden lokal gegen den ersten
+Indexadapter ausgewertet. Die Eingaben enthalten 103 + 114 Quellzeilen,
+davon 100 + 112 Indexspalten-Zeilen, 5 getrennt gespeicherte Seitenmöbel/
+Überschriften. PDF- und Text-SHA-256 sind konsistent.
+
+**Erste Adapter-Heuristik vor Korrektur** (lokale Analyse,
+kein Poseidon-Abnahmelauf):
+
+| Ergebnis | Anzahl |
+|---|---:|
+| Index-Zeilen | 212 |
+| Vorgeschlagene Einträge | 194 |
+| `headword` | 63 |
+| `subentry` | 122 |
+| `deep_subentry` | 9 |
+| zusammengeführte Folgezeilen | 18 |
+| `DEEP_INDENT_REVIEW` | 9 |
+
+`clock model (continued)` auf S. 606 wird als
+`continuation_of=p606-9:11` an `clock model` angebunden.
+Die Quellzeile `p601-4:0` enthält dagegen nur den
+alphabetischen Abschnittsmarker `A`, **keinen** Haupteintrag.
+Das wurde in der ersten Version falsch klassifiziert.
+
+Weitere konkrete Befunde:
+- `adding devices. See dynamic insertion and` mit der nächsten,
+  tiefer eingerückten Zeile `removal` war irrtümlich in zwei
+  Einträge getrennt.
+- Unter `addresses → assignment` wurden um etwa 22 pt
+  eingerückte dritte Ebenen nicht ihrem unmittelbaren
+  Untereintrag, sondern nur `addresses` zugewiesen.
+  Die dritte Ebene bleibt aus Sicherheitsgründen grundsätzlich
+  prüfpflichtig.
+- Implizite Elternbeziehungen dürfen **nicht** von der
+  linken auf die rechte Spalte oder von einer Seite auf die nächste
+  übertragen werden; dafür existiert ausschließlich der gesonderte
+  `(continued)`-Verknüpfungsvorschlag.
+
+**Korrigiert im Feature-Branch:**
+1. Einzelne Großbuchstaben werden als `alphabet_section` statt
+   `headword` vorgeschlagen; sie erzeugen keinen Elternknoten.
+2. Ein Textfragment mit Schlusswort `and` oder `or`
+   **ohne bereits enthaltene Kapitelreferenz** kann mit
+   der direkt anschließenden tief eingerückten Zeile verbunden werden.
+   Quellzeilen und Textteile bleiben getrennt belegt.
+3. Tiefe Untereinträge erhalten den vorherigen Untereintrag als
+   Elternvorschlag; falls dieser fehlt, wird der Haupteintrag
+   ausschließlich mit zusätzlichem `DEEP_PARENT_FALLBACK_REVIEW`
+   vorgeschlagen.
+4. Implizite Eltern-/Umbruchzustände werden bei jeder neuen
+   Spalte zurückgesetzt. Explizite `continued`-Kandidaten werden
+   separat über die bereits gesehenen Haupteinträge gesucht.
+5. Vier Regressionstests decken die genannten Fälle ab.
+
+**Noch ausstehend:** Die neuen Regeln sind im GitHub-Branch vorhanden,
+aber noch nicht auf Poseidon mit pytest/Ruff und den echten JSONs
+nachgetestet. Die oben angegebenen Zahlen gelten **für die vorherige
+Heuristik**, nicht als Ergebnis dieser Korrektur. Fachliche
+Erkennungsqualität benötigt weiterhin manuell bewertete Labels,
+insbesondere für tiefe Untereinträge. Write-Gate geschlossen.
