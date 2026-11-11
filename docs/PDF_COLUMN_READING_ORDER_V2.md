@@ -233,3 +233,70 @@ Gegenprüfung als bestätigt markiert werden.
 Bis dahin gilt: **Implementiert und dokumentiert, aber noch nicht
 auf Poseidon erneut getestet oder fachlich freigegeben.**
 Write-Gate geschlossen.
+
+
+## Reale Validierung der strukturierten Ausgaben (11.11.2026)
+
+Die von Poseidon erzeugten Dateien
+`retro-v2-usb-column-order-structure-p601.json` und
+`retro-v2-usb-column-order-structure-p606.json` wurden vollständig
+ausgewertet. Beide bleiben `status=REVIEW_REQUIRED`,
+`approved=false`; die PDF-SHA-256 ist identisch:
+`d39698a33486c399124af92bd02e4f978fd9a836b5cf4e52e6e4633eb1d89f61`.
+
+| Prüfung | PDF S. 601 | PDF S. 606 |
+|---|---:|---:|
+| Original-Quellzeilen | 103 | 114 |
+| Spalten-Textzeilen links/rechts | 50 / 50 | 56 / 56 |
+| `structure.headings` | 1: `Index` (`2:0`) | 0 |
+| `structure.running_headers` | 1: laufender Titel (`0:0`) | 1: laufender Titel (`0:0`) |
+| `structure.page_numbers` | 1: `573` (`1:0`) | 1: `578` (`1:0`) |
+| `structure.unresolved` | 0 | 0 |
+| `ordered_line_ids` | 100 | 112 |
+| `unassigned_line_ids` | 3 (alle strukturell erklärt) | 2 (alle strukturell erklärt) |
+| Eindeutige, vollständig abgedeckte Quellzeilen-IDs | ja | ja |
+| `source_lines_sha256` aus `source_lines` erneut berechnet | stimmt | stimmt |
+| `proposed_text` aus `ordered_line_ids` rekonstruiert | stimmt | stimmt |
+| `proposed_text_with_headings` aus Überschriften + zugeordneten Zeilen rekonstruiert | stimmt | stimmt |
+| Innerhalb der Spalten Y-aufsteigend, genau ein Links→Rechts-Übergang | ja | ja |
+
+Damit sind **217/217 Quellzeilen nachvollziehbar strukturell verortet**,
+ohne dass eine Zeile gelöscht oder doppelt zugeordnet wurde. Für den
+eigentlichen Haupttext sind 212/217 Zeilen den beiden Spalten zugeordnet
+(97,70 %); fünf weitere Zeilen sind separat als Struktur/Seitenmöbel
+erfasst, keine verbleibt `unresolved`. Diese Metriken **nicht** als
+allgemeine Layout- oder semantische Erkennungsgenauigkeit interpretieren.
+
+Besondere Beobachtungen:
+- S. 601: `Index` steht nun korrekt am Beginn von
+  `proposed_text_with_headings`. Der Abschnitt `A` verbleibt in
+  der linken Spalte. Im alten `proposed_text` wird `Index`
+  absichtlich weiterhin nicht ausgegeben (Rückwärtskompatibilität).
+- S. 601: laufender Dokumentkopf `0:0` ist geometrisch als
+  `running_headers` erfasst, trägt wegen gleichzeitiger
+  `title`- und `abandon`-Detektion aber weiterhin
+  `status=REVIEW_REQUIRED`. Dieser Klassenkonflikt ist
+  **nicht** fachlich aufgelöst.
+- S. 606: kein neuer Abschnittstitel; `ClearHubFeature() request`
+  startet links, `clock model (continued)` folgt erst nach
+  der vollständigen linken Spalte.
+- Gedruckte Seitenzahlen `573` und `578` werden ausschließlich
+  als `page_numbers` vorgeschlagen, nicht in den
+  `proposed_text_with_headings` eingemischt.
+
+**Bewertung:** Der für diese zwei Indexseiten implementierte
+Review-first-Strukturadapter hat die erwartete Zeilenverteilung und
+Lesereihenfolge in realen JSON-Ausgaben nachgewiesen. Es ist keine
+fachliche Freigabe der gesamten Index-Semantik, von
+`continued`-Beziehungen über Seiten hinweg, von
+Tabelle/Pin-Matrix oder von beliebigen Mehrspaltenlayouts.
+Auch der GitHub-Stand ist damit noch **nicht** durch eine erneute
+pytest-/Ruff-Ausgabe des Nutzers bestätigt; diese Prüfungen vor Merge
+weiterhin durchführen.
+
+Nächster fachlicher Schritt: Semantische Untergliederung des
+alphabetischen Stichwortverzeichnisses (Haupteinträge, eingerückte
+Unterpunkte, Umbruch-/Fortsetzungszeilen, seitenübergreifende
+`continued`-Einträge) gegen einen kleinen manuell bestätigten
+Goldstandard testen. Für die G200-Pinmatrix bleibt ein anderer
+Tabellen-/Zellpfad maßgeblich. V2-Write-Gate geschlossen.
