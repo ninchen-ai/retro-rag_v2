@@ -5,10 +5,10 @@ Based on V1's conservative geometry/review principles. No network or DB.
 from __future__ import annotations
 
 import argparse
-from collections import Counter
 import hashlib
 import json
 import re
+from collections import Counter
 from pathlib import Path
 
 CONTINUED = re.compile(r"\s*\(continued\)\s*$", re.IGNORECASE)
