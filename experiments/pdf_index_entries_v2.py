@@ -12,6 +12,7 @@ import re
 from pathlib import Path
 
 CONTINUED = re.compile(r"\s*\(continued\)\s*$", re.IGNORECASE)
+ALPHABET_SECTION = re.compile(r"^[A-Z]$")
 REFERENCE = re.compile(r"\b\d+(?:\.\d+)+(?:\s+Table\s+\d+(?:-\d+)?)?\b")
 
 
@@ -72,6 +73,9 @@ def plausible_wrap(previous: dict, text: str) -> bool:
     prior = previous["text_parts"][-1].strip()
     if prior.endswith((",", ";", "-")):
         return True
+    if (prior.casefold().endswith((" and", " or"))
+            and not REFERENCE.search(prior) and len(prior.split()) >= 3):
+        return True
     return (len(prior.split()) >= 3 and not REFERENCE.search(prior)
             and bool(REFERENCE.search(text)))
 
@@ -91,11 +95,15 @@ def propose_index_pages(pages: list[dict], source_hashes: list[str] | None = Non
     count = 0
     roots: dict[str, list[dict]] = {}
     last_main: dict | None = None
+    last_subentry: dict | None = None
     last_entry: dict | None = None
     for page in pages:
         columns = ordered_columns(page)
         count += page["source_line_count"]
         for side in ("left", "right"):
+            last_main = None
+            last_subentry = None
+            last_entry = None
             rows = columns[side]
             base_x = min(row["bbox_pdf_points"][0] for row in rows)
             for row in rows:
@@ -125,11 +133,13 @@ def propose_index_pages(pages: list[dict], source_hashes: list[str] | None = Non
                         "page": page["page"], "line_id": row["line_id"],
                         "status": "REVIEW_REQUIRED",
                     })
+                if kind == "headword" and ALPHABET_SECTION.fullmatch(text):
+                    kind = "alphabet_section"
                 is_continued = bool(CONTINUED.search(text))
                 canonical = CONTINUED.sub("", text).strip().casefold()
                 continuation_of = None
-                if kind == "headword":
-                    if is_continued:
+                if kind in ("headword", "alphabet_section"):
+                    if is_continued and kind == "headword":
                         matches = [
                             entry for entry in roots.get(canonical, [])
                             if page["page"] - entry["page"] in (0, 1)
@@ -144,10 +154,19 @@ def propose_index_pages(pages: list[dict], source_hashes: list[str] | None = Non
                                 "status": "REVIEW_REQUIRED",
                             })
                     last_main = None
-                parent_id = (
-                    last_main["entry_id"]
-                    if kind in ("subentry", "deep_subentry") and last_main else None
-                )
+                    last_subentry = None
+                parent_id = None
+                if kind == "subentry" and last_main:
+                    parent_id = last_main["entry_id"]
+                elif kind == "deep_subentry" and last_subentry:
+                    parent_id = last_subentry["entry_id"]
+                elif kind == "deep_subentry" and last_main:
+                    parent_id = last_main["entry_id"]
+                    findings.append({
+                        "code": "DEEP_PARENT_FALLBACK_REVIEW",
+                        "page": page["page"], "line_id": row["line_id"],
+                        "status": "REVIEW_REQUIRED",
+                    })
                 if kind in ("subentry", "deep_subentry") and parent_id is None:
                     findings.append({
                         "code": "ORPHAN_SUBENTRY", "page": page["page"],
@@ -169,6 +188,10 @@ def propose_index_pages(pages: list[dict], source_hashes: list[str] | None = Non
                     last_main = record
                     if not is_continued:
                         roots.setdefault(canonical, []).append(record)
+                elif kind == "subentry":
+                    last_subentry = record
+                elif kind == "alphabet_section":
+                    last_entry = None
     expected = {(page["page"], line_id) for page in pages
                 for line_id in page["ordered_line_ids"]}
     actual = [(entry["page"], line_id) for entry in entries
