@@ -5,7 +5,6 @@ from pathlib import Path
 
 import pymupdf
 import pytest
-from PIL import Image
 
 SCRIPT = Path(__file__).resolve().parents[1] / "experiments" / "pdf_column_order_v2.py"
 SPEC = importlib.util.spec_from_file_location("pdf_column_order_v2", SCRIPT)
@@ -106,3 +105,50 @@ def test_run_must_be_unique_and_unapproved():
     raw["completed"] = False
     with pytest.raises(ValueError, match="nicht vollständig"):
         columns.resolve_run(raw, "x")
+
+
+def test_structural_roles_keep_heading_and_page_metadata_separate():
+    """USB-Index: heading before text, page furniture remains traceable."""
+    left = {"name": "left", "bbox_pdf_points": [70, 120, 290, 710]}
+    right = {"name": "right", "bbox_pdf_points": [320, 120, 540, 710]}
+    lines = [
+        {"line_id": "0:0", "source_text": "USB Specification",
+         "bbox_pdf_points": [205, 35, 405, 49], "column": None},
+        {"line_id": "1:0", "source_text": "573",
+         "bbox_pdf_points": [525, 743, 540, 757], "column": None},
+        {"line_id": "2:0", "source_text": "Index",
+         "bbox_pdf_points": [72, 69, 124, 97], "column": None},
+        {"line_id": "3:0", "source_text": "A",
+         "bbox_pdf_points": [72, 180, 83, 199], "column": "left"},
+    ]
+    regions = [
+        {"index": 0, "class_name": "abandon",
+         "bbox_pdf_points": [205, 36, 405, 48]},
+        {"index": 1, "class_name": "title",
+         "bbox_pdf_points": [205, 36, 405, 48]},
+        {"index": 2, "class_name": "title",
+         "bbox_pdf_points": [71, 74, 125, 95]},
+        {"index": 3, "class_name": "abandon",
+         "bbox_pdf_points": [524, 742, 541, 759]},
+    ]
+    output = columns.classify_outside_columns(lines, regions, [left, right])
+    assert [r["source_text"] for r in output["headings"]] == ["Index"]
+    assert [r["source_text"] for r in output["running_headers"]] == [
+        "USB Specification"
+    ]
+    assert output["running_headers"][0]["status"] == "REVIEW_REQUIRED"
+    assert [r["source_text"] for r in output["page_numbers"]] == ["573"]
+    assert output["unresolved"] == []
+    assert {r["line_id"] for group in output.values() for r in group} == {
+        "0:0", "1:0", "2:0"
+    }
+
+
+def test_unmatched_title_outside_columns_is_not_invented():
+    lines = [{"line_id": "4:0", "source_text": "Index",
+              "bbox_pdf_points": [72, 65, 120, 90], "column": None}]
+    cols = [{"name": "left", "bbox_pdf_points": [70, 120, 280, 700]},
+            {"name": "right", "bbox_pdf_points": [320, 120, 540, 700]}]
+    result = columns.classify_outside_columns(lines, [], cols)
+    assert not result["headings"]
+    assert result["unresolved"][0]["status"] == "REVIEW_REQUIRED"
