@@ -117,4 +117,15 @@ Die `BEGIN READ ONLY`-Abfrage prüfte zunächst, ob die ausgewählte Nextcloud-Q
 
 **Vor dem schreibenden End-to-End-Test:** Die aktuelle `sync_cli` setzt gleichzeitige Erreichbarkeit von Nextcloud-WebDAV und der V2-Datenbank in einem Prozess voraus. Der WebDAV-URL-Loopback `127.0.0.1:8080` wurde auf dem Host getestet; der Importer-Login hingegen im PostgreSQL-Container auf `127.0.0.1:5432` (gesonderte HBA-Regeln). Ein gemeinsamer, sicherer Netzwerkpfad der Anwendung ist noch zu ermitteln; keinesfalls Datenbank-HBA oder Docker-Portfreigaben für den Test pauschal öffnen. Backup, geprüftes Archivverzeichnis und isolierter Anwendungspfad müssen vor `--apply` nachgewiesen werden. Das Write-Gate bleibt geschlossen.
 
+## Backup-/Netzwerk-Vorprüfung auf Poseidon – 11.11.2026
+
+Betreiberseitig zurückgemeldet:
+
+- `docker exec codeanalyse-postgres pg_dump -U codeanalyse -Fc -d retro_rag_v2_test > ~/backups/retro-rag-v2/pre-single-apply.dump` wurde ausgeführt. Der Pfad wurde mit `chmod 600` geschützt. **Erfolgreiche Backup-Erzeugung und Vollständigkeit noch nicht explizit anhand von Exitcode/Archivprüfung bestätigt.**
+- Die Host-Prüfung `pg_restore -l ...` schlug mit `-bash: pg_restore: Kommando nicht gefunden` fehl: `pg_restore` ist **auf dem Host** nicht installiert. Die Archivprüfung wird deshalb mit `docker exec -i codeanalyse-postgres pg_restore -l` und vollständig lesendem `pg_restore -f /dev/null` über stdin fortgesetzt. Kein Restore durchgeführt.
+- `df -h "$HOME"`: Root-Dateisystem `/dev/nvme0n1p2`, 221 GiB laut Anzeige, 176 GiB genutzt, 34 GiB frei, 85 % Auslastung.
+- `findmnt -T ~/projects/retro-rag_v2`: `/` auf ext4, `rw,relatime,errors=remount-ro`.
+- `ss -ltn`: Host-TCP-Port `127.0.0.1:5432` lauscht; Nextcloud-Frontend `:8080` auf `0.0.0.0` und `[::]`. **Listener-Nachweis ist kein Nachweis einer erfolgreichen Host-Anmeldung als `rag_v2_importer_login`** (HBA/Portforwarding). Deshalb vor der CLI eine echte rein lesende psycopg-Verbindung vom Host testen.
+- Kein Write-Gate geöffnet, keine migrations- oder archivseitigen Änderungen bestätigt. Dauerhaften Archivpfad gesondert auswählen; System-NVMe bereits 85 % belegt.
+
 **Hinweis:** Ein hartes Ausschalten der gesamten Maschine kann selbst nach `fsync` je nach Storage-/Controller-Cache zusätzliche Risiken haben. Das hier beschriebene Verfahren behandelt Anwendungskonflikte und Prozessabbrüche; ein Restore-Test bleibt notwendig.
