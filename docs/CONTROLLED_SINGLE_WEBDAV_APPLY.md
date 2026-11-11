@@ -73,4 +73,19 @@ python -m retro_rag.importer.sync_cli \
 
 **Abnahmestatus (11.11.2026):** Auf Poseidon wurden zweimal die 27 gezielt ausgewählten Unit-Tests erfolgreich ausgeführt (`27 passed in 0.13s` bzw. `27 passed in 0.12s`). Der erste Ruff-Lauf meldete acht Beanstandungen (Importreihenfolge, ungenutzter Import, SIM117); nach Korrektur meldete der zweite Ruff-Lauf ausschließlich `I001` wegen einer überzähligen Leerzeile nach den Imports in `webdav.py`. Diese letzte Stelle wurde mit Commit `69400e1` korrigiert, **aber noch nicht erneut auf Poseidon geprüft**. `git diff --check` lieferte beim zweiten Testlauf keine Ausgabe. Ein vollständiger Suite-Lauf, realer Nextcloud-/PostgreSQL-End-to-End-Apply, kontrollierte Gate-Freigabe, realer Crash-/Netzwerktest und unabhängige DB-Nachkontrolle sind weiterhin offen. Keine Produktionsfreigabe.
 
+## Vollständige lokale Abnahme auf Poseidon – 11.11.2026
+
+Betreiberseitig nach Fast-forward auf Commit `4d8962c`:
+
+```text
+43 passed, 11 skipped in 0.20s
+All checks passed!
+```
+
+Die vollständige `python -m pytest -q -rs`-Suite lieferte **43 bestandene** und **11 übersprungene** Tests, **0 Fehltests**. `ruff check` der drei betroffenen Importer-Module und zweier neuer Testdateien war erfolgreich; `git diff --check` und `git status --short` ohne Ausgabe (sauberer Arbeitsbaum). Die zuvor offene Ruff-I001-Nachprüfung ist damit erledigt.
+
+Die 11 auf diesem Branch **noch nicht ausgeführten** DB-Integrationstests entfallen auf vier Dokumentidentitäts-, sechs C1-Versionenaktivierungs- und einen isolierten C1-Konkurrenztest. Frühere Abnahmen auf `integration/import-pipeline-2026-11-09` gelten nicht als neue Feature-Branch-Abnahme.
+
+Weiter offen: echter WebDAV-Read-only-Planungslauf, alle elf DB-Tests auf diesem Branch, kontrollierter Einzeldatei-Apply mit echtem Importer und expliziter Gate-Freigabe sowie Wiederanlauf-/Crash- und unabhängige Nachkontrolle. Das Gate wird durch diesen Nachtrag nicht verändert.
+
 **Hinweis:** Ein hartes Ausschalten der gesamten Maschine kann selbst nach `fsync` je nach Storage-/Controller-Cache zusätzliche Risiken haben. Das hier beschriebene Verfahren behandelt Anwendungskonflikte und Prozessabbrüche; ein Restore-Test bleibt notwendig.
