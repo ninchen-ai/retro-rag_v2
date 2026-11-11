@@ -1,12 +1,11 @@
 """Read-only WebDAV discovery with explicit identity and safe URL handling."""
 
+import base64
 from dataclasses import dataclass
+from urllib.error import HTTPError
 from urllib.parse import unquote, urljoin, urlsplit
 from urllib.request import Request
-from urllib.error import HTTPError
 from xml.etree import ElementTree as ET
-import base64
-
 
 DAV = "{DAV:}"
 
@@ -142,16 +141,51 @@ class WebDAV:
         return sorted(results, key=lambda f: f.source_key)
 
     def download(self, file: RemoteFile, max_bytes: int = 100_000_000) -> bytes:
+        """Begrenzter, konditionaler GET; bei Netz-/ETag-Fehlern kein Ergebnis."""
+        if max_bytes < 1:
+            raise ValueError("max_bytes muss positiv sein")
+        if file.instance_id != self.instance_id:
+            raise ValueError("Nextcloud-Instanzkennung stimmt nicht überein")
+        if is_excluded_directory(file.uri, self.root):
+            raise ValueError("Ausgeschlossene WebDAV-Quelle")
+        parts = urlsplit(file.uri)
+        if (parts.scheme, parts.netloc) != self.origin:
+            raise ValueError("WebDAV-URL außerhalb der konfigurierten Origin")
+        if not unquote(parts.path).startswith(unquote(urlsplit(self.root).path)):
+            raise ValueError("WebDAV-URL außerhalb des Startverzeichnisses")
         if file.byte_size is not None and file.byte_size > max_bytes:
             raise ValueError(f"Datei überschreitet Größenlimit: {file.name}")
-        data = self._request(file.uri, "GET")
-        if len(data) > max_bytes:
-            raise ValueError(f"Datei überschreitet Größenlimit: {file.name}")
-        return data
+
+        headers = {"Authorization": self.auth}
+        if file.etag:
+            headers["If-Match"] = file.etag
+        request = Request(file.uri, method="GET", headers=headers)
+        with _no_redirect_opener().open(request, timeout=self.timeout) as response:
+            response_etag = response.headers.get("ETag")
+            if file.etag and response_etag and response_etag != file.etag:
+                raise RuntimeError("WebDAV-ETag hat sich während des Abrufs geändert")
+            reported = response.headers.get("Content-Length")
+            if reported is not None and int(reported) > max_bytes:
+                raise ValueError(f"Datei überschreitet Größenlimit: {file.name}")
+            chunks = []
+            total = 0
+            while True:
+                block = response.read(min(64 * 1024, max_bytes - total + 1))
+                if not block:
+                    break
+                total += len(block)
+                if total > max_bytes:
+                    raise ValueError(f"Datei überschreitet Größenlimit: {file.name}")
+                chunks.append(block)
+            if reported is not None and total != int(reported):
+                raise RuntimeError("Unvollständiger WebDAV-Download")
+            if file.byte_size is not None and total != file.byte_size:
+                raise RuntimeError("WebDAV-Dateigröße hat sich seit der Liste geändert")
+            return b"".join(chunks)
 
 
 def _no_redirect_opener():
-    from urllib.request import build_opener, HTTPRedirectHandler
+    from urllib.request import HTTPRedirectHandler, build_opener
 
     class NoRedirect(HTTPRedirectHandler):
         def redirect_request(self, req, fp, code, msg, headers, newurl):
