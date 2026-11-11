@@ -1,6 +1,5 @@
 """CLI-Grenztests: kein impliziter Massenimport und kein Apply bei Fehlern."""
 
-from contextlib import contextmanager
 import sys
 
 import pytest
