@@ -172,3 +172,46 @@ def test_cli_refuses_overwrite(tmp_path, monkeypatch):
     assert out["source_json_sha256"] == [hashlib.sha256(src.read_bytes()).hexdigest()]
     with pytest.raises(SystemExit):
         index.main()
+
+
+def test_alphabet_marker_is_not_a_headword_parent():
+    page = make_page(601, [
+        ("A", 0), ("abnormal termination sequences, 11.3.3", 0),
+        ("subentry, 11.3.4", 11),
+    ], [("addresses", 0)])
+    out = index.propose_index_pages([page])
+    assert out["entries"][0]["kind"] == "alphabet_section"
+    assert out["entries"][1]["kind"] == "headword"
+    assert out["entries"][2]["parent_id"] == out["entries"][1]["entry_id"]
+
+
+def test_see_reference_wrap_after_and():
+    page = make_page(601, [
+        ("adding devices. See dynamic insertion and", 0),
+        ("removal", 27),
+    ], [("addresses", 0)])
+    out = index.propose_index_pages([page])
+    entry = out["entries"][0]
+    assert entry["source_line_ids"] == ["0:0", "0:1"]
+    assert entry["text_parts"][-1] == "removal"
+    assert out["approved"] is False
+
+
+def test_third_level_uses_subentry_as_parent():
+    page = make_page(601, [
+        ("addresses", 0), ("assignment", 11),
+        ("after dynamic insertion or removal, 4.6.3", 22),
+    ], [("other", 0)])
+    out = index.propose_index_pages([page])
+    assert out["entries"][2]["kind"] == "deep_subentry"
+    assert out["entries"][2]["parent_id"] == out["entries"][1]["entry_id"]
+    assert any(f["code"] == "DEEP_INDENT_REVIEW" for f in out["review_findings"])
+
+
+def test_parent_from_previous_column_not_inherited():
+    page = make_page(606, [("some root", 0), ("child", 11)],
+                     [("orphan subentry, 2.1", 11), ("new root", 0)])
+    out = index.propose_index_pages([page])
+    orphan = next(e for e in out["entries"] if e["text_parts"][0] == "orphan subentry, 2.1")
+    assert orphan["parent_id"] is None
+    assert any(f["code"] == "ORPHAN_SUBENTRY" for f in out["review_findings"])
