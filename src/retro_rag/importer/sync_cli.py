@@ -7,7 +7,7 @@ from pathlib import Path
 
 import psycopg
 
-from retro_rag.importer.staging import plan_file, stage_file, digest
+from retro_rag.importer.staging import digest, plan_file, stage_file
 from retro_rag.importer.webdav import WebDAV
 
 
