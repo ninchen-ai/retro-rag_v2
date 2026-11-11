@@ -1,11 +1,11 @@
 """Read-only WebDAV discovery with explicit identity and safe URL handling."""
 
+import base64
 from dataclasses import dataclass
+from urllib.error import HTTPError
 from urllib.parse import unquote, urljoin, urlsplit
 from urllib.request import Request
-from urllib.error import HTTPError
 from xml.etree import ElementTree as ET
-import base64
 
 
 DAV = "{DAV:}"
@@ -186,7 +186,7 @@ class WebDAV:
 
 
 def _no_redirect_opener():
-    from urllib.request import build_opener, HTTPRedirectHandler
+    from urllib.request import HTTPRedirectHandler, build_opener
 
     class NoRedirect(HTTPRedirectHandler):
         def redirect_request(self, req, fp, code, msg, headers, newurl):
