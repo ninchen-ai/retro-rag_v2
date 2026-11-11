@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 import hashlib
 import os
+import tempfile
 
 import psycopg
 
@@ -63,16 +64,32 @@ def archive_original(archive_root: Path, data: bytes, filename: str) -> str:
         if digest(path.read_bytes()) != value:
             raise RuntimeError("Vorhandenes Archivartefakt stimmt nicht mit Hash überein")
     else:
-        # Exklusives Schreiben verhindert Überschreiben unveränderter Rohdaten.
+        # Ein Crash während des Schreibens darf keinen halbfertigen
+        # Zielpfad hinterlassen. Erst temp+fsync, dann atomarer hard link.
+        temp_path = None
         try:
-            with path.open("xb") as out:
-                os.chmod(path, 0o600)
+            with tempfile.NamedTemporaryFile(
+                mode="wb", prefix=".pending-", dir=folder, delete=False
+            ) as out:
+                temp_path = Path(out.name)
+                os.fchmod(out.fileno(), 0o600)
                 out.write(data)
                 out.flush()
                 os.fsync(out.fileno())
-        except FileExistsError:
-            if digest(path.read_bytes()) != value:
-                raise RuntimeError("Parallel angelegte Archivkopie hat anderen Hash")
+            try:
+                os.link(temp_path, path)
+            except FileExistsError:
+                if digest(path.read_bytes()) != value:
+                    raise RuntimeError("Parallel angelegte Archivkopie hat anderen Hash")
+            # Persistiert die neue Verzeichniseintragung vor dem DB-Commit.
+            directory_fd = os.open(folder, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
+            try:
+                os.fsync(directory_fd)
+            finally:
+                os.close(directory_fd)
+        finally:
+            if temp_path is not None:
+                temp_path.unlink(missing_ok=True)
     return path.resolve().as_uri()
 
 
