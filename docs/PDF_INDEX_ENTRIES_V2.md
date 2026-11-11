@@ -252,7 +252,7 @@ Unschärfe-Meldungen.
 
 Die reale CLI-Ausgabe belegt die Funktion des eingecheckten
 V03-Algorithmus anhand der bereitgestellten Testdaten.
-**Poseidon-Testnachweis vom 11.11.2026:** `python -m pytest -q tests/test_pdf_index_entries_v2.py` → **16 passed in 0.02s**. Erster Ruff-Lauf meldete genau **I001** (nicht sortierter Importblock in `experiments/pdf_index_entries_v2.py`), sonst keine gemeldeten Findings. Der Importblock wurde im Repo korrigiert (Commit `18c9726`). **Eine erneute grüne Ruff-Ausgabe und ein pytest-Lauf nach diesem Formatierungscommit liegen noch nicht vor.** Eine fachliche
+**Poseidon-Testnachweis vom 11.11.2026:** `python -m pytest -q tests/test_pdf_index_entries_v2.py` → **16 passed in 0.02s**. Erster Ruff-Lauf meldete genau **I001** (nicht sortierter Importblock in `experiments/pdf_index_entries_v2.py`), sonst keine gemeldeten Findings. Der Importblock wurde im Repo korrigiert (Commit `18c9726`). **Abschließende Wiederholung auf Poseidon nach `git pull --ff-only` bis Commit `4e334d3`: `python -m pytest -q tests/test_pdf_index_entries_v2.py` → `16 passed in 0.02s`; `python -m ruff check experiments/pdf_index_entries_v2.py tests/test_pdf_index_entries_v2.py` → `All checks passed!`. Damit sind Funktionstests und Ruff für den aktualisierten Indexadapter erfolgreich nachgewiesen.** Eine fachliche
 Goldstandard-Abnahme, semantische Precision/Recall und Freigabe
 zum Schreiben in die DB sind ebenfalls noch ausstehend.
 Das V2-Write-Gate bleibt geschlossen.
