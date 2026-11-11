@@ -9,7 +9,6 @@ import pytest
 from retro_rag.importer import staging, webdav
 from retro_rag.importer.webdav import RemoteFile, WebDAV
 
-
 ROOT = "http://127.0.0.1:8080/remote.php/dav/files/nina/Retro-Computing/"
 
 
