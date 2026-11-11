@@ -128,4 +128,41 @@ Betreiberseitig zurückgemeldet:
 - `ss -ltn`: Host-TCP-Port `127.0.0.1:5432` lauscht; Nextcloud-Frontend `:8080` auf `0.0.0.0` und `[::]`. **Listener-Nachweis ist kein Nachweis einer erfolgreichen Host-Anmeldung als `rag_v2_importer_login`** (HBA/Portforwarding). Deshalb vor der CLI eine echte rein lesende psycopg-Verbindung vom Host testen.
 - Kein Write-Gate geöffnet, keine migrations- oder archivseitigen Änderungen bestätigt. Dauerhaften Archivpfad gesondert auswählen; System-NVMe bereits 85 % belegt.
 
+## Abgleich mit Poseidons vorhandener Borg-Strategie (11.11.2026)
+
+Die Host-Infrastruktur ist unter `ninchen-ai/homelab-ai-infrastructure` dokumentiert:
+`docs/backup.md`, `scripts/backup/backup.sh`, `docs/storage.md` und
+`docs/servers/poseidon.md`. Verbindlicher V2-Originalarchivpfad auf der
+Toshiba-HDD: **`/data/retro-rag/v2/originals`** (bei Einrichtung als
+`nina:nina`, 0700 bestätigt); daneben `staging/` und `quarantine/`.
+Der Test-Apply darf nicht auf ein neues Archiv unter der bereits stark belegten
+System-NVMe umgelenkt werden.
+
+Das bestehende Borg-Backup arbeitet mit rotierenden, eigenständigen
+BORG-W1…W4-/M1-/M2-Repositories und erstellt vor dem Borg-Lauf
+`pg_dump -Fc` für `codeanalyse`, `nextcloud` und V1-`retro_rag`.
+**Der tatsächlich versionierte Backup-Skriptstand enthält noch keinen Dump
+von `retro_rag_v2_test` und keine eigene `borg create`-Quelle für
+`/data/retro-rag/v2/originals`.** Die bloße Existenz des Archivs auf
+`/data` bedeutet daher noch keine externe Sicherung. Die bisherige
+Einzeldatei-Restore-Abnahme ist kein Nachweis für einen V2-DB-Restore.
+
+Empfohlene separate Infrastrukturänderung mit eigener Prüfung:
+1. `retro_rag_v2_test` als zusätzlichen konsistenten Custom-Format-Dump
+   nach `/data/backup-staging/postgres/retro_rag_v2_test.dump` aufnehmen
+   und wie vorhandene Dumps mit `pg_restore -l` validieren.
+2. `/data/retro-rag/v2/originals` als eigene Quelle in `borg create`
+   aufnehmen; `staging` und `quarantine` gesondert bewerten.
+3. Vor Borg-Rotation den passenden Restore-Pfad in eine **separate**
+   Testdatenbank prüfen und V2-Originale aus Borg bytegleich zurückholen.
+4. Den neuen Umfang mit `--no-shutdown` auf einem eingelegten, geprüften
+   Backupmedium testen; danach prüfen, dass das Medium ausgehängt ist.
+5. Bei späterer produktiver Datenbank `retro_rag_v2` deren Backup
+   getrennt von der Testdatenbank planen. **Nicht** V1 überschreiben.
+
+Das bestehende Infrastruktur-Backupskript wird durch diese Dokumentation
+**nicht** geändert. Vor dem kontrollierten `--apply` bleibt ein lokal
+validierter, separater `pg_dump`-Sicherungsstand notwendig; eine
+vollständige Borg-V2-Abnahme ist weiterhin offen. Gate bleibt geschlossen.
+
 **Hinweis:** Ein hartes Ausschalten der gesamten Maschine kann selbst nach `fsync` je nach Storage-/Controller-Cache zusätzliche Risiken haben. Das hier beschriebene Verfahren behandelt Anwendungskonflikte und Prozessabbrüche; ein Restore-Test bleibt notwendig.
