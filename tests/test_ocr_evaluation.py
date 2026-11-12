@@ -4,7 +4,10 @@ import json
 import pytest
 
 from retro_rag.importer.ocr_evaluation import (
-    edit_distance, evaluate, evaluate_folder, normalize,
+    edit_distance,
+    evaluate,
+    evaluate_folder,
+    normalize,
 )
 
 
