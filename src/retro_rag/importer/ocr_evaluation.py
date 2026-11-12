@@ -8,7 +8,6 @@ import argparse
 import json
 import re
 import unicodedata
-from collections import Counter
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -63,15 +62,17 @@ def evaluate(reference: str, candidate: str, critical_terms: list[str] | None = 
         })
     reference_hits = sum(item["expected"] for item in details)
     matched_hits = sum(item["matched"] for item in details)
+    char_edits = edit_distance(list(ref), list(hyp))
+    word_edits = edit_distance(ref_words, hyp_words)
     return {
         "reference_characters": len(ref),
         "candidate_characters": len(hyp),
-        "character_edits": edit_distance(list(ref), list(hyp)),
-        "cer": round(edit_distance(list(ref), list(hyp)) / len(ref), 6),
+        "character_edits": char_edits,
+        "cer": round(char_edits / len(ref), 6),
         "reference_words": len(ref_words),
         "candidate_words": len(hyp_words),
-        "word_edits": edit_distance(ref_words, hyp_words),
-        "wer": round(edit_distance(ref_words, hyp_words) / len(ref_words), 6),
+        "word_edits": word_edits,
+        "wer": round(word_edits / len(ref_words), 6),
         "critical_terms_expected": reference_hits,
         "critical_terms_matched": matched_hits,
         "critical_term_recall": (
