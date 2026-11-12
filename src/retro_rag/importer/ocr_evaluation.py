@@ -94,7 +94,7 @@ def evaluate_folder(folder: Path) -> dict:
     candidate = (folder / "ocr.txt").read_text(encoding="utf-8")
     terms = review.get("reference", {}).get("critical_terms", [])
     if not isinstance(terms, list):
-        raise ValueError("critical_terms muss eine Liste sein")
+        raise TypeError("critical_terms muss eine Liste sein")
     result = evaluate(reference, candidate, terms)
     result.update({
         "case_id": review["case_id"],
