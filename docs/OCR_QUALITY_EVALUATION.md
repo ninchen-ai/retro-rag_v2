@@ -79,3 +79,17 @@ CER/WER messen Textabweichungen und können wichtige Hardwarefehler
 untergewichten. `critical_term_recall` prüft benannte Begriffe, aber noch
 nicht, ob weitere erfundene technische Werte im OCR-Text stehen. Eine
 gesonderte fachliche und Layout-Abnahme bleibt zwingend.
+
+## Verifikation auf Poseidon (12.11.2026)
+
+Nach Korrektur der Ruff-Hinweise TRY004 (TypeError statt ValueError)
+und I001 (Importformatierung) auf `feat/ocr-quality-evaluation`
+wurden durch den lokalen Projektlauf auf Poseidon bestätigt:
+
+- `python -m pytest -q tests/test_ocr_evaluation.py`:
+  **8 passed in 0.02s**
+- `python -m ruff check src/retro_rag/importer/ocr_evaluation.py tests/test_ocr_evaluation.py`:
+  **All checks passed!**
+
+Diese Ergebnisse betreffen reine Regressionstests mit synthetischen
+Referenz-/OCR-Texten, keine CER-/WER-Messung an echten Scans.
