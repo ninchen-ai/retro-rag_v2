@@ -120,3 +120,5 @@ Als nächstes den Textvergleich bytegenau durchführen, danach den identischen
 technischen Bereich aus der SHA-256-geprüften Original-PDF bei definierten
 200 DPI bearbeiten. Für den Vergleich von Ganzseiten- und Bereichs-OCR müssen
 identische Referenzinhalte / Textregionen zugrunde liegen.
+
+**Ergänzung nach dem Poseidon-Vergleich:** Mit `cmp` wurde für beide Sprachvarianten (`eng`, `eng+deu`, jeweils PSM 6) die **bytegenaue Identität** der lokal neu erzeugten OCR-Texte mit den Vergleichsdateien bestätigt. Damit ist der PNG-Ausschnittversuch nicht nur hinsichtlich der gerundeten Scores, sondern auch hinsichtlich der erzeugten Texte reproduziert. Die Einschränkungen der provisorischen Referenz und des vom Original-PDF abweichenden Ausgangsbildes bestehen weiterhin.
