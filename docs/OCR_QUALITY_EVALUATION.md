@@ -93,3 +93,30 @@ wurden durch den lokalen Projektlauf auf Poseidon bestätigt:
 
 Diese Ergebnisse betreffen reine Regressionstests mit synthetischen
 Referenz-/OCR-Texten, keine CER-/WER-Messung an echten Scans.
+
+## Reproduzierbarkeit des Ausschnittvergleichs (12.11.2026)
+
+Auf Poseidon wurde das lokal bereitgestellte Paket
+`/tmp/retro-v2-ocr-specs` mit dem maskierten Ausschnitt der hochgeladenen
+CUBX-Seite 111 erneut durch Tesseract (PSM 6) verarbeitet. Der Vergleich mit
+`reference_provisional.txt` ergab dieselben **gerundeten** CER-/WER-Werte wie
+im zuvor gelieferten Testpaket:
+
+| Variante | CER | WER |
+| --- | ---: | ---: |
+| Paketdatei `eng` | 2,32 % | 15,00 % |
+| Poseidon `eng` | 2,32 % | 15,00 % |
+| Paketdatei `eng+deu` | 2,51 % | 16,25 % |
+| Poseidon `eng+deu` | 2,51 % | 16,25 % |
+
+**Grenzen:** Gleiche Scores sind kein Nachweis byteidentischer Texte (separater
+`cmp`-Test steht noch aus). Der Ausschnitt stammt aus einem hochgeladenen PNG,
+nicht aus einem verifiziert mit 200 DPI gerenderten Original-PDF. Die Referenz
+ist noch nicht endgültig manuell freigegeben; die Werte sind deshalb eine
+**vorläufige, reproduzierbare Experiment-Baseline**, keine OCR-Abnahme und
+keine Erlaubnis zur Indexierung. Kein Datenbankschreibzugriff erfolgte.
+
+Als nächstes den Textvergleich bytegenau durchführen, danach den identischen
+technischen Bereich aus der SHA-256-geprüften Original-PDF bei definierten
+200 DPI bearbeiten. Für den Vergleich von Ganzseiten- und Bereichs-OCR müssen
+identische Referenzinhalte / Textregionen zugrunde liegen.
