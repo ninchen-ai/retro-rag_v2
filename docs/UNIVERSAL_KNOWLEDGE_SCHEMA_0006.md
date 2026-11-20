@@ -209,3 +209,15 @@ Nach dem separaten erfolgreichen Lauf der 10 rollback-only Integrationstests wur
 | `knowledge_proposal` | 0 Datensätze |
 
 **Befund:** Persistentes Schema, Sperre und Bereinigung sind nach Regression und Mehrverbindungstest konsistent. Migration 0006 ist in der V2-Testdatenbank installiert, getestet und noch **nicht als produktiver Wissensfreigabeworkflow** zu betrachten. Der vollständige Restore-Test des Pre-0006-Archivs bleibt offen; bisher wurde nur die Lesbarkeit des Archivs überprüft.
+
+### Vollständiger Pre-0006-Restore-Test bestanden (Poseidon, 20.11.2026)
+
+Der Betreiber hat das vor der Migration erstellte Archiv `/home/nina/backups/retro-rag-v2/retro_rag_v2_test_pre0006_20261120_164032.dump` (SHA-256 `6325f1563eb5f54436f914740cdd1c837f7b101cc6e8fc9b0ea97418931dedd0`) geprüft, mit `pg_restore --single-transaction --exit-on-error` in eine temporäre Datenbank `retro_rag_v2_restore_0006_check` **im bestehenden PostgreSQL-Cluster** vollständig eingespielt, verifiziert und danach die temporäre Datenbank gelöscht. Ausgabe:
+
+- Backup-SHA-256: `OK`.
+- Restore ohne Fehler; die Abfrage ergab `5|37|f|t|t`: Migrationsstand 5, 37 Basistabellen, Write-Gate geschlossen, `knowledge_proposal` nicht vorhanden (erwartet vor 0006), Erweiterung `vector` vorhanden.
+- Temporäre Datenbank entfernt; Abschlussmeldung `RESTORE-TEST BESTANDEN`.
+
+**Abnahmescope:** Datenbank-Dump ist in **dem vorhandenen Cluster mit vorhandenen globalen Rollen und Erweiterungsdateien** wiederherstellbar. Kein Nachweis für einen vollständigen Cluster-Neuaufbau samt globalen Rollen, `pg_hba.conf`, Nextcloud-Dateien, Originalarchiv und Borg-Wiederherstellung. Die bereits auf 0006 migrierte `retro_rag_v2_test` wurde nicht restauriert oder zurückgesetzt.
+
+**Ergebnis Migration 0006 (Testdatenbank):** Installation, Struktur, Datenintegrität, simulierte und echte Rollen-Logins, definierte Mehrverbindungstests, 24+10 Pytest-Regressions-/Integrationstests, nachgelagerte Bestandskontrolle und Backup-Restore im oben genannten Scope erfolgreich. Universelle Agenten-, Extraktions- und Freigabefunktionen sind damit ausdrücklich **nicht** implementiert oder produktiv abgenommen.
