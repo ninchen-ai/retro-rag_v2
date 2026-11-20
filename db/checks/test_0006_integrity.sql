@@ -60,8 +60,8 @@ BEGIN
       p,'fact','agent','{"statement":"test"}','{"model":"test"}','test-run'
     );
     RAISE EXCEPTION 'Gate-Test: unerwartet zugelassen';
-  EXCEPTION WHEN raise_exception THEN
-    IF SQLERRM = 'Gate-Test: unerwartet zugelassen' THEN RAISE; END IF;
+  EXCEPTION WHEN SQLSTATE '42501' THEN
+    -- assert_import_write_gate() wirft explizit 42501, nicht P0001.
     IF SQLERRM NOT LIKE '%Schreibsperre ist geschlossen%' THEN RAISE; END IF;
   END;
   IF EXISTS (SELECT 1 FROM rag_v2.knowledge_proposal WHERE id=p) THEN
