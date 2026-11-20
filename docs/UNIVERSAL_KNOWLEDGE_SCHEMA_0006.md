@@ -1,6 +1,6 @@
-# Migration 0006 – technischer Entwurf (universeller Wissenskern)
+# Migration 0006 – universeller Wissenskern: Entwurf und technische Abnahme
 
-**Status:** ENTWURF, nicht auf Poseidon angewendet; fachliche Ziele 3.0 und Modell 3.1 sind Grundlage.
+**Aktueller Status (20.11.2026):** In `retro_rag_v2_test` dauerhaft installiert und im vereinbarten Testumfang technisch abgenommen (43 Tabellen, geschlossenes Write-Gate, SQL-/Rollen-/Parallelitäts- und Regressionstests bestanden; Pre-0006-Dump im bestehenden Cluster erfolgreich wiederhergestellt). **Nicht** produktiv freigegeben. Die folgenden frühen Entwurfs- und Vorprüfungsabschnitte sind historische Zwischenstände; spätere Abnahmeabschnitte dokumentieren den tatsächlichen Verlauf. Verbindliche offene Aufgaben: [Projekt-Roadmap](PROJECT_ROADMAP.md).
 **Branch:** `feat/universal-knowledge-schema-0006`, Basis `integration/import-pipeline-2026-11-09`.
 **Quelle der Wahrheit:** `db/migrations/0001_init.sql` bis `0005_document_identity.sql`; vorhandene 37 Tabellen.
 **Geltung:** ausschließlich `retro_rag_v2_test` bzw. spätere ausdrücklich freigegebene V2-DB. V1 und Nextcloud bleiben unberührt.
