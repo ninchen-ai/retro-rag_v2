@@ -37,3 +37,12 @@
 - Darüber hinaus sind erforderlich: Tests für Belegpflicht und Historisierung von Beziehungen, Parallelität, Zugriffsrollen, bestehende 0001–0005-Invarianten, die Importpipeline und Restore-/Rollback-Szenarien.
 
 **Wichtig:** Ein Commit dieser Dateien ist ausdrücklich kein Nachweis bestandener Integrationstests.
+
+## Transaktionale PostgreSQL-Abnahme vom 20.11.2026
+
+- Auf Poseidon wurde 0006 zusammen mit `verify_0006.sql` und `test_0006_integrity.sql` in einer einzigen Transaktion mit entferntem Abschluss-`COMMIT` ausgeführt.
+- Beide Prüfskripte meldeten `PASS`; der Lauf endete mit `ROLLBACK`.
+- Nachkontrolle: Migrationsstand 5, 37 Tabellen, `writes_enabled=false`.
+- Dieser Nachweis deckt **nicht** echte Login-/HBA-Verbindungen, gleichzeitige Schreibvorgänge oder dauerhafte Anwendung ab.
+
+Neu: `db/checks/test_0006_role_boundaries.sql` prüft die Rechte mit `SET ROLE` für Importer, Reader und Reviewer in derselben äußeren Testtransaktion. Diese Prüfung ist **noch nicht auf Poseidon ausgeführt**. Sie simuliert Rollenrechte, ersetzt aber keine Tests mit echten Loginidentitäten.
