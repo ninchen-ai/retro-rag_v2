@@ -24,6 +24,19 @@ Verbindliche Regeln für Code, Datenmodell, Import, Lebenszyklus und Betrieb. Gr
 
 ---
 
+## Zielarchitektur: universelle Wissensplattform (20.11.2026)
+
+Die fachlich freigegebenen [zwölf Architekturziele](docs/ARCHITECTURE_GOALS.md) und [vier Architekturentscheidungen](docs/ARCHITECTURE_DECISIONS.md) ergänzen die bisherigen Konventionen. Die vorhandenen Regeln für unveränderliche Originale, Dokumentidentität, Dry-Run, Write-Gate, technische Rollen, Review und Audit bleiben bestehen.
+
+Für künftige Module gelten zusätzlich:
+
+1. Dokumentindexierung, selektive Wissensextraktion und fachliche Freigabe sind getrennte Vorgänge. Optionale Extraktion darf erfolgreiche Dokumentindexierung nicht blockieren.
+2. Extraktionsprofile und Freigaberegeln werden ausdrücklich autorisiert und versioniert. Dokumente und Agentenausgaben dürfen diese Regeln nicht selbst festlegen.
+3. Agentenerkenntnisse werden ausschließlich als unbestätigte, logisch getrennte Vorschläge gespeichert. Ein Agent darf nicht seine eigenen Ergebnisse freigeben.
+4. Automatische Freigabe erfolgt ausschließlich durch unabhängige deterministische Prüfung gemäß autorisierter Regel. Fehlende Belege, Widersprüche und Unsicherheit führen zu Review; LLM-Confidence genügt nicht.
+5. Vorschläge, Tests, Regelversionen und Freigabeentscheidungen müssen nachvollziehbar sein. Unbestätigte Vorschläge werden bei Retrieval nicht als bestätigte Tatsachen behandelt.
+6. Diese Vorgaben sind **Zielarchitektur**. Die freigegebene Migration `0006` stellt nur die Datenmodell-Grundlage auf `retro_rag_v2_test` bereit. Das Write-Gate bleibt geschlossen; Extraktion, Agenten und fachliche Freigabe bedürfen eigener Implementierung und Abnahme.
+
 ## 1. Grundprinzipien
 
 Diese vier Regeln gelten überall und haben Vorrang vor Bequemlichkeit.
