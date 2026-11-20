@@ -57,3 +57,9 @@ Daten, Quellenbeziehungen, Freigaben und historische Entscheidungen bleiben erha
 
 ## Offene Detailentscheidungen
 Universelles Wissensobjektmodell und Verhältnis zu `knowledge_subject`, `reference_entity`, `fact` und `evidence`; konkretes Extraktionsprofilformat; Freigabepolicy und Auditpersistenz; Agentenautonomie und Ressourcenlimits; Aufbewahrung unbestätigter Vorschläge; Migrations- und Abnahmekonzept. Keine dieser Fragen wird durch dieses Dokument als bereits implementiert dargestellt.
+
+## Implementierungsnachtrag – 20.11.2026
+
+Die fachliche Freigabe der zwölf Ziele bleibt unverändert. Das universelle Wissensobjektmodell 3.1 wurde anschließend fachlich freigegeben und als **erste additive Datenmodellstufe** in Migration `0006` umgesetzt. In `retro_rag_v2_test` sind sechs neue Tabellen und die geschützte Sicht `accepted_entity_relation` mit insgesamt 43 Tabellen dauerhaft installiert. SQL-/Rollen-/Parallelitätstests und der Restore des Pre-0006-Backups im bestehenden Cluster wurden erfolgreich nachgewiesen ([Abnahmeprotokoll](UNIVERSAL_KNOWLEDGE_SCHEMA_0006.md)).
+
+Die historischen offenen Detailfragen oben sind daher **nicht unverändert aktuell**: Das grundlegende Verhältnis zwischen `knowledge_subject`, `reference_entity` und den neuen Themen/Beziehungen wurde für `0006` entschieden. Weitere Werttypen, unabhängige Extraktionsprofile, Freigabepolicies und Audit, Agentenschnittstelle, widersprüchliche/zeitliche Aussagen, Retrieval sowie Aufbewahrungsregeln bleiben ausdrücklich Folgearbeiten. Die technische Migration ist keine fachliche Freigabe einer automatischen Wissensveröffentlichung.
