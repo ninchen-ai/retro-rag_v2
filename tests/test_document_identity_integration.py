@@ -34,8 +34,8 @@ def db(monkeypatch):
             if dbname != "retro_rag_v2_test" or username != "rag_v2_migrator_login":
                 raise RuntimeError("Nur dedizierter Migrator-Login auf retro_rag_v2_test erlaubt")
             cur.execute("SELECT max(version) FROM rag_v2.schema_migration")
-            if cur.fetchone()[0] != 5:
-                raise RuntimeError("Migration 0005 als letzter Migrationsstand erforderlich")
+            if cur.fetchone()[0] not in (5, 6):
+                raise RuntimeError("Migration 0005 oder 0006 erforderlich")
             cur.execute("SELECT writes_enabled FROM rag_v2.write_gate WHERE id=true")
             if cur.fetchone()[0] is not False:
                 raise RuntimeError("Test nur bei bereits geschlossenem Write-Gate")
