@@ -102,3 +102,14 @@ Auf der vorhandenen V2-Testdatenbank über TCP `127.0.0.1:5432` wurden beide akt
 - `rag_v2_migrator_login`: `FATAL: password authentication failed for user "rag_v2_migrator_login"`
 
 Beide **Negativtests bestanden**. Gemeinsam mit dem bereits dokumentierten Reader-Test liegen damit drei tatsächliche Passwort-Ablehnungen vor. Die Bedeutung ist begrenzt auf diesen Verbindungsweg und die getestete Datenbank; positive Logins mit gültigem Passwort und parallele Datenbanksitzungen sind weiterhin offen. Weder Rollen noch HBA-Regeln wurden für diese Tests verändert.
+
+### Positive TCP-Logins Reader/Importer (Poseidon, 20.11.2026)
+
+Zusätzlich zu den fehlgeschlagenen Passwort-Negativtests wurden beide Rollen mit interaktiver Passworteingabe über `psql -X -W -h 127.0.0.1` und echte TCP-Verbindungen zur `retro_rag_v2_test` erfolgreich authentifiziert:
+
+| Rolle | `session_user` | `current_user` | `current_database()` | `inet_client_addr()` |
+|---|---|---|---|---|
+| `rag_v2_reader_login` | `rag_v2_reader_login` | `rag_v2_reader_login` | `retro_rag_v2_test` | `127.0.0.1` |
+| `rag_v2_importer_login` | `rag_v2_importer_login` | `rag_v2_importer_login` | `retro_rag_v2_test` | `127.0.0.1` |
+
+**Ergebnis:** positive Authentifizierung für Reader und Importer nachgewiesen. Keine Passwörter protokolliert. Der Migrator ist nur negativ getestet; eine positive Migrator-Anmeldung und isolierte konkurrierende Transaktionen bleiben offen. Diese Logins beweisen keine weiteren Rechte an Schemaobjekten über die bereits transaktional getesteten `SET ROLE`-Grenzen hinaus. `0006` wurde weiterhin nicht dauerhaft angewendet.
