@@ -93,6 +93,6 @@ BEGIN
   END;
   UPDATE rag_v2.write_gate SET writes_enabled=false WHERE id=true;
   RAISE NOTICE '0006 Integritaetstests PASS (noch ROLLBACK erforderlich)';
-END
+END;
 $tests$;
 ROLLBACK;
