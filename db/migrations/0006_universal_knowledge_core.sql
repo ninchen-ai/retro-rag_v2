@@ -275,6 +275,9 @@ GRANT SELECT ON rag_v2.entity_type, rag_v2.knowledge_topic,
 GRANT SELECT ON rag_v2.entity_type, rag_v2.knowledge_topic,
   rag_v2.knowledge_topic_assignment, rag_v2.entity_relation,
   rag_v2.entity_relation_evidence, rag_v2.knowledge_proposal TO rag_v2_reviewer;
+-- Deferred trigger helper runs as INVOKER: reviewer needs EXECUTE.
+GRANT EXECUTE ON FUNCTION rag_v2.validate_accepted_entity_relation(uuid)
+  TO rag_v2_reviewer;
 GRANT SELECT ON rag_v2.entity_type, rag_v2.knowledge_topic,
   rag_v2.knowledge_topic_assignment, rag_v2.entity_relation,
   rag_v2.entity_relation_evidence TO rag_v2_importer;
