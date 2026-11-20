@@ -18,6 +18,14 @@ if [[ "$info" != "retro_rag_v2_test|6" ]]; then
     exit 1
 fi
 
+gate="$(docker exec "$container" psql -XAt -v ON_ERROR_STOP=1 \
+    -U codeanalyse -d "$database" -c \
+    "SELECT writes_enabled FROM rag_v2.write_gate WHERE id=true")"
+if [[ "$gate" != "f" ]]; then
+    echo "Abbruch: V2-Write-Gate muss geschlossen sein, erhalten: $gate" >&2
+    exit 1
+fi
+
 tmp="$(mktemp "$PWD/db/schema/.schema.XXXXXXXX.sql")"
 trap 'rm -f "$tmp"' EXIT
 
