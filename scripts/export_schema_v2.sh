@@ -13,8 +13,8 @@ mkdir -p db/schema
 info="$(docker exec "$container" psql -X -A -t -v ON_ERROR_STOP=1 \
     -U codeanalyse -d "$database" -c \
     "SELECT current_database() || '|' || COALESCE((SELECT max(version)::text FROM rag_v2.schema_migration), 'missing')")"
-if [[ "$info" != "retro_rag_v2_test|5" ]]; then
-    echo "Abbruch: erwartet retro_rag_v2_test mit Migration 5, erhalten: $info" >&2
+if [[ "$info" != "retro_rag_v2_test|6" ]]; then
+    echo "Abbruch: erwartet retro_rag_v2_test mit Migration 6, erhalten: $info" >&2
     exit 1
 fi
 
@@ -45,8 +45,24 @@ if ! grep -q 'source_instance text' "$tmp"; then
     echo "Abbruch: source_instance aus Migration 0005 fehlt im Schemaexport" >&2
     exit 1
 fi
-if [[ "$(grep -c '^CREATE TABLE rag_v2\.' "$tmp")" -ne 37 ]]; then
-    echo "Abbruch: erwartet genau 37 rag_v2-Tabellen" >&2
+if [[ "$(grep -c '^CREATE TABLE rag_v2\.' "$tmp")" -ne 43 ]]; then
+    echo "Abbruch: erwartet genau 43 rag_v2-Tabellen" >&2
+    exit 1
+fi
+# Gezielte 0006-Schutzpruefungen gegen den wirklich exportierten Datenbankstand.
+for table in entity_type knowledge_topic knowledge_topic_assignment \
+             entity_relation entity_relation_evidence knowledge_proposal; do
+    if ! grep -Fq "CREATE TABLE rag_v2.$table (" "$tmp"; then
+        echo "Abbruch: 0006-Tabelle $table fehlt im Schemaexport" >&2
+        exit 1
+    fi
+done
+if ! grep -Fq 'CREATE VIEW rag_v2.accepted_entity_relation AS' "$tmp"; then
+    echo "Abbruch: 0006-Sicherheits-View fehlt im Schemaexport" >&2
+    exit 1
+fi
+if ! grep -Fq 'CREATE FUNCTION rag_v2.guard_knowledge_proposal_import()' "$tmp"; then
+    echo "Abbruch: 0006-Gate-Funktion fehlt im Schemaexport" >&2
     exit 1
 fi
 
