@@ -24,8 +24,8 @@ def db():
             if cur.fetchone() != ("retro_rag_v2_test", "rag_v2_migrator_login"):
                 raise RuntimeError("C1-Tests erfordern dedizierten Migrator auf V2-Test")
             cur.execute("SELECT max(version) FROM rag_v2.schema_migration")
-            if cur.fetchone()[0] != 5:
-                raise RuntimeError("C1-Tests erwarten genau Migrationsstand 0005")
+            if cur.fetchone()[0] not in (5, 6):
+                raise RuntimeError("C1-Tests erwarten Migrationsstand 0005 oder 0006")
             cur.execute("SELECT writes_enabled FROM rag_v2.write_gate WHERE id=true")
             if cur.fetchone()[0] is not False:
                 raise RuntimeError("C1-Tests starten nur bei geschlossenem Gate")
