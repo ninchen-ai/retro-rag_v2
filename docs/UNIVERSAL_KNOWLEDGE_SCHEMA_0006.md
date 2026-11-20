@@ -82,3 +82,15 @@ Alle vier Sollwerte sind erfüllt. Der vollständige Rollback der letzten Testtr
 Die Ansicht `pg_hba_file_rules` zeigte vorgelagerte `reject`-Regeln für lokale Unix-Sockets sowie `scram-sha-256` für loopback-TCP (`retro_rag_v2_test`) und weitere `reject`-Regeln für die Reader-/Importer-/Migrator-Loginrollen. Zusätzlich bestehen allgemeinere `trust`-Regeln für `local all all` und Loopback-TCP für `all/all`. Diese können für andere Rollen und Datenbanken passwortfreie Authentifizierung ermöglichen. **Sicherheitsbefund außerhalb von 0006**: globale Trust-Härtung nur nach Abhängigkeitsprüfung für bestehende Datenbanken/Dienste. Nicht ungeprüft ändern.
 
 **Noch nicht verifiziert:** tatsächliche Regelpriorität mittels `rule_number` (statt nur `line_number`), vom Server zuletzt geladene Konfiguration und erfolgreicher/abgewiesener tatsächlicher Login über TCP. `pg_hba_file_rules` reflektiert die aktuellen Dateien, nicht notwendigerweise die zuletzt geladenen Einstellungen. Die HBA-Ausgabe wurde deshalb nicht als bestandener Authentifizierungstest bewertet.
+
+### HBA-Regelreihenfolge und Reader-SCRAM-Negativtest (Poseidon, 20.11.2026)
+
+Die Ansicht `pg_hba_file_rules` wurde nach `rule_number` gelesen; alle **17 Zeilen haben `error IS NULL`**. Wesentliche erste Treffer:
+- Reader: Regel 1 `local all rag_v2_reader_login reject`; Regeln 2 und 3 `retro_rag_v2_test` über `127.0.0.1/32` bzw. `::1/128` mit `scram-sha-256`; Regeln 4/5 andere Hosts `reject`.
+- Importer/Migrator: Regel 6 lokale Sockets `reject`; Regeln 7/8 TCP-Loopback auf `retro_rag_v2_test` mit `scram-sha-256`; Regeln 9/10 alle übrigen Hosts `reject`.
+- Erst Regeln 11–13: allgemeines `trust` für lokalen Socket / IPv4-/IPv6-Loopback. Diese bleiben für andere Rollen eine gesonderte Sicherheitsfrage.
+- `pg_conf_load_time()` lieferte `2026-11-20 14:01:53.912068+00`. Die Datei-Ansicht allein beweist nicht, wann die letzten HBA-Dateiänderungen geladen wurden.
+
+**Tatsächlich ausgeführter Negativtest:** TCP im PostgreSQL-Container nach `127.0.0.1:5432` als `rag_v2_reader_login` auf `retro_rag_v2_test`, absichtlich falsches Passwort, Ergebnis `FATAL: password authentication failed for user "rag_v2_reader_login"`. Das ist ein bestandener *Negativtest* der Reader-Authentifizierung und kein Nachweis einer erfolgreichen Anmeldung mit gültigem Passwort.
+
+**Ausstehend:** Importer-/Migrator-Negativtests, positive Anmeldung mit gültigen Zugangsdaten (ohne Offenlegung), IPv6- und Socket-Tests nach Bedarf sowie Parallelität in einer isolierten persistenten Testdatenbank.
