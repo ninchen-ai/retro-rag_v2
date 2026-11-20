@@ -29,3 +29,7 @@ Diese Entscheidungen ergänzen die vorhandenen, datierten Architekturentscheidun
 - Die bestehenden Migrationen `0001`–`0005` werden nicht umgeschrieben.
 - `rag_v2.write_gate` bleibt unverändert und geschlossen, bis eine gesonderte operative Freigabe vorliegt.
 - Implementierung, Tabellenentwurf, neue Rollen und Migration `0006` sind **nicht** Teil dieser Dokumentationsentscheidung.
+
+## Implementierungsnachtrag – Migration 0006
+
+Die Entscheidungen UWP-01 bis UWP-04 bleiben fachlich unverändert. Für UWP-01 und UWP-04 wurde mit `0006` eine **technische Datenmodellbasis** installiert (`knowledge_topic`, `entity_type`, `entity_relation`, `knowledge_proposal` und zugehörige Tabellen). Diese Basis wurde auf `retro_rag_v2_test` einschließlich Restore-Test validiert. Die selektive Extraktion, eigenständige Agenten-API und regelabhängige Freigabe sind **nicht implementiert**; die universelle Beziehungsfreigabe ist ausdrücklich gesperrt. Siehe [Testprotokoll](UNIVERSAL_KNOWLEDGE_SCHEMA_0006.md).
