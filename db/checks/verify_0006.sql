@@ -51,6 +51,12 @@ BEGIN
   THEN
     RAISE EXCEPTION 'verify_0006: Gate-Trigger fehlt';
   END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_trigger
+    WHERE tgrelid='rag_v2.entity_relation'::regclass
+      AND tgname='relation_no_approval_before_policy' AND NOT tgisinternal)
+  THEN
+    RAISE EXCEPTION 'verify_0006: Fail-closed-Freigabesperre fehlt';
+  END IF;
   RAISE NOTICE 'verify_0006: Struktur und zentrale Rechte PASS';
 END
 $verify$;
