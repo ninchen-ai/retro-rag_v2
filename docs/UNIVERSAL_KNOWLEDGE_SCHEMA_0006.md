@@ -46,3 +46,18 @@
 - Dieser Nachweis deckt **nicht** echte Login-/HBA-Verbindungen, gleichzeitige Schreibvorgänge oder dauerhafte Anwendung ab.
 
 Neu: `db/checks/test_0006_role_boundaries.sql` prüft die Rechte mit `SET ROLE` für Importer, Reader und Reviewer in derselben äußeren Testtransaktion. Diese Prüfung ist **noch nicht auf Poseidon ausgeführt**. Sie simuliert Rollenrechte, ersetzt aber keine Tests mit echten Loginidentitäten.
+
+### Erweiterter Rollentest (Poseidon, 20.11.2026)
+
+Auf dem Branch `feat/universal-knowledge-schema-0006` (lokaler Stand vor dieser Dokumentation: `7fe43ef`) wurden Migration `0006` ohne terminales `COMMIT`, `verify_0006.sql`, `test_0006_integrity.sql` und `test_0006_role_boundaries.sql` in **einer** PostgreSQL-Transaktion ausgeführt.
+
+Übermittelte psql-Ausgabe:
+- `verify_0006: Struktur und zentrale Rechte PASS`
+- `0006 Integritaetstests PASS (noch ROLLBACK erforderlich)`
+- `0006 role: importer PASS`
+- `0006 role: reader PASS`
+- `0006 role: reviewer PASS`
+- `0006 Rollengrenzen PASS (noch ROLLBACK erforderlich)`
+- abschließend `ROLLBACK`, keine Fehlermeldung im übermittelten Testlauf.
+
+**Aussagekraft:** DDL, interne Prüfungen und transaktionale Rechtewechsel per `SET ROLE` bestanden. Ein Nachcheck der persistenten Tabellenanzahl/Migrationsmarker **nach diesem erweiterten Lauf**, unabhängige Login-/HBA-Tests sowie Konkurrenz-/Restore-Tests sind noch offen. Kein dauerhafter Apply von `0006` nachgewiesen.
