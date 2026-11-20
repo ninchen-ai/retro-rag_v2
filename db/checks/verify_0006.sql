@@ -51,6 +51,14 @@ BEGIN
   THEN
     RAISE EXCEPTION 'verify_0006: Gate-Trigger fehlt';
   END IF;
+  IF NOT has_function_privilege('rag_v2_reviewer',
+      'rag_v2.validate_accepted_entity_relation(uuid)', 'EXECUTE') THEN
+    RAISE EXCEPTION 'verify_0006: Reviewer darf Belegpruefung nicht ausfuehren';
+  END IF;
+  IF has_function_privilege('rag_v2_importer',
+      'rag_v2.validate_accepted_entity_relation(uuid)', 'EXECUTE') THEN
+    RAISE EXCEPTION 'verify_0006: Importer hat unnoetiges Belegpruefungsrecht';
+  END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_trigger
     WHERE tgrelid='rag_v2.entity_relation'::regclass
       AND tgname='relation_no_approval_before_policy' AND NOT tgisinternal)
