@@ -127,6 +127,12 @@ CREATE TABLE rag_v2.entity_relation_evidence (
 CREATE INDEX entity_relation_evidence_evidence_idx
   ON rag_v2.entity_relation_evidence(evidence_id);
 
+-- Reader bekommt ausschließlich bestätigte universelle Beziehungen.
+CREATE VIEW rag_v2.accepted_entity_relation WITH (security_barrier = true) AS
+  SELECT id, source_subject_id, target_subject_id, relation_type,
+         context, valid_from, valid_to, created_at
+  FROM rag_v2.entity_relation WHERE status = 'accepted';
+
 CREATE FUNCTION rag_v2.validate_accepted_entity_relation(p_id uuid)
 RETURNS void LANGUAGE plpgsql SET search_path = pg_catalog, rag_v2 AS $fn$
 BEGIN
@@ -207,6 +213,9 @@ CREATE TABLE rag_v2.knowledge_proposal (
     (extraction_profile IS NOT NULL AND btrim(extraction_profile) <> ''))
 );
 
+CREATE INDEX knowledge_proposal_created_idx
+  ON rag_v2.knowledge_proposal(created_at);
+
 CREATE FUNCTION rag_v2.prevent_knowledge_proposal_rewrite()
 RETURNS trigger LANGUAGE plpgsql SET search_path = pg_catalog, rag_v2 AS $fn$
 BEGIN
@@ -245,8 +254,8 @@ REVOKE ALL ON FUNCTION rag_v2.reject_topic_cycle(),
   rag_v2.guard_knowledge_proposal_import() FROM PUBLIC;
 
 GRANT SELECT ON rag_v2.entity_type, rag_v2.knowledge_topic,
-  rag_v2.knowledge_topic_assignment, rag_v2.entity_relation,
-  rag_v2.entity_relation_evidence TO rag_v2_reader;
+  rag_v2.knowledge_topic_assignment, rag_v2.accepted_entity_relation
+  TO rag_v2_reader;
 GRANT SELECT ON rag_v2.entity_type, rag_v2.knowledge_topic,
   rag_v2.knowledge_topic_assignment, rag_v2.entity_relation,
   rag_v2.entity_relation_evidence, rag_v2.knowledge_proposal TO rag_v2_reviewer;
