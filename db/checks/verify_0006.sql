@@ -58,5 +58,5 @@ BEGIN
     RAISE EXCEPTION 'verify_0006: Fail-closed-Freigabesperre fehlt';
   END IF;
   RAISE NOTICE 'verify_0006: Struktur und zentrale Rechte PASS';
-END
+END;
 $verify$;
