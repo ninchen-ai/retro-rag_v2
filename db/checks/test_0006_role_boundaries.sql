@@ -75,8 +75,9 @@ BEGIN
   IF current_user <> 'rag_v2_reader' THEN
     RAISE EXCEPTION 'Reader: aktuelle Rolle falsch';
   END IF;
-  SELECT count(*) INTO n FROM rag_v2.accepted_entity_relation;
-  IF n <> 0 THEN RAISE EXCEPTION 'Reader: unerwartete freigegebene Beziehungen'; END IF;
+  SELECT count(*) INTO n FROM rag_v2.accepted_entity_relation
+  WHERE source_subject_id = current_setting('rag_v2.test_0006_subject_a')::uuid;
+  IF n <> 0 THEN RAISE EXCEPTION 'Reader: unbestaetigte Testbeziehung sichtbar'; END IF;
   BEGIN
     SELECT count(*) INTO n FROM rag_v2.entity_relation;
     RAISE EXCEPTION 'Reader: direkte Relation unerwartet lesbar';
