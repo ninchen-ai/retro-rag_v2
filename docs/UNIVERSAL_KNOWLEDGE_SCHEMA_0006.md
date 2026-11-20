@@ -193,3 +193,19 @@ Befehl (gekürzt): `pytest -q -rs tests/test_document_identity_integration.py te
 Zusammen mit dem vorherigen regulären Pytest-Lauf (`24 passed, 11 skipped`) wurden somit **34 unterschiedliche Pytest-Testfälle erfolgreich ausgeführt**. Der weiterhin auf den alten separat isolierten Cluster begrenzte `test_version_activation_concurrency.py` wurde nicht ausgeführt. Der neue 0006-Mehrverbindungstest wurde separat bereits bestanden.
 
 **Vorläufige Bewertung:** Die bisherige Importlogik (Dokumentidentität und Versionsaktivierung) funktioniert im getesteten Umfang unter Schema 0006. Abschlussabnahme bleibt von einer unabhängigen Bestandskontrolle und der Bewertung der Wiederherstellbarkeit des Backups abhängig.
+
+### Unabhängige Abschlusskontrolle nach allen Tests (Poseidon, 20.11.2026)
+
+Nach dem separaten erfolgreichen Lauf der 10 rollback-only Integrationstests wurde eine neue lesende SQL-Abfrage gegen die dauerhaft migrierte `retro_rag_v2_test` ausgeführt. Gemeldete Werte:
+
+| Prüfung | Ergebnis |
+|---|---|
+| `MAX(schema_migration.version)` | `6` |
+| Basistabellen im Schema `rag_v2` | `43` |
+| `rag_v2.write_gate.writes_enabled` | `false` |
+| `rag_v2.write_gate.reason` | `Parallelitätstest erfolgreich; Freigabe ausstehend` |
+| `knowledge_topic` | 0 Datensätze |
+| `entity_relation` | 0 Datensätze |
+| `knowledge_proposal` | 0 Datensätze |
+
+**Befund:** Persistentes Schema, Sperre und Bereinigung sind nach Regression und Mehrverbindungstest konsistent. Migration 0006 ist in der V2-Testdatenbank installiert, getestet und noch **nicht als produktiver Wissensfreigabeworkflow** zu betrachten. Der vollständige Restore-Test des Pre-0006-Archivs bleibt offen; bisher wurde nur die Lesbarkeit des Archivs überprüft.
