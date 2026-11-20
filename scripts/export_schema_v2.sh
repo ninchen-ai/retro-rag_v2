@@ -65,8 +65,30 @@ for table in entity_type knowledge_topic knowledge_topic_assignment \
         exit 1
     fi
 done
-if ! grep -Fq 'CREATE VIEW rag_v2.accepted_entity_relation AS' "$tmp"; then
+# pg_dump schreibt View-Optionen (z.B. WITH (security_barrier='true'))
+# zwischen den View-Namen und AS; diese Pruefung darf keinen exakten
+# CREATE-VIEW-Einzeiler voraussetzen.
+if ! grep -Eq '^CREATE VIEW rag_v2[.]accepted_entity_relation([[:space:]]|$)' "$tmp"; then
     echo "Abbruch: 0006-Sicherheits-View fehlt im Schemaexport" >&2
+    exit 1
+fi
+# Die Sicherheitsoption wird unabhaengig vom pg_dump-Layout direkt
+# aus PostgreSQL gelesen. Nur der erwartete boolesche Wert ist zulaessig.
+barrier="$(docker exec "$container" psql -XAt -v ON_ERROR_STOP=1 \
+    -U codeanalyse -d "$database" -c \
+    "SELECT COALESCE((
+      SELECT EXISTS(
+        SELECT 1 FROM unnest(c.reloptions) AS opt
+        WHERE opt IN ('security_barrier=true', 'security_barrier=on')
+      )::text
+      FROM pg_class c
+      JOIN pg_namespace n ON n.oid=c.relnamespace
+      WHERE n.nspname='rag_v2'
+        AND c.relname='accepted_entity_relation'
+        AND c.relkind='v'
+    ), 'false')")"
+if [[ "$barrier" != "true" ]]; then
+    echo "Abbruch: accepted_entity_relation ohne security_barrier" >&2
     exit 1
 fi
 if ! grep -Fq 'CREATE FUNCTION rag_v2.guard_knowledge_proposal_import()' "$tmp"; then
