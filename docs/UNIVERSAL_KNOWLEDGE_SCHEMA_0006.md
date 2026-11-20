@@ -154,3 +154,20 @@ Damit ist das dauerhaft installierte Testschema unabhängig nachkontrolliert.
 3. Zwei parallele Importversuche bei geschlossenem Gate.
 
 Der Test legt zwei kurzlebige Themenfixtures mit UUID an, committet diese für Sitzungssichtbarkeit und entfernt sie im `finally`-Block. Er führt **kein committed Öffnen des Write-Gates** aus und prüft den wieder geschlossenen Zustand. Bei hartem Prozessabbruch können Topics zurückbleiben: Die UUIDs werden deshalb vor dem Test ausgegeben und sind gezielt zu bereinigen. Vor Ausführung das Skript lokal syntaktisch prüfen. Der bestehende C1-Konkurrenztest wird **nicht** für diese Datenbank umfunktioniert.
+
+### Mehrverbindungstests für Migration `0006` – bestanden (Poseidon, 20.11.2026)
+
+Der Test `tests/run_0006_concurrency.py` wurde nach `python -m py_compile` auf dem bestehenden Datenbankserver über `nsenter` (Netzwerk-Namespace des Containers `codeanalyse-postgres`) gegen `retro_rag_v2_test` ausgeführt. Verwendet wurden zwei unterschiedliche reale SCRAM-Loginidentitäten: `rag_v2_migrator_login` und `rag_v2_importer_login`. Passwortabfragen erfolgten interaktiv.
+
+Übermittelte Ergebnisse:
+
+- `PASS 0006: Topic-Zyklus verhindert; Blockierung beobachtet`
+- `PASS 0006: Gate-Serialisierung und parallele Import-Ablehnung`
+- `PASS 0006: Test-Fixures bereinigt, Write-Gate geschlossen`
+- `PASS 0006: Mehrverbindungstests abgeschlossen`
+
+Die Testthemen `8e38a16e-e92d-46a6-bf48-01b1e426d270` und `f8b7fe55-a33a-4ada-8b97-397d1745e1d2` wurden laut Skriptbereinigung entfernt. Der Test prüfte nach seiner eigenen Bereinigung die Themenanzahl und `writes_enabled = false`.
+
+**Bewertung:** Gegenläufige Änderungen an der Themenhierarchie werden im getesteten Mehrverbindungsszenario serialisiert, Zyklen verhindert; ein parallel laufender Vorschlagsimport wird durch das Write-Gate blockiert und nach dessen Rollback abgewiesen. Keine dauerhafte Freigabe des Gates erfolgt. Damit ist dieser definierte Parallelitätstest **PASS**.
+
+**Ausstehend für Abschlussabnahme:** unabhängige Bestandskontrolle nach dem Lauf, Regressionstests der vorhandenen Importpipeline sowie ggf. ein echter Restore-Test des Backups. Der Parallelitätstest beweist nicht alle denkbaren Interleavings oder die spätere Policy-Freigabelogik.
