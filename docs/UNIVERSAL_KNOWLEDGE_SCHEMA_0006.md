@@ -171,3 +171,13 @@ Die Testthemen `8e38a16e-e92d-46a6-bf48-01b1e426d270` und `f8b7fe55-a33a-4ada-8b
 **Bewertung:** Gegenläufige Änderungen an der Themenhierarchie werden im getesteten Mehrverbindungsszenario serialisiert, Zyklen verhindert; ein parallel laufender Vorschlagsimport wird durch das Write-Gate blockiert und nach dessen Rollback abgewiesen. Keine dauerhafte Freigabe des Gates erfolgt. Damit ist dieser definierte Parallelitätstest **PASS**.
 
 **Ausstehend für Abschlussabnahme:** unabhängige Bestandskontrolle nach dem Lauf, Regressionstests der vorhandenen Importpipeline sowie ggf. ein echter Restore-Test des Backups. Der Parallelitätstest beweist nicht alle denkbaren Interleavings oder die spätere Policy-Freigabelogik.
+
+### Pytest-Regressionslauf und Absicherung älterer Integrationstests
+
+Auf Poseidon wurde bei dauerhaft angewendeter Migration `0006` auf dem Branch `feat/universal-knowledge-schema-0006` der Befehl `python -m pytest -q -rs` ausgeführt. Ergebnis: **24 passed, 11 skipped, 0 failed** (0,21 s).
+
+Skip-Gründe: 4 × `RETRO_V2_IDENTITY_TEST_DSN` fehlt; 6 × `RETRO_V2_C1_TEST_DSN` fehlt; 1 × `RETRO_V2_C1_ISOLATED_DSN` fehlt. Das sind keine fehlgeschlagenen Datenbanktests; die zehn rollback-only Integrationstests wurden **nicht ausgeführt**.
+
+Prüfung des Codes ergab, dass die Fixtures in `tests/test_document_identity_integration.py` und `tests/test_version_activation_integration.py` zusätzlich den Schema-Endstand **genau 0005** erforderten. Für die bestehende migrierte Testdatenbank wurde dieser Prüfpunkt auf `0005 oder 0006` erweitert. Alle übrigen Schutzbedingungen – nur `retro_rag_v2_test`, dedizierter `rag_v2_migrator_login`, anfänglich geschlossenes Write-Gate, uncommitted Testdaten mit Rollback – bleiben erhalten. **Die zehn nach DSN-Vergabe möglichen Integrationstests sind noch nicht erneut ausgeführt.**
+
+Der alte `tests/test_version_activation_concurrency.py` bleibt unverändert: Er verlangt ausdrücklich `cluster_name='retro-rag-v2-c1-isolated'` und darf **nicht** gegen die bestehende Testinstanz gestartet werden. Die neu hinzugefügten 0006-Konkurrenztests sind separat bestanden.
