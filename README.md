@@ -2,6 +2,8 @@
 
 > **Universelle Wissensplattform (20.11.2026):** Die zwölf fachlich freigegebenen [Architekturziele](docs/ARCHITECTURE_GOALS.md) und vier [Grundsatzentscheidungen](docs/ARCHITECTURE_DECISIONS.md) werden inkrementell umgesetzt. Migration [0006](db/migrations/0006_universal_knowledge_core.sql) ist auf `retro_rag_v2_test` installiert und mit Restore-, Integritäts-, Rollen- und Mehrverbindungstests geprüft (43 Tabellen, geschlossenes Write-Gate). Die eigentliche Extraktions-, Agenten- und Freigabeengine ist **noch nicht implementiert oder freigegeben**. Siehe [Testprotokoll](docs/UNIVERSAL_KNOWLEDGE_SCHEMA_0006.md) und [aktuelles Schema](db/SCHEMA_CURRENT.md).
 
+**Zentrale Projektplanung:** [Roadmap und Aufgabenliste A/B/C einschließlich der sieben Importpipeline-Stufen](docs/PROJECT_ROADMAP.md). Dort sind offene Aufgaben, Implementierungsstand, Abnahme und empfohlene Reihenfolge getrennt erfasst.
+
 Lokales RAG-System für Retro-PC-Hardware. Es beantwortet Fragen im Chat auf Basis von zwei Wissensquellen:
 
 - **Bestand:** Welche Hardware ist zu Hause vorhanden, in welchem Zustand, in welcher Menge, wo gelagert und in welchem System verbaut?
