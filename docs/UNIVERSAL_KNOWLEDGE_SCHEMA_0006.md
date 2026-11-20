@@ -94,3 +94,11 @@ Die Ansicht `pg_hba_file_rules` wurde nach `rule_number` gelesen; alle **17 Zeil
 **Tatsächlich ausgeführter Negativtest:** TCP im PostgreSQL-Container nach `127.0.0.1:5432` als `rag_v2_reader_login` auf `retro_rag_v2_test`, absichtlich falsches Passwort, Ergebnis `FATAL: password authentication failed for user "rag_v2_reader_login"`. Das ist ein bestandener *Negativtest* der Reader-Authentifizierung und kein Nachweis einer erfolgreichen Anmeldung mit gültigem Passwort.
 
 **Ausstehend:** Importer-/Migrator-Negativtests, positive Anmeldung mit gültigen Zugangsdaten (ohne Offenlegung), IPv6- und Socket-Tests nach Bedarf sowie Parallelität in einer isolierten persistenten Testdatenbank.
+
+### Importer-/Migrator-SCRAM-Negativtests (Poseidon, 20.11.2026)
+
+Auf der vorhandenen V2-Testdatenbank über TCP `127.0.0.1:5432` wurden beide aktivierten Rollen mit bewusst falschem Passwort getestet:
+- `rag_v2_importer_login`: `FATAL: password authentication failed for user "rag_v2_importer_login"`
+- `rag_v2_migrator_login`: `FATAL: password authentication failed for user "rag_v2_migrator_login"`
+
+Beide **Negativtests bestanden**. Gemeinsam mit dem bereits dokumentierten Reader-Test liegen damit drei tatsächliche Passwort-Ablehnungen vor. Die Bedeutung ist begrenzt auf diesen Verbindungsweg und die getestete Datenbank; positive Logins mit gültigem Passwort und parallele Datenbanksitzungen sind weiterhin offen. Weder Rollen noch HBA-Regeln wurden für diese Tests verändert.
