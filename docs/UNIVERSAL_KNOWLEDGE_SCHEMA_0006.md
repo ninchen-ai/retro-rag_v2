@@ -122,3 +122,17 @@ Mit `psql -X -W -h 127.0.0.1 -U rag_v2_migrator_login -d retro_rag_v2_test` wurd
 - `RESET ROLE` erfolgreich.
 
 Alle drei aktivierten V2-Loginrollen (Reader, Importer, Migrator) wurden sowohl mit falschem Passwort abgewiesen als auch mit gültigem Passwort erfolgreich authentifiziert. HBA- und LOGIN-Prüfungen über IPv4-Loopback **PASS**. Andere Verbindungswege und isolierte Parallelitätstests sind weiterhin offen. Kein Apply von Migration `0006`.
+
+### Persistente Anwendung auf `retro_rag_v2_test` (Poseidon, 20.11.2026)
+
+Die Nutzerin hat den regulären Testdatenbank-Apply freigegeben und folgende Ergebnisse des vollständigen lokalen Ablaufs übermittelt:
+
+- Vorprüfung bestand: Migration 5, 37 Tabellen, geschlossenes `write_gate`, keine `knowledge_proposal`-Tabelle.
+- Vorherige Sicherung: `/home/nina/backups/retro-rag-v2/retro_rag_v2_test_pre0006_20261120_164032.dump`; Dateimodus `600`, Größe 123 KiB.
+- SHA-256 der Sicherung: `6325f1563eb5f54436f914740cdd1c837f7b101cc6e8fc9b0ea97418931dedd0`
+- `pg_dump -Fc` und Archivleseprüfung durch `pg_restore --file=/dev/null` erfolgreich; **kein vollständiger Wiederherstellungstest**.
+- SQL-Migration `db/migrations/0006_universal_knowledge_core.sql` unter `SET ROLE rag_v2_migrator` auf der bestehenden Datenbank `retro_rag_v2_test` regulär ausgeführt; psql meldete **`COMMIT`**.
+- Unmittelbar folgende, unabhängige Prüfung `db/checks/verify_0006.sql`: **`verify_0006: Struktur und zentrale Rechte PASS`**.
+- Terminal meldete `MIGRATION 0006 UND STRUKTURPRÜFUNG ABGESCHLOSSEN`.
+
+**Status:** Migration `0006` dauerhaft in der vorhandenen **V2-Testdatenbank** angewendet, nicht in V1 oder Nextcloud. Die unabhängige Post-Apply-Abfrage von Versionsmarker, 43 Tabellen, Gate und katalogisierten Entitätstypen sowie der Mehrverbindungstest sind noch durchzuführen. Das bisherige C1-Konkurrenztestskript `tests/test_version_activation_concurrency.py` ist ausdrücklich auf einen alten, separat isolierten Cluster begrenzt und darf **nicht** unverändert gegen diese Testdatenbank ausgeführt werden.
