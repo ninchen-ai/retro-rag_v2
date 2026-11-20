@@ -181,3 +181,15 @@ Skip-Gründe: 4 × `RETRO_V2_IDENTITY_TEST_DSN` fehlt; 6 × `RETRO_V2_C1_TEST_DS
 Prüfung des Codes ergab, dass die Fixtures in `tests/test_document_identity_integration.py` und `tests/test_version_activation_integration.py` zusätzlich den Schema-Endstand **genau 0005** erforderten. Für die bestehende migrierte Testdatenbank wurde dieser Prüfpunkt auf `0005 oder 0006` erweitert. Alle übrigen Schutzbedingungen – nur `retro_rag_v2_test`, dedizierter `rag_v2_migrator_login`, anfänglich geschlossenes Write-Gate, uncommitted Testdaten mit Rollback – bleiben erhalten. **Die zehn nach DSN-Vergabe möglichen Integrationstests sind noch nicht erneut ausgeführt.**
 
 Der alte `tests/test_version_activation_concurrency.py` bleibt unverändert: Er verlangt ausdrücklich `cluster_name='retro-rag-v2-c1-isolated'` und darf **nicht** gegen die bestehende Testinstanz gestartet werden. Die neu hinzugefügten 0006-Konkurrenztests sind separat bestanden.
+
+### Rollback-only Integrationstests auf dauerhaftem Schema 0006 bestanden (Poseidon, 20.11.2026)
+
+Nach dem Aktualisieren des Branches auf `bad0747` wurden die vormals übersprungenen Integrationstests mit echten Migrator-Zugangsdaten über TCP im Netzwerk-Namespace von `codeanalyse-postgres` auf `retro_rag_v2_test` gestartet. Die beiden Umgebungsvariablen `RETRO_V2_IDENTITY_TEST_DSN` und `RETRO_V2_C1_TEST_DSN` wurden ausschließlich im Testprozess gesetzt; die Zugangsdaten wurden interaktiv abgefragt und nicht im Testprotokoll gespeichert.
+
+Befehl (gekürzt): `pytest -q -rs tests/test_document_identity_integration.py tests/test_version_activation_integration.py`
+
+**Übermittelte Ausgabe: `10 passed in 0.19s`**, davon 4 Dokumentidentitäts- und 6 C1-Versionsaktivierungs-Integrationstests. Keine Fehler und keine Skips in diesem gezielten Lauf.
+
+Zusammen mit dem vorherigen regulären Pytest-Lauf (`24 passed, 11 skipped`) wurden somit **34 unterschiedliche Pytest-Testfälle erfolgreich ausgeführt**. Der weiterhin auf den alten separat isolierten Cluster begrenzte `test_version_activation_concurrency.py` wurde nicht ausgeführt. Der neue 0006-Mehrverbindungstest wurde separat bereits bestanden.
+
+**Vorläufige Bewertung:** Die bisherige Importlogik (Dokumentidentität und Versionsaktivierung) funktioniert im getesteten Umfang unter Schema 0006. Abschlussabnahme bleibt von einer unabhängigen Bestandskontrolle und der Bewertung der Wiederherstellbarkeit des Backups abhängig.
