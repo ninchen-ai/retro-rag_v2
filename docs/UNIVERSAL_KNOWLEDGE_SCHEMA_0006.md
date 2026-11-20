@@ -71,3 +71,14 @@ Nach dem erweiterten transaktionalen Test wurde über eine **neue psql-Verbindun
 - `to_regclass('rag_v2.knowledge_proposal') IS NULL`
 
 Alle vier Sollwerte sind erfüllt. Der vollständige Rollback der letzten Testtransaktion ist damit unabhängig nachkontrolliert. Authentifizierungs-/HBA- und Parallelitätstests bleiben ausstehend.
+
+### Vorprüfung Loginrollen und HBA-Konfiguration (Poseidon, 20.11.2026)
+
+Über `pg_auth_members` mit `pg_has_role(..., 'USAGE'/'SET')` wurde bestätigt:
+- Alle sieben `rag_v2_*_login`-Rollen erben jeweils die vorgesehene technische Gruppe.
+- Nur `rag_v2_migrator_login` darf `SET ROLE` in seine technische Gruppe ausführen, die übrigen sechs Mitgliedschaften nicht.
+- `rag_v2_importer_login`, `rag_v2_reader_login` und `rag_v2_migrator_login` sind laut `pg_roles` LOGIN; `rag_v2_reviewer_login` ist NOLOGIN.
+
+Die Ansicht `pg_hba_file_rules` zeigte vorgelagerte `reject`-Regeln für lokale Unix-Sockets sowie `scram-sha-256` für loopback-TCP (`retro_rag_v2_test`) und weitere `reject`-Regeln für die Reader-/Importer-/Migrator-Loginrollen. Zusätzlich bestehen allgemeinere `trust`-Regeln für `local all all` und Loopback-TCP für `all/all`. Diese können für andere Rollen und Datenbanken passwortfreie Authentifizierung ermöglichen. **Sicherheitsbefund außerhalb von 0006**: globale Trust-Härtung nur nach Abhängigkeitsprüfung für bestehende Datenbanken/Dienste. Nicht ungeprüft ändern.
+
+**Noch nicht verifiziert:** tatsächliche Regelpriorität mittels `rule_number` (statt nur `line_number`), vom Server zuletzt geladene Konfiguration und erfolgreicher/abgewiesener tatsächlicher Login über TCP. `pg_hba_file_rules` reflektiert die aktuellen Dateien, nicht notwendigerweise die zuletzt geladenen Einstellungen. Die HBA-Ausgabe wurde deshalb nicht als bestandener Authentifizierungstest bewertet.
