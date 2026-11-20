@@ -114,6 +114,21 @@ CREATE TABLE rag_v2.entity_relation (
   created_at timestamptz NOT NULL DEFAULT now(),
   CHECK (valid_to IS NULL OR valid_from IS NULL OR valid_to > valid_from)
 );
+-- Bis eine versionierte Freigabe-Policy implementiert ist, darf keine
+-- universelle Beziehung als akzeptiert veröffentlicht werden.
+CREATE FUNCTION rag_v2.block_unimplemented_relation_approval()
+RETURNS trigger LANGUAGE plpgsql SET search_path = pg_catalog, rag_v2 AS $fn$
+BEGIN
+  IF NEW.status = 'accepted' THEN
+    RAISE EXCEPTION '0006: Freigabepolicy für universelle Beziehungen noch nicht implementiert';
+  END IF;
+  RETURN NEW;
+END
+$fn$;
+CREATE TRIGGER relation_no_approval_before_policy
+  BEFORE INSERT OR UPDATE OF status ON rag_v2.entity_relation
+  FOR EACH ROW EXECUTE FUNCTION rag_v2.block_unimplemented_relation_approval();
+
 CREATE INDEX entity_relation_source_idx
   ON rag_v2.entity_relation(source_subject_id, relation_type, status);
 CREATE INDEX entity_relation_target_idx
@@ -251,7 +266,8 @@ REVOKE ALL ON FUNCTION rag_v2.reject_topic_cycle(),
   rag_v2.check_entity_relation_evidence(),
   rag_v2.prevent_accepted_entity_relation_rewrite(),
   rag_v2.prevent_knowledge_proposal_rewrite(),
-  rag_v2.guard_knowledge_proposal_import() FROM PUBLIC;
+  rag_v2.guard_knowledge_proposal_import(),
+  rag_v2.block_unimplemented_relation_approval() FROM PUBLIC;
 
 GRANT SELECT ON rag_v2.entity_type, rag_v2.knowledge_topic,
   rag_v2.knowledge_topic_assignment, rag_v2.accepted_entity_relation
