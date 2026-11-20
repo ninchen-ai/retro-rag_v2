@@ -123,7 +123,7 @@ BEGIN
     RAISE EXCEPTION '0006: Freigabepolicy für universelle Beziehungen noch nicht implementiert';
   END IF;
   RETURN NEW;
-END
+END;
 $fn$;
 CREATE TRIGGER relation_no_approval_before_policy
   BEFORE INSERT OR UPDATE OF status ON rag_v2.entity_relation
