@@ -21,7 +21,7 @@ BEGIN
   IF (SELECT count(*) FROM rag_v2.schema_migration WHERE version BETWEEN 1 AND 5) <> 5 THEN
     RAISE EXCEPTION '0006: unvollständige Migrationshistorie';
   END IF;
-END
+END;
 $guard$;
 
 SELECT pg_advisory_xact_lock(824020, 2);
@@ -85,7 +85,7 @@ BEGIN
     RAISE EXCEPTION '0006: zyklische Themenhierarchie';
   END IF;
   RETURN NEW;
-END
+END;
 $fn$;
 CREATE TRIGGER topic_no_cycle
   BEFORE INSERT OR UPDATE OF parent_id ON rag_v2.knowledge_topic
@@ -161,7 +161,7 @@ BEGIN
   ) THEN
     RAISE EXCEPTION '0006: bestätigte Beziehung ohne Beleg %', p_id;
   END IF;
-END
+END;
 $fn$;
 
 CREATE FUNCTION rag_v2.check_entity_relation_evidence()
@@ -178,7 +178,7 @@ BEGIN
     END IF;
   END IF;
   RETURN NULL;
-END
+END;
 $fn$;
 
 CREATE CONSTRAINT TRIGGER entity_relation_requires_evidence
@@ -203,7 +203,7 @@ BEGIN
     RAISE EXCEPTION '0006: bestätigte Beziehung historisieren statt überschreiben';
   END IF;
   RETURN NEW;
-END
+END;
 $fn$;
 CREATE TRIGGER entity_relation_no_accepted_rewrite
   BEFORE UPDATE ON rag_v2.entity_relation FOR EACH ROW
@@ -235,7 +235,7 @@ CREATE FUNCTION rag_v2.prevent_knowledge_proposal_rewrite()
 RETURNS trigger LANGUAGE plpgsql SET search_path = pg_catalog, rag_v2 AS $fn$
 BEGIN
   RAISE EXCEPTION '0006: Vorschläge sind unveränderlich';
-END
+END;
 $fn$;
 CREATE TRIGGER knowledge_proposal_immutable
   BEFORE UPDATE OR DELETE ON rag_v2.knowledge_proposal
@@ -250,7 +250,7 @@ RETURNS trigger LANGUAGE plpgsql SET search_path = pg_catalog, rag_v2 AS $fn$
 BEGIN
   PERFORM rag_v2.assert_import_write_gate();
   RETURN NEW;
-END
+END;
 $fn$;
 CREATE TRIGGER knowledge_proposal_write_gate
   BEFORE INSERT ON rag_v2.knowledge_proposal
