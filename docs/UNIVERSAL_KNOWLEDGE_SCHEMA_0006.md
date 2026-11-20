@@ -136,3 +136,21 @@ Die Nutzerin hat den regulären Testdatenbank-Apply freigegeben und folgende Erg
 - Terminal meldete `MIGRATION 0006 UND STRUKTURPRÜFUNG ABGESCHLOSSEN`.
 
 **Status:** Migration `0006` dauerhaft in der vorhandenen **V2-Testdatenbank** angewendet, nicht in V1 oder Nextcloud. Die unabhängige Post-Apply-Abfrage von Versionsmarker, 43 Tabellen, Gate und katalogisierten Entitätstypen sowie der Mehrverbindungstest sind noch durchzuführen. Das bisherige C1-Konkurrenztestskript `tests/test_version_activation_concurrency.py` ist ausdrücklich auf einen alten, separat isolierten Cluster begrenzt und darf **nicht** unverändert gegen diese Testdatenbank ausgeführt werden.
+
+### Nachkontrolle des dauerhaft migrierten Testschemas und geplanter Konkurrenztest
+
+Die nach dem Commit separat ausgeführten Abfragen ergaben:
+- `MAX(schema_migration.version) = 6`
+- **43** Basistabellen in `rag_v2`
+- **15** Entitätstypen
+- `writes_enabled=false`, Sperrgrund weiterhin `Parallelitätstest erfolgreich; Freigabe ausstehend`
+- **0** Datensätze in `knowledge_proposal`
+
+Damit ist das dauerhaft installierte Testschema unabhängig nachkontrolliert.
+
+`tests/run_0006_concurrency.py` wurde als **noch nicht ausgeführter** Mehrverbindungstest ergänzt. Er verwendet echte Importer-/Migrator-Logins über SCRAM und mehrere unabhängige PostgreSQL-Sitzungen gegen die bestehende `retro_rag_v2_test`. Das Skript testet:
+1. Gegensätzliche konkurrierende Umhängungen zweier ausschließlich testbezogener Themen und tatsächliches Warten (`pg_blocking_pids`).
+2. Eine nicht committete Änderung des `write_gate` gegen einen gleichzeitig versuchten Import sowie dessen Ablehnung nach dem Rollback.
+3. Zwei parallele Importversuche bei geschlossenem Gate.
+
+Der Test legt zwei kurzlebige Themenfixtures mit UUID an, committet diese für Sitzungssichtbarkeit und entfernt sie im `finally`-Block. Er führt **kein committed Öffnen des Write-Gates** aus und prüft den wieder geschlossenen Zustand. Bei hartem Prozessabbruch können Topics zurückbleiben: Die UUIDs werden deshalb vor dem Test ausgegeben und sind gezielt zu bereinigen. Vor Ausführung das Skript lokal syntaktisch prüfen. Der bestehende C1-Konkurrenztest wird **nicht** für diese Datenbank umfunktioniert.
