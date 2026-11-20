@@ -1,6 +1,8 @@
 # Retro-RAG V2
 
-Lokales RAG-System für Retro-PC-Hardware. Es beantwortet Fragen im Chat auf Basis von zwei Wissensquellen:
+> **Zielarchitektur (fachlich freigegeben am 20.11.2026):** Retro-RAG V2 wird schrittweise zu einer universellen, lokalen Wissensplattform erweitert. Die zwölf verbindlichen Ziele stehen in [Architekturziele](docs/ARCHITECTURE_GOALS.md), die vier neuen Grundsatzentscheidungen in [Architekturentscheidungen](docs/ARCHITECTURE_DECISIONS.md). Dies ist eine **Zielbeschreibung**, kein bereits implementierter Funktionsumfang. Die nachfolgenden Abschnitte dokumentieren weiterhin den bisherigen Retro-Hardware-Entwicklungsstand. Bestehende Import-, Datenbank- und Sicherheitsgrenzen bleiben bis zu gesonderter Umsetzung unverändert.
+
+**Bisheriger Implementierungsfokus:** Lokales RAG-System für Retro-PC-Hardware. Es beantwortet Fragen im Chat auf Basis von zwei Wissensquellen:
 
 - **Bestand:** Welche Hardware ist zu Hause vorhanden, in welchem Zustand, in welcher Menge, wo gelagert und in welchem System verbaut?
 - **Referenzwissen:** Was können Schnittstellen, Chipsätze, Grafik-APIs und Treiber, und was ist mit was kompatibel (Datenblätter, Manuals, Standards)?
