@@ -338,5 +338,6 @@
       </node>
       <node TEXT="Offene Implementierungsparameter: Fristen, OCR-Schwellen, Authentifizierung, Alarme, Lizenz, Paketversionen" />
     </node>
-  </node>
+    <node TEXT="Universelle Wissensplattform – Zielarchitektur (20.11.2026; fachlich freigegeben, noch nicht implementiert)" FOLDED="true" ID="ID_2026112001"><node TEXT="AZ-01 bis AZ-12: docs/ARCHITECTURE_GOALS.md" ID="ID_2026112002" /><node TEXT="UWP-01: Strukturierung nach Bedarf" ID="ID_2026112003" /><node TEXT="UWP-02: selektive regelbasierte Extraktion" ID="ID_2026112004" /><node TEXT="UWP-03: regelabhängige unabhängige Freigabe" ID="ID_2026112005" /><node TEXT="UWP-04: Agentenvorschläge getrennt und unbestätigt" ID="ID_2026112006" /><node TEXT="Bestehende V2-Architektur bleibt als Implementierungsstand erhalten" ID="ID_2026112007" /></node>
+</node>
 </map>
