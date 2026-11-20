@@ -113,3 +113,12 @@ Zusätzlich zu den fehlgeschlagenen Passwort-Negativtests wurden beide Rollen mi
 | `rag_v2_importer_login` | `rag_v2_importer_login` | `rag_v2_importer_login` | `retro_rag_v2_test` | `127.0.0.1` |
 
 **Ergebnis:** positive Authentifizierung für Reader und Importer nachgewiesen. Keine Passwörter protokolliert. Der Migrator ist nur negativ getestet; eine positive Migrator-Anmeldung und isolierte konkurrierende Transaktionen bleiben offen. Diese Logins beweisen keine weiteren Rechte an Schemaobjekten über die bereits transaktional getesteten `SET ROLE`-Grenzen hinaus. `0006` wurde weiterhin nicht dauerhaft angewendet.
+
+### Positive Migrator-Anmeldung und `SET ROLE` (Poseidon, 20.11.2026)
+
+Mit `psql -X -W -h 127.0.0.1 -U rag_v2_migrator_login -d retro_rag_v2_test` wurde eine echte TCP-/SCRAM-Anmeldung nachgewiesen:
+- Vor Rollenwechsel: `session_user = rag_v2_migrator_login`, `current_user = rag_v2_migrator_login`
+- `SET ROLE rag_v2_migrator` erfolgreich; danach `session_user = rag_v2_migrator_login`, `current_user = rag_v2_migrator`
+- `RESET ROLE` erfolgreich.
+
+Alle drei aktivierten V2-Loginrollen (Reader, Importer, Migrator) wurden sowohl mit falschem Passwort abgewiesen als auch mit gültigem Passwort erfolgreich authentifiziert. HBA- und LOGIN-Prüfungen über IPv4-Loopback **PASS**. Andere Verbindungswege und isolierte Parallelitätstests sind weiterhin offen. Kein Apply von Migration `0006`.
