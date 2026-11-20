@@ -61,3 +61,13 @@ Auf dem Branch `feat/universal-knowledge-schema-0006` (lokaler Stand vor dieser 
 - abschließend `ROLLBACK`, keine Fehlermeldung im übermittelten Testlauf.
 
 **Aussagekraft:** DDL, interne Prüfungen und transaktionale Rechtewechsel per `SET ROLE` bestanden. Ein Nachcheck der persistenten Tabellenanzahl/Migrationsmarker **nach diesem erweiterten Lauf**, unabhängige Login-/HBA-Tests sowie Konkurrenz-/Restore-Tests sind noch offen. Kein dauerhafter Apply von `0006` nachgewiesen.
+
+### Unabhängige Rollback-Nachkontrolle (Poseidon)
+
+Nach dem erweiterten transaktionalen Test wurde über eine **neue psql-Verbindung** nachgeprüft:
+- `MAX(rag_v2.schema_migration.version) = 5`
+- `information_schema.tables` für Basistabellen in `rag_v2`: **37**
+- `rag_v2.write_gate.writes_enabled = false` (Grund weiterhin `Parallelitätstest erfolgreich; Freigabe ausstehend`)
+- `to_regclass('rag_v2.knowledge_proposal') IS NULL`
+
+Alle vier Sollwerte sind erfüllt. Der vollständige Rollback der letzten Testtransaktion ist damit unabhängig nachkontrolliert. Authentifizierungs-/HBA- und Parallelitätstests bleiben ausstehend.
