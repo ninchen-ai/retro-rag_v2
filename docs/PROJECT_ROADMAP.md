@@ -110,7 +110,7 @@ Der echte `cubx-103.pdf`-Test mit `ocr_pages={111}` ergab 112 Seiten, 114 Chunks
 
 Die PDF-Extraktion unterscheidet nun vorsichtig zwischen **strukturell leerer** Seite (keine Zeichen-/Bildoperationen im PyMuPDF-BBox-Log und keine Annotationen/Widgets) und textloser Seite **mit möglichem sichtbarem Inhalt**, für die Review/OCR weiterhin angemessen ist. Leere Seiten werden in `document.metadata.blank_pages` gemeldet; die Indexfreigabe bleibt `false`. Neue Regressionstests prüfen eine tatsächlich leere Seite sowie eine rein vektorbasierte Seite, die **nicht** als leer durchrutschen darf. Absichtlich erzwungene OCR auf einer leeren Seite bleibt ein separat ausgewiesener Fehlerfall.
 
-**Noch nicht auf Poseidon ausgeführt:** aktualisierte Pytest-/Ruff-Regression und Wiederholung des realen CUBX-PDF-Laufs mit `ocr_pages={111}`. Keine Aussage zur tatsächlichen OCR-Texterkennungsqualität oder zur E2E-Persistenz.
+**Live-Nachtest auf Poseidon (21.11.2026):** Nach Fast-Forward auf `0899a08` wurde der reale CUBX-WebDAV-Lauf mit `ocr_mode=auto`, `ocr_pages={111}`, `ocr_language=eng+deu`, `ocr_dpi=200` wiederholt: SHA-256 unverändert `f10dc04911aa75241adcb29731af62fc4ce4c5e5a21b0a69ff621778c784f82b`, 112 Seiten, 114 Chunks, `ocr_pages=[111]`, `ocr_failed_pages=[]`, **`warnings=[]`**, `indexing_allowed=false`, `fact_proposal_count=0`. Das beseitigt die zuvor beobachtete Fehlinformation zu Seite 112. Die Vorschau zeigt `blank_pages` bisher nicht an. **Weiter offen:** aktualisierte Pytest-/Ruff-Regression (einschließlich Blank-/Vektor-Negativtests), fachliche CER/WER-Qualitätsbewertung von Seite 111 und persistente E2E-Verarbeitung.
 
 ## E. Empfohlene Reihenfolge und Freigabe-Gates
 
