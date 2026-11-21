@@ -98,6 +98,12 @@ Auf dem **Staging-Branch** wurde der schreibfreie Adapter `src/retro_rag/importe
 
 **Poseidon-Regressionsnachweis (21.11.2026):** Nach Fast-Forward auf `28d32e0` meldeten `python -m ruff check .` **All checks passed**, `python -m pytest -q -rs` **143 passed, 11 skipped** (gegenüber 135 + 8 Preview-Tests), `git diff --check` ohne Beanstandung. Die zehn Datenbank-Integrationstests wurden separat zuvor bestanden und unabhängig nachkontrolliert. **Echter WebDAV→PDF-Preview-Nachweis (Poseidon, 21.11.2026):** Nextcloud-Instanz `poseidon-nextcloud`, `fileid=172`, `cubx-103.pdf`, SHA-256 `f10dc04911aa75241adcb29731af62fc4ce4c5e5a21b0a69ff621778c784f82b`; 112 Seiten, 113 Chunks, OCR deaktiviert, kein extrahierbarer Text auf Seiten 111/112, OCR dort erforderlich. Zweiter Abruf und Vertrags-Hash stimmten überein, `indexing_allowed=false`, `fact_proposal_count=0`. **Noch offen:** gezielter OCR-Lauf und Goldstandardvergleich, persistente Job-/Chunk-/Embedding-Integration sowie isolierter C1-Parallelitätstest. Dies ist **kein** End-to-End-Importworker, kein persistenter Chunk-/Embedding-Pfad und kein neuer `--apply`-Weg.
 
+### Echter OCR-Nachtrag – ASUS CUBX, 21.11.2026
+
+- In der schreibfreien Nextcloud-Vorschau von `cubx-103.pdf` (`fileid=172`, SHA-256 `f10dc04911aa75241adcb29731af62fc4ce4c5e5a21b0a69ff621778c784f82b`) wurde `ocr_mode=auto`, `ocr_pages={111,112}`, `ocr_language=eng+deu`, `ocr_dpi=200` ausgeführt: 112 Seiten, 114 Chunks, `ocr_pages=[111]`, `ocr_failed_pages=[112]`, Meldung `OCR lieferte keinen Text` für Seite 112, `indexing_allowed=false`, keine Faktvorschläge.
+- **Interpretation anhand des vorhandenen visuell geprüften Goldstandards:** Seite 111 ist eine bildbasierte Anzeige mit echtem OCR-Bedarf; Seite 112 ist eine **bestätigte weiße Leerseite ohne OCR-Bedarf**. Die Fehlermeldung auf Seite 112 resultiert aus der erzwungenen OCR und bedeutet nicht, dass relevanter Inhalt verloren ging.
+- **Nächster Kontrolllauf:** Ausschließlich `ocr_pages={111}` erzwingen und Seite 112 nicht explizit bearbeiten; bei funktionierender Auto-Heuristik dürfte Seite 112 nicht in `ocr_failed_pages` erscheinen. Die technische OCR-Ausführung ist **keine Qualitätsfreigabe**: CER/WER und Fachbegriffe getrennt anhand des bestehenden OCR-Goldstandards prüfen. Persistente Job-/Chunk-/Embedding-Integration weiterhin offen.
+
 ## E. Empfohlene Reihenfolge und Freigabe-Gates
 
 | Reihenfolge | Paket | Abschlussbedingung |
