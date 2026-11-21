@@ -112,6 +112,12 @@ Die PDF-Extraktion unterscheidet nun vorsichtig zwischen **strukturell leerer** 
 
 **Live-Nachtest auf Poseidon (21.11.2026):** Nach Fast-Forward auf `0899a08` wurde der reale CUBX-WebDAV-Lauf mit `ocr_mode=auto`, `ocr_pages={111}`, `ocr_language=eng+deu`, `ocr_dpi=200` wiederholt: SHA-256 unverändert `f10dc04911aa75241adcb29731af62fc4ce4c5e5a21b0a69ff621778c784f82b`, 112 Seiten, 114 Chunks, `ocr_pages=[111]`, `ocr_failed_pages=[]`, **`warnings=[]`**, `indexing_allowed=false`, `fact_proposal_count=0`. Das beseitigt die zuvor beobachtete Fehlinformation zu Seite 112. Die Vorschau zeigt `blank_pages` bisher nicht an. **Poseidon-Regressionsabnahme (21.11.2026):** nach `git pull --ff-only` auf `8440509`: `python -m ruff check .` **All checks passed**, `python -m pytest -q -rs` **145 passed, 11 skipped**, `git diff --check` ohne Befund. Damit sind die beiden neuen Negativ-/Leerseitentests erfolgreich; Live-WebDAV-PDF/OCR-Vorschau unverändert ohne Warnungen (siehe oben). **Weiter offen:** fachliche CER/WER-Qualitätsbewertung von Seite 111 gegen manuell überprüfte Vollseitenreferenz, isolierter C1-Parallelitätstest und persistente E2E-Verarbeitung.
 
+### OCR-Goldstandard: wiedergefunden und lokale OCR rekonstruiert (21.11.2026)
+
+- Das ursprüngliche Paket `cubx-103-f10dc04911aa-p0111` wurde als Backup unter `/mnt/atlas/retro-v2-pdf-goldstandard/` gefunden. `page.png`, `extracted.txt`, `metrics.json`, `review.json` vorhanden; `reference.txt` und `ocr.txt` im Backup fehlen. `review_status=unreviewed`; PDF-SHA-256 `f10dc04911aa75241adcb29731af62fc4ce4c5e5a21b0a69ff621778c784f82b`, PDF-Seite 111.
+- Auf Poseidon wurde eine **separate Arbeitskopie** unter `/data/retro-rag/v2/ocr-evaluation/cubx-103-f10dc04911aa-p0111/` angelegt und die OCR-Ausgabe der SHA-geprüften Original-PDF-Seite erneut mittels PyMuPDF/Tesseract, `eng+deu`, 200 DPI erzeugt: **1.723 Zeichen**, `ocr.txt` und `ocr_run.json` gespeichert. Backup auf Atlas unverändert; keine OCR-Qualitätsfreigabe.
+- **Noch offen:** unabhängige, anhand des Originalseitenbilds manuell geprüfte vollständige `reference.txt`; erst danach `review_status` sachgerecht setzen und CER/WER/kritische Terme mit `ocr_evaluation` ermitteln. Zeichenlängengleichheit ist kein Byteidentitäts- oder Qualitätsnachweis. Lokale Rohtexte/Seitenbilder nicht nach GitHub committen.
+
 ## E. Empfohlene Reihenfolge und Freigabe-Gates
 
 | Reihenfolge | Paket | Abschlussbedingung |
