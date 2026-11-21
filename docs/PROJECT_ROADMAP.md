@@ -159,6 +159,13 @@ Im vorhandenen **schreibfreien Experiment** `experiments/ocr_regions_cubx.py` wu
 
 **Grenzen und Abnahme:** Die relativen Ausschnittkoordinaten müssen im echten PDF anhand der neuen PNGs kontrolliert werden. Keine automatische Korrektur aus erwarteten Überschriftstexten, kein Review-Statuswechsel und keine Indexfreigabe. Der Code ist im Staging-Branch committed; **Ruff, Pytest und Live-Poseidon-Lauf für das neue Profil stehen aus**. Zunächst Ergebnisse mit dem bisherigen kombinierten Überschriften-Crop vergleichen, erst danach CER/WER anhand unabhängiger Referenzen.
 
+### Einzelzeilen-OCR: erster echter Lauf und Testkorrektur (21.11.2026)
+
+- Live-WebDAV-Lauf des Profils `headline-lines` gegen SHA-geprüftes `cubx-103.pdf`, Nextcloud-`fileid=172`, Seite 111, Ergebnisordner `/data/retro-rag/v2/ocr-evaluation/cubx-headline-psm7-01`: sechs Kandidaten, `status=not_evaluated`, `indexing_allowed=false`.
+- **Ausgaben, 200/300 DPI bei PSM 7:** Titel `WAGP!V6800\\Series` / `™=AGP:V6800)Series`; erste Sloganzeile `span the Graphics Globe` / leer; zweite Sloganzeile `With) DDRMntelligence` / `with) DDRUntelligence`. Einzelzeilen-Crops verbessern die Erkennung **nicht durchgängig**. Erste Sloganzeile bei 200 DPI gut lesbar, aber Titel/zweite Zeile weiterhin fehlerhaft. Crops sind vor einer endgültigen Bewertung noch visuell zu kontrollieren.
+- Poseidon-Regressionslauf am selben Stand ergab `152 passed, 1 failed, 11 skipped`; Ruff meldete `I001`, `F401`, `C401`. **Ursache des fehlgeschlagenen Alt-Tests:** Bei PSM-7-Erweiterung wurde der Python-Default unbeabsichtigt von (6,11) auf (6,7,11) vergrößert, damit 18 statt 12 Kandidaten in der Standardfunktion. Die CLI des bisherigen `regions`-Profils selbst selektierte bereits ausdrücklich (6,11). Korrigiert: `DEFAULT_PSM_OPTIONS=(6,11)`, `PSM_OPTIONS=(6,7,11)` zur Validierung; unbenutzten Testimport entfernt und Set-Comprehension statt Generator verwendet (Commits `c286969`, `7887beb`). **Erneuter Ruff-/Pytest-Lauf auf Poseidon ausstehend**; keine Freigabe vor Bestätigung.
+- Der Versuch hat weder OCR-Indexierung noch Fact-Vorschläge freigegeben. Für weitere Verbesserungen zunächst einzeln zugeschnittene Bilder sichten und erst danach kontrast-/farbbasierte Verfahren vergleichen; CER/WER erfordern dieselben, manuell verifizierten Referenzzeilen.
+
 ## E. Empfohlene Reihenfolge und Freigabe-Gates
 
 | Reihenfolge | Paket | Abschlussbedingung |
