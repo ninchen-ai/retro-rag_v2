@@ -172,6 +172,12 @@ Im vorhandenen **schreibfreien Experiment** `experiments/ocr_regions_cubx.py` wu
 - **Fachlicher OCR-Ausblick, nicht implementiert oder abgenommen:** Optionales Vision-Language-Model als **zweiter, isolierter OCR-Kandidat** für stilisierte Titel und Badge-Schrift (zuerst z. B. lokal Qwen3-VL 2B/4B, alternativ dokumentorientiertes PaddleOCR-VL). VLM-Ausgaben dürfen nicht als Ground Truth, bestätigte Fakten oder freigegebener Indextext gelten: Originalbild- und Regions-Hash, Modellversion, Prompt, Kandidatentext, kritische Zahlen/Fachbezeichnungen und Review-Entscheidung getrennt sichern. Gegen geprüfte regionsgleiche Referenzen CER/WER und Critical-Term-Recall messen. Kein automatisches Vertrauen auf semantisch plausible Ergänzungen und keine Freigabe des Write-Gates.
 - Erst schreibfreies Experiment mit einem existierenden PNG-Ausschnitt, ohne Änderungen an bestehender Extraktion/Importworker; Modell-Laufzeit und Ressourcenbedarf auf Poseidon prüfen.
 
+### Selektive Vision-LLM-Unterstützung – erster Einzelbefund (21.11.2026)
+
+Auf Poseidon wurde der zuvor per SHA-256 verifizierte CUBX-Seite-111-Ausschnitt `title_line-300dpi.png` aus `/data/retro-rag/v2/ocr-evaluation/cubx-headline-psm7-01/` mit lokalem Ollama-Modell `qwen3-vl:2b` und Aufforderung zur wörtlichen Transkription getestet. Ausgabe: **`AGP-V6800 Series`**, entsprechend dem visuell erkennbaren Titel. Zum Vergleich lieferte Tesseract PSM 7 auf der 200-DPI-Zeile `WAGP!V6800\\Series` und bei 300 DPI `™=AGP:V6800)Series`.
+
+**Status:** Dies ist **ein erfolgreicher Einzelkandidat**, keine nachgewiesene allgemeine Genauigkeit, kein CER-/WER-Gesamtnachweis und keine Produktionsfreigabe. Das VLM wird als **optionale, selektiv regelgesteuerte Zusatzinstanz** nach Standard-PDF-/Tesseract-Verarbeitung vorgesehen, **nicht als Ersatz für Tesseract**. Bei verdächtigen OCR-Regionen Originalbild, Crop, Tesseract-Kandidat, VLM-Kandidat, Prompt/Modellversion und gegebenenfalls Abweichungen aufbewahren; bestätigte Wissensobjekte/Indexierung erst nach bestehender Review-/Freigabelogik. Kein automatisches Überschreiben oder Selbstbestätigen. Als nächstes die beiden vorhandenen Slogan-Ausschnitte mit demselben Modell untersuchen und quantitative Bewertung gegen manuell geprüfte regionsgleiche Referenzen vorbereiten.
+
 ## E. Empfohlene Reihenfolge und Freigabe-Gates
 
 | Reihenfolge | Paket | Abschlussbedingung |
