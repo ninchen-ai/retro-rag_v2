@@ -58,6 +58,19 @@ def outline_by_page(toc: list[list], page_count: int) -> dict[int, list[str]]:
     return result
 
 
+def is_structurally_blank(page) -> bool:
+    """Nur Seiten ohne Zeichen-/Bildoperationen oder Anmerkungen als leer einstufen.
+
+    Kein visueller Weiß-Pixel-Test: weiße Vektorflächen und versteckte Inhalte
+    bleiben vorsichtshalber ungeklärt statt stillschweigend verworfen zu werden.
+    """
+    return (
+        not page.get_bboxlog()
+        and page.first_annot is None
+        and page.first_widget is None
+    )
+
+
 def read_pdf(
     path: Path,
     source_id: str,
@@ -96,6 +109,7 @@ def read_pdf(
     warnings: list[str] = []
     ocr_done: list[int] = []
     ocr_failed: list[int] = []
+    blank_pages: list[int] = []
     with pymupdf.open(stream=raw, filetype="pdf") as pdf:
         if pdf.needs_pass:
             raise ValueError("Passwortgeschützte PDFs benötigen einen gesonderten Review")
@@ -121,7 +135,12 @@ def read_pdf(
                 warnings.append(f"Seite {page_number}: {extracted.warning}")
             parts = split_page(extracted.text, max_chars)
             if not parts:
-                warnings.append(f"Seite {page_number}: kein extrahierbarer Text; OCR erforderlich")
+                if extracted.status == "empty" and is_structurally_blank(page):
+                    blank_pages.append(page_number)
+                elif extracted.status != "ocr_failed":
+                    warnings.append(
+                        f"Seite {page_number}: kein extrahierbarer Text; OCR/Review erforderlich"
+                    )
             for part in parts:
                 chunks.append(
                     Chunk(
@@ -155,6 +174,7 @@ def read_pdf(
                 "ocr_mode": ocr_mode,
                 "ocr_pages": ocr_done,
                 "ocr_failed_pages": ocr_failed,
+                "blank_pages": blank_pages,
                 "ocr_engine": "Tesseract/PyMuPDF" if ocr_done else None,
                 "ocr_language": ocr_language if ocr_done else None,
                 "ocr_dpi": ocr_dpi if ocr_done else None,
