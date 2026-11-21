@@ -1,5 +1,9 @@
 # Retro-RAG V2
 
+> **Universelle Wissensplattform (20.11.2026):** Die zwölf fachlich freigegebenen [Architekturziele](docs/ARCHITECTURE_GOALS.md) und vier [Grundsatzentscheidungen](docs/ARCHITECTURE_DECISIONS.md) werden inkrementell umgesetzt. Migration [0006](db/migrations/0006_universal_knowledge_core.sql) ist auf `retro_rag_v2_test` installiert und mit Restore-, Integritäts-, Rollen- und Mehrverbindungstests geprüft (43 Tabellen, geschlossenes Write-Gate). Die eigentliche Extraktions-, Agenten- und Freigabeengine ist **noch nicht implementiert oder freigegeben**. Siehe [Testprotokoll](docs/UNIVERSAL_KNOWLEDGE_SCHEMA_0006.md) und [aktuelles Schema](db/SCHEMA_CURRENT.md).
+
+**Zentrale Projektplanung:** [Roadmap und Aufgabenliste A/B/C einschließlich der sieben Importpipeline-Stufen](docs/PROJECT_ROADMAP.md). Dort sind offene Aufgaben, Implementierungsstand, Abnahme und empfohlene Reihenfolge getrennt erfasst. **Für den aktuellen Stand sind Roadmap und `db/SCHEMA_CURRENT.md` maßgeblich; datierte ältere README-Abschnitte dokumentieren historische Zwischenstände.**
+
 Lokales RAG-System für Retro-PC-Hardware. Es beantwortet Fragen im Chat auf Basis von zwei Wissensquellen:
 
 - **Bestand:** Welche Hardware ist zu Hause vorhanden, in welchem Zustand, in welcher Menge, wo gelagert und in welchem System verbaut?
@@ -9,7 +13,7 @@ Der Nutzen entsteht durch die Verknüpfung beider Quellen, etwa bei der Frage *�
 
 Alles läuft lokal auf dem Homelab-Server **Poseidon**. Es gibt keine Cloud-Dienste, und eine Internetrecherche durch das LLM ist vorerst nicht vorgesehen.
 
-> **Status (09.11.2026):** Phase 0 und Import-Staging sind als Entwicklungsstand vorhanden. C1 (atomare Versionsaktivierung) ist mit sieben PostgreSQL-Tests abgenommen, jedoch noch nicht an einen echten Verarbeitungs-Worker angebunden. Der Metadatenvertrag aus `feat/import-contract-metadata` ist im Integrationsbranch zusätzlich konsolidiert; ein gemeinsamer Testlauf auf Poseidon ist noch ausstehend. Kein produktiver Import freigegeben; Write-Gate geschlossen. Verbindliche Regeln: [`conventions.md`](conventions.md).
+> **Historischer Zwischenstand (09.11.2026; nicht aktueller Projektstatus):** Phase 0 und Import-Staging sind als Entwicklungsstand vorhanden. C1 (atomare Versionsaktivierung) ist mit sieben PostgreSQL-Tests abgenommen, jedoch noch nicht an einen echten Verarbeitungs-Worker angebunden. Der Metadatenvertrag aus `feat/import-contract-metadata` ist im Integrationsbranch zusätzlich konsolidiert; ein gemeinsamer Testlauf auf Poseidon ist noch ausstehend. Kein produktiver Import freigegeben; Write-Gate geschlossen. Verbindliche Regeln: [`conventions.md`](conventions.md).
 
 ---
 
@@ -182,7 +186,7 @@ source .venv/bin/activate
 python -m pip install -e '.[dev]'
 ```
 
-OCR und Layoutanalyse sind noch nicht implementiert. Für diese optionalen zukünftigen Worker werden Abhängigkeiten erst nach Kompatibilitätsprüfung separat in `pyproject.toml` definiert; derzeit existiert keine `requirements-layout.txt`.
+PDF-Extraktion und OCR wurden in separaten Entwicklungsbranches erprobt, sind jedoch nicht als vollständig integrierte und Ende-zu-Ende abgenommene Worker dieser Integrationslinie zu betrachten. Die OCR-Qualitätsoptimierung bleibt ein eigener offener Punkt. Für optionale Layout-Abhängigkeiten existiert bislang keine `requirements-layout.txt`; Implementierungs- und Integrationsstand siehe [Projekt-Roadmap](docs/PROJECT_ROADMAP.md).
 
 Tesseract-OCR wird bei Bedarf als Systempaket installiert (`sudo apt install tesseract-ocr tesseract-ocr-deu tesseract-ocr-eng`).
 
@@ -239,7 +243,7 @@ retro-rag/
 
 ---
 
-## Phase 0 – Stand auf Poseidon (08.11.2026)
+## Historischer Phase-0-Stand auf Poseidon (08.11.2026; durch Migration 0006 überholt)
 
 Die Testdatenbank `retro_rag_v2_test` läuft im bestehenden Container `codeanalyse-postgres`
 (PostgreSQL 16.15, pgvector 0.8.6). `0001_init.sql` wurde ausgeführt und

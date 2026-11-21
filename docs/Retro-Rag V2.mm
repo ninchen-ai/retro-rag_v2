@@ -338,5 +338,14 @@
       </node>
       <node TEXT="Offene Implementierungsparameter: Fristen, OCR-Schwellen, Authentifizierung, Alarme, Lizenz, Paketversionen" />
     </node>
+    <node TEXT="Universelle Wissensplattform – Architekturziele 3.0 (20.11.2026; fachlich freigegeben)" FOLDED="true" ID="ID_2026112001">
+      <node TEXT="AZ-01 bis AZ-12: docs/ARCHITECTURE_GOALS.md" ID="ID_2026112002" />
+      <node TEXT="UWP-01: Strukturierung nach Bedarf" ID="ID_2026112003" />
+      <node TEXT="UWP-02: selektive regelbasierte Extraktion" ID="ID_2026112004" />
+      <node TEXT="UWP-03: regelabhängige unabhängige Freigabe" ID="ID_2026112005" />
+      <node TEXT="UWP-04: Agentenvorschläge getrennt und unbestätigt" ID="ID_2026112006" />
+      <node TEXT="Migration 0006: universeller Wissenskern in Test-DB; 43 Tabellen, SQL- und Restore-Tests bestanden; Write-Gate geschlossen" ID="ID_2026112007" />
+      <node TEXT="Extraktion, Agenten und Freigabeengine bleiben Folgearbeiten" ID="ID_2026112008" />
+    </node>
   </node>
 </map>

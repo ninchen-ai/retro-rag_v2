@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict pdVmmSQerRX1UeNtWahktfan5v9MU15zViJEPMG4pPZqe1dZmzA2MQ63DKL9xzN
+\restrict XBcyqM0CBUSc7cOUQvesQbAiH06pAjWp8Ohn35qdagXJ9dabwh5r7fKTbvdX4JG
 
 -- Dumped from database version 16.15 (Debian 16.15-1.pgdg12+2)
 -- Dumped by pg_dump version 16.15 (Debian 16.15-1.pgdg12+2)
@@ -79,6 +79,23 @@ $$;
 
 
 --
+-- Name: block_unimplemented_relation_approval(); Type: FUNCTION; Schema: rag_v2; Owner: -
+--
+
+CREATE FUNCTION rag_v2.block_unimplemented_relation_approval() RETURNS trigger
+    LANGUAGE plpgsql
+    SET search_path TO 'pg_catalog', 'rag_v2'
+    AS $$
+BEGIN
+  IF NEW.status = 'accepted' THEN
+    RAISE EXCEPTION '0006: Freigabepolicy für universelle Beziehungen noch nicht implementiert';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+
+--
 -- Name: check_accepted_evidence_trigger(); Type: FUNCTION; Schema: rag_v2; Owner: -
 --
 
@@ -111,6 +128,30 @@ $$;
 
 
 --
+-- Name: check_entity_relation_evidence(); Type: FUNCTION; Schema: rag_v2; Owner: -
+--
+
+CREATE FUNCTION rag_v2.check_entity_relation_evidence() RETURNS trigger
+    LANGUAGE plpgsql
+    SET search_path TO 'pg_catalog', 'rag_v2'
+    AS $$
+BEGIN
+  IF TG_TABLE_NAME = 'entity_relation' THEN
+    PERFORM rag_v2.validate_accepted_entity_relation(NEW.id);
+  ELSE
+    PERFORM rag_v2.validate_accepted_entity_relation(
+      CASE WHEN TG_OP = 'DELETE' THEN OLD.relation_id ELSE NEW.relation_id END
+    );
+    IF TG_OP = 'UPDATE' AND OLD.relation_id IS DISTINCT FROM NEW.relation_id THEN
+      PERFORM rag_v2.validate_accepted_entity_relation(OLD.relation_id);
+    END IF;
+  END IF;
+  RETURN NULL;
+END;
+$$;
+
+
+--
 -- Name: check_unit_location_trigger(); Type: FUNCTION; Schema: rag_v2; Owner: -
 --
 
@@ -132,6 +173,44 @@ BEGIN
         PERFORM rag_v2.validate_unit_location(NEW.unit_id);
     END IF;
     RETURN NULL;
+END;
+$$;
+
+
+--
+-- Name: guard_knowledge_proposal_import(); Type: FUNCTION; Schema: rag_v2; Owner: -
+--
+
+CREATE FUNCTION rag_v2.guard_knowledge_proposal_import() RETURNS trigger
+    LANGUAGE plpgsql
+    SET search_path TO 'pg_catalog', 'rag_v2'
+    AS $$
+BEGIN
+  PERFORM rag_v2.assert_import_write_gate();
+  RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: prevent_accepted_entity_relation_rewrite(); Type: FUNCTION; Schema: rag_v2; Owner: -
+--
+
+CREATE FUNCTION rag_v2.prevent_accepted_entity_relation_rewrite() RETURNS trigger
+    LANGUAGE plpgsql
+    SET search_path TO 'pg_catalog', 'rag_v2'
+    AS $$
+BEGIN
+  IF OLD.status = 'accepted' AND (
+    NEW.source_subject_id IS DISTINCT FROM OLD.source_subject_id OR
+    NEW.target_subject_id IS DISTINCT FROM OLD.target_subject_id OR
+    NEW.relation_type IS DISTINCT FROM OLD.relation_type OR
+    NEW.context IS DISTINCT FROM OLD.context OR
+    NEW.valid_from IS DISTINCT FROM OLD.valid_from
+  ) THEN
+    RAISE EXCEPTION '0006: bestätigte Beziehung historisieren statt überschreiben';
+  END IF;
+  RETURN NEW;
 END;
 $$;
 
@@ -190,6 +269,20 @@ $$;
 
 
 --
+-- Name: prevent_knowledge_proposal_rewrite(); Type: FUNCTION; Schema: rag_v2; Owner: -
+--
+
+CREATE FUNCTION rag_v2.prevent_knowledge_proposal_rewrite() RETURNS trigger
+    LANGUAGE plpgsql
+    SET search_path TO 'pg_catalog', 'rag_v2'
+    AS $$
+BEGIN
+  RAISE EXCEPTION '0006: Vorschläge sind unveränderlich';
+END;
+$$;
+
+
+--
 -- Name: prevent_review_decision_rewrite(); Type: FUNCTION; Schema: rag_v2; Owner: -
 --
 
@@ -200,6 +293,60 @@ CREATE FUNCTION rag_v2.prevent_review_decision_rewrite() RETURNS trigger
 BEGIN
     RAISE EXCEPTION 'Review-Entscheidungen sind unveränderlich';
     RETURN NULL; -- unerreichbar, aber Trigger-Rückgabe explizit
+END;
+$$;
+
+
+--
+-- Name: reject_topic_cycle(); Type: FUNCTION; Schema: rag_v2; Owner: -
+--
+
+CREATE FUNCTION rag_v2.reject_topic_cycle() RETURNS trigger
+    LANGUAGE plpgsql
+    SET search_path TO 'pg_catalog', 'rag_v2'
+    AS $$
+BEGIN
+  IF NEW.parent_id IS NULL THEN RETURN NEW; END IF;
+  -- Parent-Änderungen serialisieren; parallele umgekehrte Umhängungen
+  -- dürfen ohne gemeinsame Serialisierung keine Zyklen erzeugen.
+  PERFORM pg_advisory_xact_lock(824020, 6);
+  IF EXISTS (
+    WITH RECURSIVE ancestry(id, parent_id) AS (
+      SELECT t.id, t.parent_id
+      FROM rag_v2.knowledge_topic t WHERE t.id = NEW.parent_id
+      UNION
+      SELECT t.id, t.parent_id
+      FROM rag_v2.knowledge_topic t
+      JOIN ancestry a ON t.id = a.parent_id
+    )
+    SELECT 1 FROM ancestry WHERE id = NEW.id
+  ) THEN
+    RAISE EXCEPTION '0006: zyklische Themenhierarchie';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: validate_accepted_entity_relation(uuid); Type: FUNCTION; Schema: rag_v2; Owner: -
+--
+
+CREATE FUNCTION rag_v2.validate_accepted_entity_relation(p_id uuid) RETURNS void
+    LANGUAGE plpgsql
+    SET search_path TO 'pg_catalog', 'rag_v2'
+    AS $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM rag_v2.entity_relation r WHERE r.id = p_id
+    AND r.status = 'accepted'
+    AND NOT EXISTS (
+      SELECT 1 FROM rag_v2.entity_relation_evidence re
+      WHERE re.relation_id = r.id
+    )
+  ) THEN
+    RAISE EXCEPTION '0006: bestätigte Beziehung ohne Beleg %', p_id;
+  END IF;
 END;
 $$;
 
@@ -330,6 +477,44 @@ $$;
 SET default_tablespace = '';
 
 SET default_table_access_method = heap;
+
+--
+-- Name: entity_relation; Type: TABLE; Schema: rag_v2; Owner: -
+--
+
+CREATE TABLE rag_v2.entity_relation (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    source_subject_id uuid NOT NULL,
+    target_subject_id uuid NOT NULL,
+    relation_type text NOT NULL,
+    context jsonb DEFAULT '{}'::jsonb NOT NULL,
+    status text DEFAULT 'proposed'::text NOT NULL,
+    valid_from timestamp with time zone,
+    valid_to timestamp with time zone,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT entity_relation_check CHECK (((valid_to IS NULL) OR (valid_from IS NULL) OR (valid_to > valid_from))),
+    CONSTRAINT entity_relation_context_check CHECK ((jsonb_typeof(context) = 'object'::text)),
+    CONSTRAINT entity_relation_relation_type_check CHECK ((relation_type ~ '^[a-z][a-z0-9_]*$'::text)),
+    CONSTRAINT entity_relation_status_check CHECK ((status = ANY (ARRAY['proposed'::text, 'accepted'::text, 'rejected'::text, 'corrected'::text, 'deferred'::text])))
+);
+
+
+--
+-- Name: accepted_entity_relation; Type: VIEW; Schema: rag_v2; Owner: -
+--
+
+CREATE VIEW rag_v2.accepted_entity_relation WITH (security_barrier='true') AS
+ SELECT id,
+    source_subject_id,
+    target_subject_id,
+    relation_type,
+    context,
+    valid_from,
+    valid_to,
+    created_at
+   FROM rag_v2.entity_relation
+  WHERE (status = 'accepted'::text);
+
 
 --
 -- Name: article; Type: TABLE; Schema: rag_v2; Owner: -
@@ -565,6 +750,31 @@ CREATE TABLE rag_v2.embedding_model (
 
 
 --
+-- Name: entity_relation_evidence; Type: TABLE; Schema: rag_v2; Owner: -
+--
+
+CREATE TABLE rag_v2.entity_relation_evidence (
+    relation_id uuid NOT NULL,
+    evidence_id uuid NOT NULL
+);
+
+
+--
+-- Name: entity_type; Type: TABLE; Schema: rag_v2; Owner: -
+--
+
+CREATE TABLE rag_v2.entity_type (
+    code text NOT NULL,
+    name text NOT NULL,
+    description text,
+    enabled boolean DEFAULT true NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT entity_type_code_check CHECK ((code ~ '^[a-z][a-z0-9_]*$'::text)),
+    CONSTRAINT entity_type_name_check CHECK ((btrim(name) <> ''::text))
+);
+
+
+--
 -- Name: evidence; Type: TABLE; Schema: rag_v2; Owner: -
 --
 
@@ -638,6 +848,30 @@ CREATE TABLE rag_v2.installation (
 
 
 --
+-- Name: knowledge_proposal; Type: TABLE; Schema: rag_v2; Owner: -
+--
+
+CREATE TABLE rag_v2.knowledge_proposal (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    proposal_kind text NOT NULL,
+    origin_kind text NOT NULL,
+    payload jsonb NOT NULL,
+    provenance jsonb NOT NULL,
+    agent_run_key text,
+    extraction_profile text,
+    source_refs jsonb DEFAULT '[]'::jsonb NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT knowledge_proposal_check CHECK (((origin_kind <> 'agent'::text) OR ((agent_run_key IS NOT NULL) AND (btrim(agent_run_key) <> ''::text)))),
+    CONSTRAINT knowledge_proposal_check1 CHECK (((origin_kind <> 'extraction'::text) OR ((extraction_profile IS NOT NULL) AND (btrim(extraction_profile) <> ''::text)))),
+    CONSTRAINT knowledge_proposal_origin_kind_check CHECK ((origin_kind = ANY (ARRAY['manual'::text, 'extraction'::text, 'agent'::text]))),
+    CONSTRAINT knowledge_proposal_payload_check CHECK (((jsonb_typeof(payload) = 'object'::text) AND (payload <> '{}'::jsonb))),
+    CONSTRAINT knowledge_proposal_proposal_kind_check CHECK ((proposal_kind = ANY (ARRAY['entity'::text, 'fact'::text, 'relation'::text]))),
+    CONSTRAINT knowledge_proposal_provenance_check CHECK (((jsonb_typeof(provenance) = 'object'::text) AND (provenance <> '{}'::jsonb))),
+    CONSTRAINT knowledge_proposal_source_refs_check CHECK ((jsonb_typeof(source_refs) = 'array'::text))
+);
+
+
+--
 -- Name: knowledge_subject; Type: TABLE; Schema: rag_v2; Owner: -
 --
 
@@ -649,6 +883,32 @@ CREATE TABLE rag_v2.knowledge_subject (
     reference_entity_id uuid,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     CONSTRAINT knowledge_subject_check CHECK ((num_nonnulls(article_id, article_revision_id, document_id, reference_entity_id) = 1))
+);
+
+
+--
+-- Name: knowledge_topic; Type: TABLE; Schema: rag_v2; Owner: -
+--
+
+CREATE TABLE rag_v2.knowledge_topic (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    parent_id uuid,
+    name text NOT NULL,
+    description text,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT knowledge_topic_check CHECK ((parent_id IS DISTINCT FROM id)),
+    CONSTRAINT knowledge_topic_name_check CHECK ((btrim(name) <> ''::text))
+);
+
+
+--
+-- Name: knowledge_topic_assignment; Type: TABLE; Schema: rag_v2; Owner: -
+--
+
+CREATE TABLE rag_v2.knowledge_topic_assignment (
+    topic_id uuid NOT NULL,
+    subject_id uuid NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
 );
 
 
@@ -775,7 +1035,6 @@ CREATE TABLE rag_v2.reference_entity (
     description text,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     CONSTRAINT reference_entity_entity_key_check CHECK ((btrim(entity_key) <> ''::text)),
-    CONSTRAINT reference_entity_entity_type_check CHECK ((entity_type = ANY (ARRAY['interface'::text, 'chipset'::text, 'software'::text, 'driver'::text, 'graphics_api'::text, 'standard'::text, 'other'::text]))),
     CONSTRAINT reference_entity_name_check CHECK ((btrim(name) <> ''::text))
 );
 
@@ -1161,6 +1420,30 @@ ALTER TABLE ONLY rag_v2.embedding_model
 
 
 --
+-- Name: entity_relation_evidence entity_relation_evidence_pkey; Type: CONSTRAINT; Schema: rag_v2; Owner: -
+--
+
+ALTER TABLE ONLY rag_v2.entity_relation_evidence
+    ADD CONSTRAINT entity_relation_evidence_pkey PRIMARY KEY (relation_id, evidence_id);
+
+
+--
+-- Name: entity_relation entity_relation_pkey; Type: CONSTRAINT; Schema: rag_v2; Owner: -
+--
+
+ALTER TABLE ONLY rag_v2.entity_relation
+    ADD CONSTRAINT entity_relation_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: entity_type entity_type_pkey; Type: CONSTRAINT; Schema: rag_v2; Owner: -
+--
+
+ALTER TABLE ONLY rag_v2.entity_type
+    ADD CONSTRAINT entity_type_pkey PRIMARY KEY (code);
+
+
+--
 -- Name: evidence evidence_pkey; Type: CONSTRAINT; Schema: rag_v2; Owner: -
 --
 
@@ -1193,11 +1476,43 @@ ALTER TABLE ONLY rag_v2.installation
 
 
 --
+-- Name: knowledge_proposal knowledge_proposal_pkey; Type: CONSTRAINT; Schema: rag_v2; Owner: -
+--
+
+ALTER TABLE ONLY rag_v2.knowledge_proposal
+    ADD CONSTRAINT knowledge_proposal_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: knowledge_subject knowledge_subject_pkey; Type: CONSTRAINT; Schema: rag_v2; Owner: -
 --
 
 ALTER TABLE ONLY rag_v2.knowledge_subject
     ADD CONSTRAINT knowledge_subject_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: knowledge_topic_assignment knowledge_topic_assignment_pkey; Type: CONSTRAINT; Schema: rag_v2; Owner: -
+--
+
+ALTER TABLE ONLY rag_v2.knowledge_topic_assignment
+    ADD CONSTRAINT knowledge_topic_assignment_pkey PRIMARY KEY (topic_id, subject_id);
+
+
+--
+-- Name: knowledge_topic knowledge_topic_parent_id_name_key; Type: CONSTRAINT; Schema: rag_v2; Owner: -
+--
+
+ALTER TABLE ONLY rag_v2.knowledge_topic
+    ADD CONSTRAINT knowledge_topic_parent_id_name_key UNIQUE NULLS NOT DISTINCT (parent_id, name);
+
+
+--
+-- Name: knowledge_topic knowledge_topic_pkey; Type: CONSTRAINT; Schema: rag_v2; Owner: -
+--
+
+ALTER TABLE ONLY rag_v2.knowledge_topic
+    ADD CONSTRAINT knowledge_topic_pkey PRIMARY KEY (id);
 
 
 --
@@ -1487,6 +1802,27 @@ CREATE INDEX document_version_hash_idx ON rag_v2.document_version USING btree (c
 
 
 --
+-- Name: entity_relation_evidence_evidence_idx; Type: INDEX; Schema: rag_v2; Owner: -
+--
+
+CREATE INDEX entity_relation_evidence_evidence_idx ON rag_v2.entity_relation_evidence USING btree (evidence_id);
+
+
+--
+-- Name: entity_relation_source_idx; Type: INDEX; Schema: rag_v2; Owner: -
+--
+
+CREATE INDEX entity_relation_source_idx ON rag_v2.entity_relation USING btree (source_subject_id, relation_type, status);
+
+
+--
+-- Name: entity_relation_target_idx; Type: INDEX; Schema: rag_v2; Owner: -
+--
+
+CREATE INDEX entity_relation_target_idx ON rag_v2.entity_relation USING btree (target_subject_id, relation_type, status);
+
+
+--
 -- Name: evidence_version_idx; Type: INDEX; Schema: rag_v2; Owner: -
 --
 
@@ -1505,6 +1841,13 @@ CREATE INDEX fact_subject_property_idx ON rag_v2.fact USING btree (subject_id, p
 --
 
 CREATE UNIQUE INDEX installation_one_active_per_unit_idx ON rag_v2.installation USING btree (unit_id) WHERE (valid_to IS NULL);
+
+
+--
+-- Name: knowledge_proposal_created_idx; Type: INDEX; Schema: rag_v2; Owner: -
+--
+
+CREATE INDEX knowledge_proposal_created_idx ON rag_v2.knowledge_proposal USING btree (created_at);
 
 
 --
@@ -1533,6 +1876,13 @@ CREATE UNIQUE INDEX knowledge_subject_reference_unique ON rag_v2.knowledge_subje
 --
 
 CREATE UNIQUE INDEX knowledge_subject_revision_unique ON rag_v2.knowledge_subject USING btree (article_revision_id) WHERE (article_revision_id IS NOT NULL);
+
+
+--
+-- Name: knowledge_topic_assignment_subject_idx; Type: INDEX; Schema: rag_v2; Owner: -
+--
+
+CREATE INDEX knowledge_topic_assignment_subject_idx ON rag_v2.knowledge_topic_assignment USING btree (subject_id);
 
 
 --
@@ -1568,6 +1918,27 @@ CREATE INDEX unit_article_idx ON rag_v2.unit USING btree (article_id);
 --
 
 CREATE INDEX unit_serial_idx ON rag_v2.unit USING btree (serial_number) WHERE (serial_number IS NOT NULL);
+
+
+--
+-- Name: entity_relation_evidence entity_relation_evidence_integrity; Type: TRIGGER; Schema: rag_v2; Owner: -
+--
+
+CREATE CONSTRAINT TRIGGER entity_relation_evidence_integrity AFTER INSERT OR DELETE OR UPDATE ON rag_v2.entity_relation_evidence DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION rag_v2.check_entity_relation_evidence();
+
+
+--
+-- Name: entity_relation entity_relation_no_accepted_rewrite; Type: TRIGGER; Schema: rag_v2; Owner: -
+--
+
+CREATE TRIGGER entity_relation_no_accepted_rewrite BEFORE UPDATE ON rag_v2.entity_relation FOR EACH ROW EXECUTE FUNCTION rag_v2.prevent_accepted_entity_relation_rewrite();
+
+
+--
+-- Name: entity_relation entity_relation_requires_evidence; Type: TRIGGER; Schema: rag_v2; Owner: -
+--
+
+CREATE CONSTRAINT TRIGGER entity_relation_requires_evidence AFTER INSERT OR UPDATE ON rag_v2.entity_relation DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION rag_v2.check_entity_relation_evidence();
 
 
 --
@@ -1613,6 +1984,27 @@ CREATE TRIGGER installation_no_rewrite BEFORE UPDATE ON rag_v2.installation FOR 
 
 
 --
+-- Name: knowledge_proposal knowledge_proposal_immutable; Type: TRIGGER; Schema: rag_v2; Owner: -
+--
+
+CREATE TRIGGER knowledge_proposal_immutable BEFORE DELETE OR UPDATE ON rag_v2.knowledge_proposal FOR EACH ROW EXECUTE FUNCTION rag_v2.prevent_knowledge_proposal_rewrite();
+
+
+--
+-- Name: knowledge_proposal knowledge_proposal_write_gate; Type: TRIGGER; Schema: rag_v2; Owner: -
+--
+
+CREATE TRIGGER knowledge_proposal_write_gate BEFORE INSERT ON rag_v2.knowledge_proposal FOR EACH ROW EXECUTE FUNCTION rag_v2.guard_knowledge_proposal_import();
+
+
+--
+-- Name: entity_relation relation_no_approval_before_policy; Type: TRIGGER; Schema: rag_v2; Owner: -
+--
+
+CREATE TRIGGER relation_no_approval_before_policy BEFORE INSERT OR UPDATE OF status ON rag_v2.entity_relation FOR EACH ROW EXECUTE FUNCTION rag_v2.block_unimplemented_relation_approval();
+
+
+--
 -- Name: review_decision review_decision_immutable; Type: TRIGGER; Schema: rag_v2; Owner: -
 --
 
@@ -1645,6 +2037,13 @@ CREATE TRIGGER storage_assignment_no_rewrite BEFORE UPDATE ON rag_v2.storage_ass
 --
 
 CREATE CONSTRAINT TRIGGER storage_location_integrity AFTER INSERT OR DELETE OR UPDATE ON rag_v2.storage_assignment DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION rag_v2.check_unit_location_trigger();
+
+
+--
+-- Name: knowledge_topic topic_no_cycle; Type: TRIGGER; Schema: rag_v2; Owner: -
+--
+
+CREATE TRIGGER topic_no_cycle BEFORE INSERT OR UPDATE OF parent_id ON rag_v2.knowledge_topic FOR EACH ROW EXECUTE FUNCTION rag_v2.reject_topic_cycle();
 
 
 --
@@ -1774,6 +2173,38 @@ ALTER TABLE ONLY rag_v2.document_version
 
 
 --
+-- Name: entity_relation_evidence entity_relation_evidence_evidence_id_fkey; Type: FK CONSTRAINT; Schema: rag_v2; Owner: -
+--
+
+ALTER TABLE ONLY rag_v2.entity_relation_evidence
+    ADD CONSTRAINT entity_relation_evidence_evidence_id_fkey FOREIGN KEY (evidence_id) REFERENCES rag_v2.evidence(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: entity_relation_evidence entity_relation_evidence_relation_id_fkey; Type: FK CONSTRAINT; Schema: rag_v2; Owner: -
+--
+
+ALTER TABLE ONLY rag_v2.entity_relation_evidence
+    ADD CONSTRAINT entity_relation_evidence_relation_id_fkey FOREIGN KEY (relation_id) REFERENCES rag_v2.entity_relation(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: entity_relation entity_relation_source_subject_id_fkey; Type: FK CONSTRAINT; Schema: rag_v2; Owner: -
+--
+
+ALTER TABLE ONLY rag_v2.entity_relation
+    ADD CONSTRAINT entity_relation_source_subject_id_fkey FOREIGN KEY (source_subject_id) REFERENCES rag_v2.knowledge_subject(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: entity_relation entity_relation_target_subject_id_fkey; Type: FK CONSTRAINT; Schema: rag_v2; Owner: -
+--
+
+ALTER TABLE ONLY rag_v2.entity_relation
+    ADD CONSTRAINT entity_relation_target_subject_id_fkey FOREIGN KEY (target_subject_id) REFERENCES rag_v2.knowledge_subject(id) ON DELETE RESTRICT;
+
+
+--
 -- Name: evidence evidence_document_version_id_fkey; Type: FK CONSTRAINT; Schema: rag_v2; Owner: -
 --
 
@@ -1862,6 +2293,30 @@ ALTER TABLE ONLY rag_v2.knowledge_subject
 
 
 --
+-- Name: knowledge_topic_assignment knowledge_topic_assignment_subject_id_fkey; Type: FK CONSTRAINT; Schema: rag_v2; Owner: -
+--
+
+ALTER TABLE ONLY rag_v2.knowledge_topic_assignment
+    ADD CONSTRAINT knowledge_topic_assignment_subject_id_fkey FOREIGN KEY (subject_id) REFERENCES rag_v2.knowledge_subject(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: knowledge_topic_assignment knowledge_topic_assignment_topic_id_fkey; Type: FK CONSTRAINT; Schema: rag_v2; Owner: -
+--
+
+ALTER TABLE ONLY rag_v2.knowledge_topic_assignment
+    ADD CONSTRAINT knowledge_topic_assignment_topic_id_fkey FOREIGN KEY (topic_id) REFERENCES rag_v2.knowledge_topic(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: knowledge_topic knowledge_topic_parent_id_fkey; Type: FK CONSTRAINT; Schema: rag_v2; Owner: -
+--
+
+ALTER TABLE ONLY rag_v2.knowledge_topic
+    ADD CONSTRAINT knowledge_topic_parent_id_fkey FOREIGN KEY (parent_id) REFERENCES rag_v2.knowledge_topic(id) ON DELETE RESTRICT;
+
+
+--
 -- Name: processing_artifact processing_artifact_processing_step_id_fkey; Type: FK CONSTRAINT; Schema: rag_v2; Owner: -
 --
 
@@ -1899,6 +2354,14 @@ ALTER TABLE ONLY rag_v2.property_component_type
 
 ALTER TABLE ONLY rag_v2.property_component_type
     ADD CONSTRAINT property_component_type_property_id_fkey FOREIGN KEY (property_id) REFERENCES rag_v2.property(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: reference_entity reference_entity_type_fk; Type: FK CONSTRAINT; Schema: rag_v2; Owner: -
+--
+
+ALTER TABLE ONLY rag_v2.reference_entity
+    ADD CONSTRAINT reference_entity_type_fk FOREIGN KEY (entity_type) REFERENCES rag_v2.entity_type(code) ON UPDATE RESTRICT ON DELETE RESTRICT;
 
 
 --
@@ -1977,5 +2440,5 @@ ALTER TABLE ONLY rag_v2.unit_condition_history
 -- PostgreSQL database dump complete
 --
 
-\unrestrict pdVmmSQerRX1UeNtWahktfan5v9MU15zViJEPMG4pPZqe1dZmzA2MQ63DKL9xzN
+\unrestrict XBcyqM0CBUSc7cOUQvesQbAiH06pAjWp8Ohn35qdagXJ9dabwh5r7fKTbvdX4JG
 

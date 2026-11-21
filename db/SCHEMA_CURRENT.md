@@ -1,5 +1,38 @@
 # Aktuelles Datenbankschema – Retro-RAG V2
 
+**Aktueller Testdatenbankstand: 20.11.2026 · Migration 0006 · 43 Tabellen**
+
+## Verifizierter Stand auf Poseidon
+
+- Testdatenbank: `retro_rag_v2_test` im PostgreSQL-16-Container `codeanalyse-postgres`.
+- Migrationen `0001` bis `0006` sind installiert; sechs neue universelle Tabellen ergänzen das vorherige 37-Tabellen-Schema.
+- Neu: `entity_type`, `knowledge_topic`, `knowledge_topic_assignment`, `entity_relation`, `entity_relation_evidence`, `knowledge_proposal`; außerdem `accepted_entity_relation` als eingeschränkte Lesesicht.
+- Unabhängige SQL-Kontrolle: **43 Tabellen**, **15 Entitätstypen**, **0 Themen**, **0 Beziehungen**, **0 Vorschläge**. `rag_v2.write_gate.writes_enabled=false`.
+- Tests: transaktionale Migration, Rollentests (inklusive echter SCRAM-Logins), Mehrverbindungsprüfung, **24 reguläre Pytest-Tests plus 10 explizite Datenbankintegrationstests** erfolgreich. Der alte C1-Konkurrenztest bleibt separat und wurde nicht auf der vorhandenen Testdatenbank ausgeführt.
+- Sicherung vor 0006 wurde per `pg_restore --single-transaction --exit-on-error` in eine kurzlebige Datenbank im vorhandenen Cluster wiederhergestellt und überprüft: Version 5, 37 Tabellen, geschlossenes Gate; temporäre Datenbank danach gelöscht.
+- Die fachliche [Zielarchitektur](../docs/ARCHITECTURE_GOALS.md) und [Entscheidungen](../docs/ARCHITECTURE_DECISIONS.md) sind dokumentiert; Extraktions- und Freigabepolicies noch **nicht** umgesetzt.
+- Nachweis: [Migrations-/Testprotokoll 0006](../docs/UNIVERSAL_KNOWLEDGE_SCHEMA_0006.md).
+
+### Live-Schema-Snapshot
+
+Der [DDL-Snapshot](schema/retro_rag_v2_test.sql) wurde nach Migration 0006 auf Poseidon erneut aus der tatsächlich installierten V2-Testdatenbank exportiert und im Featurebranch versioniert (Commit `64de205`; siehe [Roadmap C-02](../docs/PROJECT_ROADMAP.md)). Das aktualisierte Skript `scripts/export_schema_v2.sh` verlangt Version 6, 43 Tabellen und ein geschlossenes Write-Gate. Der Snapshot enthält ausschließlich Schema-DDL und ersetzt weder Migrationen noch ein vollständiges Backup.
+
+```bash
+cd ~/projects/retro-rag_v2
+git pull --ff-only
+bash scripts/export_schema_v2.sh
+git diff --check
+git diff --stat -- db/schema/retro_rag_v2_test.sql
+```
+
+Der Snapshot enthält nur DDL des Schemas `rag_v2`, ohne Daten, Berechtigungen, globale Rollen, HBA-Regeln oder die `public`-Extensiondefinition. Migrationen und Backups bleiben verbindlich.
+
+---
+
+## Historischer Schema- und Abnahmestand bis Migration 0005
+
+**Die folgenden Abschnitte sind historische Nachweise mit Stand 09.11.2026; ihre Angaben zu 37 Tabellen, Migration 0005 und früheren offenen Punkten beschreiben nicht mehr den aktuellen Zustand.**
+
 **Stand:** 09.11.2026 · **Entwicklungszweig:** `feat/document-identity-review`
 
 ## Autoritativer Stand
