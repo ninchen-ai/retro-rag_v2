@@ -193,6 +193,13 @@ Auf Poseidon wurde der zuvor per SHA-256 verifizierte CUBX-Seite-111-Ausschnitt 
 - **Einordnung:** `gemma3:12b` ist auf Poseidon in diesem Versuch lokal ausführbar und liefert **3/3 korrekt transkribierte Zeilen**. Das ist kein statistisch belastbarer Vergleich und keine OCR-Qualitätsfreigabe. Selektiver VLM-Fallback hinter Standard-OCR mit unabhängiger Evidenz-/Freigabeprüfung bleibt das Ziel; keine Änderung an Indexierung, Datenbank oder Write-Gate.
 - **Folgeprüfung:** Weitere schwer lesbare, vom Prompt nicht vorweggenommene Bereiche (z. B. kleine Badge-Texte, andere PDF-Seiten/Modelnummern) sowie Wiederholungsläufe; Quelle/Crop, Modellidentität, Prompts und getrennte Kandidaten speichern. CER/WER und kritische Zeichen nur anhand manuell geprüfter Referenz.
 
+### Gemma 3 12B – OCR der zehn seitlichen CUBX-Badges (21.11.2026)
+
+- Der bereits vorliegende, aus SHA-256-geprüfter PDF-Seite 111 gerenderte Ausschnitt `/data/retro-rag/v2/ocr-evaluation/cubx-regions-experiment-01/badges-300dpi.png` wurde lokal mit `ollama run gemma3:12b` und einem neutralen Transkriptionsprompt („exactly as printed; do not invent“) untersucht.
+- **Gemma-Ausgabe:** `NVIDIA / GeForce`, `AGP 4x / 2x`, `DirectX 7`, `SmartDoctor / Technologies`, `VR 3D Glasses`, `704x480 / Video capture`, `MPEG2 / encoding`, `VideoSecurity`, `ASUS DVD / Software player`, `3D Games / Banned`.
+- **Visueller Abgleich gegen den zuvor hochgeladenen Originalausschnitt:** Die ersten neun Labels werden inhaltlich weitgehend korrekt wiedergegeben; **letztes Badge heißt `3D Games Bundled`, nicht `Banned`**. Aus den neun weitgehend richtigen Labels folgt **keine** allgemeine 90-%-OCR-Genauigkeit; die Aussage bezieht sich nur auf diese zehn Textblöcke, nicht auf einzelne Zeichen, CER/WER oder andere Dokumenttypen. Tesseract lieferte zuvor auf diesem Zuschnitt überwiegend Zeichenrauschen.
+- **Qualitätsfolge:** Die VLM-Unterstützung ist nützlich, aber auch semantisch plausible, technisch wichtige Fehler möglich. VLM-Transkriptionen als separate **unbestätigte OCR-Kandidaten** mit Quell-/Crop-/Modell-Provenienz behandeln. Abweichende Begriffe, Zahlen und Modelle zum Review markieren; keine eigenständige Überschreibung bestehender OCR, keine automatische Indexierung oder Faktenfreigabe. Für belastbare Bewertung weitere Seiten sowie unabhängige Wiederholungsläufe und regionsgleiche manuell bestätigte Referenzen nutzen.
+
 ## E. Empfohlene Reihenfolge und Freigabe-Gates
 
 | Reihenfolge | Paket | Abschlussbedingung |
