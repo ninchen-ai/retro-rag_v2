@@ -166,6 +166,12 @@ Im vorhandenen **schreibfreien Experiment** `experiments/ocr_regions_cubx.py` wu
 - Poseidon-Regressionslauf am selben Stand ergab `152 passed, 1 failed, 11 skipped`; Ruff meldete `I001`, `F401`, `C401`. **Ursache des fehlgeschlagenen Alt-Tests:** Bei PSM-7-Erweiterung wurde der Python-Default unbeabsichtigt von (6,11) auf (6,7,11) vergrößert, damit 18 statt 12 Kandidaten in der Standardfunktion. Die CLI des bisherigen `regions`-Profils selbst selektierte bereits ausdrücklich (6,11). Korrigiert: `DEFAULT_PSM_OPTIONS=(6,11)`, `PSM_OPTIONS=(6,7,11)` zur Validierung; unbenutzten Testimport entfernt und Set-Comprehension statt Generator verwendet (Commits `c286969`, `7887beb`). **Erneuter Ruff-/Pytest-Lauf auf Poseidon ausstehend**; keine Freigabe vor Bestätigung.
 - Der Versuch hat weder OCR-Indexierung noch Fact-Vorschläge freigegeben. Für weitere Verbesserungen zunächst einzeln zugeschnittene Bilder sichten und erst danach kontrast-/farbbasierte Verfahren vergleichen; CER/WER erfordern dieselben, manuell verifizierten Referenzzeilen.
 
+### PSM-7-Abnahme und mögliche VLM-Vergleichsstufe (21.11.2026)
+
+- **Poseidon-Regression PASS** nach Fast-Forward auf `4035f48`: Ruff `All checks passed!`, Pytest `153 passed, 11 skipped` in 0,68 s; `git diff --check` ohne Beanstandung. Damit ist die PSM-7-Einzelzeilen-Konfiguration technisch geprüft. 10 reguläre DB-Integrationstests wurden schon separat auf dem Testcluster bestanden; isolierter C1-Konkurrenztest bleibt offen.
+- **Fachlicher OCR-Ausblick, nicht implementiert oder abgenommen:** Optionales Vision-Language-Model als **zweiter, isolierter OCR-Kandidat** für stilisierte Titel und Badge-Schrift (zuerst z. B. lokal Qwen3-VL 2B/4B, alternativ dokumentorientiertes PaddleOCR-VL). VLM-Ausgaben dürfen nicht als Ground Truth, bestätigte Fakten oder freigegebener Indextext gelten: Originalbild- und Regions-Hash, Modellversion, Prompt, Kandidatentext, kritische Zahlen/Fachbezeichnungen und Review-Entscheidung getrennt sichern. Gegen geprüfte regionsgleiche Referenzen CER/WER und Critical-Term-Recall messen. Kein automatisches Vertrauen auf semantisch plausible Ergänzungen und keine Freigabe des Write-Gates.
+- Erst schreibfreies Experiment mit einem existierenden PNG-Ausschnitt, ohne Änderungen an bestehender Extraktion/Importworker; Modell-Laufzeit und Ressourcenbedarf auf Poseidon prüfen.
+
 ## E. Empfohlene Reihenfolge und Freigabe-Gates
 
 | Reihenfolge | Paket | Abschlussbedingung |
