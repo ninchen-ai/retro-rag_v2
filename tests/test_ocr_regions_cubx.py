@@ -6,7 +6,7 @@ import pytest
 
 pymupdf = pytest.importorskip("pymupdf")
 
-from experiments.ocr_regions_cubx import Region, run_region_experiment
+from experiments.ocr_regions_cubx import HEADLINE_LINES, Region, run_region_experiment, tesseract_ocr
 
 
 def sample_pdf():
@@ -105,5 +105,46 @@ def test_page_boundaries_checked(tmp_path):
         run_region_experiment(
             data, expected_sha256=hashlib.sha256(data).hexdigest(),
             output_dir=target, page_number=111,
+        )
+    assert not target.exists()
+
+
+def test_headline_lines_psm7_dpi_variants(tmp_path):
+    data = sample_pdf()
+    received = []
+
+    def mock_ocr(png, *, language, psm):
+        assert png.startswith(b"\\x89PNG")
+        received.append((language, psm))
+        return "AGP-V6800 Series\\n"
+
+    target = tmp_path / "headline-lines"
+    report = run_region_experiment(
+        data, expected_sha256=hashlib.sha256(data).hexdigest(),
+        output_dir=target, page_number=1, regions=HEADLINE_LINES,
+        dpi_options=(200, 300), psm_options=(7,), ocr=mock_ocr,
+    )
+    assert len(report["runs"]) == 6
+    assert set(row["region"] for row in report["runs"]) == {
+        "title_line", "slogan_line1", "slogan_line2"
+    }
+    assert all(row["psm"] == 7 for row in report["runs"])
+    assert {row["dpi"] for row in report["runs"]} == {200, 300}
+    assert received == [("eng+deu", 7)] * 6
+    assert len(list(target.glob("*.png"))) == 6
+    assert len(list(target.glob("*.txt"))) == 6
+    assert report["indexing_allowed"] is False
+    assert report["quality_approved"] is False
+    assert all(row["status"] == "not_evaluated" for row in report["runs"])
+
+
+def test_psm7_rejected_outside_supported_set(tmp_path):
+    data = sample_pdf()
+    target = tmp_path / "invalid-psm"
+    with pytest.raises(ValueError, match="PSM"):
+        run_region_experiment(
+            data, expected_sha256=hashlib.sha256(data).hexdigest(),
+            output_dir=target, page_number=1,
+            regions=HEADLINE_LINES, psm_options=(13,),
         )
     assert not target.exists()
