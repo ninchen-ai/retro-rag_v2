@@ -114,9 +114,9 @@ def test_headline_lines_psm7_dpi_variants(tmp_path):
     received = []
 
     def mock_ocr(png, *, language, psm):
-        assert png.startswith(b"\\x89PNG")
+        assert png.startswith(b"\x89PNG")
         received.append((language, psm))
-        return "AGP-V6800 Series\\n"
+        return "AGP-V6800 Series\n"
 
     target = tmp_path / "headline-lines"
     report = run_region_experiment(
