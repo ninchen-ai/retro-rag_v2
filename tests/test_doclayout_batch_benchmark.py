@@ -7,7 +7,6 @@ from typing import ClassVar
 
 import pytest
 
-
 SCRIPT = Path(__file__).resolve().parents[1] / "experiments" / "doclayout_batch_benchmark.py"
 SPEC = importlib.util.spec_from_file_location("doclayout_batch_benchmark", SCRIPT)
 benchmark = importlib.util.module_from_spec(SPEC)
