@@ -14,9 +14,9 @@ import os
 import re
 import subprocess
 import tempfile
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable
 
 import pymupdf
 
@@ -65,7 +65,7 @@ def tesseract_ocr(png: bytes, *, language: str, psm: int) -> str:
         raise ValueError("Nicht unterstützter PSM-Modus")
     result = subprocess.run(
         ["tesseract", "stdin", "stdout", "-l", language, "--psm", str(psm)],
-        input=png, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        input=png, capture_output=True,
         check=True, timeout=120,
     )
     return result.stdout.decode("utf-8", errors="replace")
