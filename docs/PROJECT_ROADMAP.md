@@ -92,6 +92,12 @@ Diese Datei ist der **zentrale Aufgabenindex**. Detaillierte Architektur- und Te
 - **Weiter offen:** vollständiger E2E-Pfad Nextcloud/WebDAV → PDF/OCR → Job/Artefakte → Chunks/Embeddings → kontrollierte Aktivierung; erst danach Freigabe von PR #13 für den regulären Integrationsbranch. Keine automatische `--apply`-Freigabe, kein Gate-Öffnen, keine Produktivfreigabe.
 - Migration `0007` bleibt als gesonderter **nur dokumentierter Entwurf** in [Draft PR #14](https://github.com/ninchen-ai/retro-rag_v2/pull/14). Eine erfolgreiche Pipeline-Regression ist keine Abnahme für `0007`.
 
+### Einzeldatei-Vorschau WebDAV → PDF/OCR (Entwicklungsstand 21.11.2026)
+
+Auf dem **Staging-Branch** wurde der schreibfreie Adapter `src/retro_rag/importer/pdf_preview_cli.py` ergänzt, mit `tests/test_pdf_preview_cli.py`. Er verwendet eine explizite Nextcloud-`fileid`, einen vorab bestätigten SHA-256, den abgesicherten WebDAV-Download und den vorhandenen `read_pdf()`-Adapter. Das Original wird nur für die Dauer der Extraktion in einem privaten temporären Verzeichnis abgelegt und anschließend gelöscht; das Ergebnis enthält ausschließlich Metadaten, OCR-Seiten, Chunk-Zahl und Warnungen, keine DB-Schreiboperationen und keine Freigabe. `indexing_allowed` muss weiterhin `False` bleiben.
+
+**Noch nicht auf Poseidon getestet:** Der neue Adapter und seine Tests müssen nach `git pull --ff-only` mit Pytest/Ruff erneut geprüft werden. Ein echter WebDAV-Abruf wird erst mit geeigneten Credentials gegen den lokalen Loopback-Endpunkt durchgeführt. Das ist **kein** End-to-End-Importworker, kein persistenter Chunk-/Embedding-Pfad und kein neuer `--apply`-Weg.
+
 ## E. Empfohlene Reihenfolge und Freigabe-Gates
 
 | Reihenfolge | Paket | Abschlussbedingung |
