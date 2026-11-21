@@ -6,7 +6,7 @@ import pytest
 
 pymupdf = pytest.importorskip("pymupdf")
 
-from experiments.ocr_regions_cubx import HEADLINE_LINES, Region, run_region_experiment, tesseract_ocr
+from experiments.ocr_regions_cubx import HEADLINE_LINES, Region, run_region_experiment
 
 
 def sample_pdf():
@@ -125,7 +125,7 @@ def test_headline_lines_psm7_dpi_variants(tmp_path):
         dpi_options=(200, 300), psm_options=(7,), ocr=mock_ocr,
     )
     assert len(report["runs"]) == 6
-    assert set(row["region"] for row in report["runs"]) == {
+    assert {row["region"] for row in report["runs"]} == {
         "title_line", "slogan_line1", "slogan_line2"
     }
     assert all(row["psm"] == 7 for row in report["runs"])
