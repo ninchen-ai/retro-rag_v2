@@ -104,9 +104,9 @@ def main() -> int:
 
     # Modelle/weights können beim Laden Code ausführen: ausschließlich
     # vertrauenswürdige, vorab geprüfte Gewichte benutzen.
+    import torch
     from doclayout_yolo import YOLOv10
     from PIL import Image
-    import torch
 
     if args.device.startswith("cuda") and not torch.cuda.is_available():
         parser.error("CUDA angefordert, aber keine CUDA-fähige GPU verfügbar")
