@@ -80,6 +80,17 @@ Diese Datei ist der **zentrale Aufgabenindex**. Detaillierte Architektur- und Te
 - [Issue #8 – OCR-Qualität](https://github.com/ninchen-ai/retro-rag_v2/issues/8).
 - Die genannten Links sind **Arbeitsnachweise**, keine Behauptung, dass sämtliche PRs bereits gemergt oder deren Akzeptanzkriterien erledigt sind.
 
+## Integrationsnachtrag PDF/OCR/WebDAV – 21.11.2026
+
+**Branch:** `integration/pdf-ocr-webdav-2026-11-21` · [Draft PR #13](https://github.com/ninchen-ai/retro-rag_v2/pull/13).
+
+- PDF-Extraktion, OCR Stage 4 und OCR-Qualität (`feat/ocr-quality-evaluation`) wurden zusammen mit `feat/controlled-single-webdav-apply` in den **separaten Staging-Branch** übernommen. Dies ist noch **kein Merge in die reguläre Integrationslinie**.
+- Nach Ruff-Bereinigung bestätigte Poseidon: `python -m ruff check .` **All checks passed**, `python -m pytest -q -rs` **135 passed, 11 skipped**, `git diff --check` ohne Beanstandung; Staging-Commit `47f22aba`.
+- Die vier Tests aus `tests/test_document_identity_integration.py` und die sechs Tests aus `tests/test_version_activation_integration.py` wurden anschließend als separate DB-Integrationsprüfungen über `rag_v2_migrator_login` gegen `retro_rag_v2_test` ausgeführt: **10 passed in 0.23s**. Die Fixtures verwenden transaktionales Rollback; ein nachfolgender unabhängiger Gate-/Datenzähler-Check steht noch aus.
+- Der elfte übersprungene Test (`test_version_activation_concurrency.py`) benötigt **einen separaten isolierten Cluster mit Migrationsstand 0005** und ist nicht für die persistente V2-Testdatenbank bestimmt.
+- **Offen:** unabhängige SQL-Nachkontrolle von Gate, Versionsmarker und Zählern; vollständiger E2E-Pfad Nextcloud/WebDAV → PDF/OCR → Job/Artefakte → Chunks/Embeddings → kontrollierte Aktivierung; erst danach Freigabe von PR #13 für den regulären Integrationsbranch. Keine automatische `--apply`-Freigabe, kein Gate-Öffnen, keine Produktivfreigabe.
+- Migration `0007` bleibt als gesonderter **nur dokumentierter Entwurf** in [Draft PR #14](https://github.com/ninchen-ai/retro-rag_v2/pull/14). Eine erfolgreiche Pipeline-Regression ist keine Abnahme für `0007`.
+
 ## E. Empfohlene Reihenfolge und Freigabe-Gates
 
 | Reihenfolge | Paket | Abschlussbedingung |
