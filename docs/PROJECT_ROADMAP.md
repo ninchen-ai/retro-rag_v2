@@ -178,6 +178,14 @@ Auf Poseidon wurde der zuvor per SHA-256 verifizierte CUBX-Seite-111-Ausschnitt 
 
 **Status:** Dies ist **ein erfolgreicher Einzelkandidat**, keine nachgewiesene allgemeine Genauigkeit, kein CER-/WER-Gesamtnachweis und keine Produktionsfreigabe. Das VLM wird als **optionale, selektiv regelgesteuerte Zusatzinstanz** nach Standard-PDF-/Tesseract-Verarbeitung vorgesehen, **nicht als Ersatz für Tesseract**. Bei verdächtigen OCR-Regionen Originalbild, Crop, Tesseract-Kandidat, VLM-Kandidat, Prompt/Modellversion und gegebenenfalls Abweichungen aufbewahren; bestätigte Wissensobjekte/Indexierung erst nach bestehender Review-/Freigabelogik. Kein automatisches Überschreiben oder Selbstbestätigen. Als nächstes die beiden vorhandenen Slogan-Ausschnitte mit demselben Modell untersuchen und quantitative Bewertung gegen manuell geprüfte regionsgleiche Referenzen vorbereiten.
 
+### Lokales Vision-LLM als selektiver OCR-Zweitkandidat – Slogan-Test (21.11.2026)
+
+- **Unveränderte, nur lokal erzeugte Ausschnitte:** `/data/retro-rag/v2/ocr-evaluation/cubx-headline-psm7-01/title_line-300dpi.png`, `slogan_line1-200dpi.png` und `slogan_line2-200dpi.png`; Quelle CUBX PDF S. 111, Original-SHA-256 `f10dc04911aa75241adcb29731af62fc4ce4c5e5a21b0a69ff621778c784f82b`.
+- **Ollama/Qwen3-VL 2B, einzelner manueller Prompt „transcribe exactly“:** Titel `AGP-V6800 Series` (korrekt gegenüber sichtbarer Vorlage); Slogan Zeile 1 `Span the Graphics Globe` (korrekt); Slogan Zeile 2 `with_DDR_Intelligence` (**falsch**, die Vorlage enthält Leerzeichen). Keine unabhängigen Mehrfachläufe, keine statistische Qualitätsaussage.
+- **Besonderer Fehlermodus:** Das Modell rationalisierte den Unterstrich-Fehler ausführlich mit angeblichen Beispiel-/Bildbeschreibungen, die nicht in der Eingabe standen. Modellbegründungen, Behauptungen über die Bildvorlage und selbstberichtete Sicherheit sind daher **kein Evidenznachweis**. Bewertung ausschließlich an Quelle/Bildausschnitt und unabhängig überprüfter Referenz.
+- **Architekturentscheidung bekräftigt:** Standardextraktion/Tesseract zuerst; VLM nur bei regelbasiert auffälligen Regionen, **als getrennter Transkriptionsvorschlag**, niemals als selbstbestätigende Korrektur. Text, Eingangsbildhash, ursprünglicher PDF-/Regionsbezug, Modellversion/Prompt, Übereinstimmungskonflikte und unabhängige Freigabe getrennt halten. Keine Änderung am Write-Gate, kein automatischer Index- oder Fakten-Apply.
+- **Nächster Versuch:** Detektivischer Vergleich OCR/VLM an bislang nicht im Prompt verratenen schwierigen Regionen mit manuell geprüfter Referenz; keine erwarteten Lösungstexte als Prompt-Vorgabe verwenden (um Wiedererkennen/Anpassung an bekanntes Wissen nicht mit optischer Erkennung zu verwechseln).
+
 ## E. Empfohlene Reihenfolge und Freigabe-Gates
 
 | Reihenfolge | Paket | Abschlussbedingung |
