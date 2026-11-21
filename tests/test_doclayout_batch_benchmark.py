@@ -3,6 +3,7 @@
 import hashlib
 import importlib.util
 from pathlib import Path
+from typing import ClassVar
 
 import pytest
 
@@ -37,7 +38,7 @@ class Box:
 
 
 class Result:
-    names = {1: "table", 2: "figure"}
+    names: ClassVar[dict[int, str]] = {1: "table", 2: "figure"}
 
     def __init__(self, boxes):
         self.boxes = boxes
