@@ -153,6 +153,12 @@ Die 12 lokalen OCR-Textkandidaten auf Poseidon wurden qualitativ gegenüber dem 
 - Bildkontrolle der hochgeladenen 300-DPI-Ausschnitte: `headline` umfasst vollständige Überschrift und Slogan, aber Schatten/komplexe Farbflächen beeinträchtigen Texterkennung. `specifications` enthält die relevanten technischen Zeilen auf schwarzem Grund, gut abgegrenzt. `badges` enthält die vertikale komplette Badge-Leiste, doch Schrift und Hintergrund haben schwierigen Kontrast; als **nächste Hypothese** einzelne Badges separat segmentieren und ggf. bildvorverarbeiten. **Keine gemessene Qualitätssteigerung** nachgewiesen, keine Änderung an `read_pdf()` oder Indexfreigabe.
 - Weiter offen: echte OCR-Referenzen je Region, CER/WER, kritische Begriffe, isolierter C1-Parallelitätstest und persistente Importverarbeitung.
 
+### OCR-Experiment Punkt 1 – Titel und Slogan als Einzelzeilen (21.11.2026)
+
+Im vorhandenen **schreibfreien Experiment** `experiments/ocr_regions_cubx.py` wurde das wählbare Profil `--profile headline-lines` ergänzt. Es verwendet ausschließlich drei anhand des visuellen CUBX-Seitenbildes vorläufig abgegrenzte Textzeilen: `title_line` („AGP-V6800 Series“), `slogan_line1` („Span the Graphics Globe“) und `slogan_line2` („with DDR Intelligence“). Die drei Zeilen werden **direkt aus der Original-PDF S. 111** mit 200 bzw. 300 DPI gerendert und jeweils Tesseract **PSM 7** (`eng+deu`) zugeführt: 6 PNG-Bilder, 6 Kandidatentexte und der unverändert auf `not_evaluated`/`indexing_allowed=false` begrenzte Bericht. Der bisherige Modus `--profile regions` (3 größere Regionen, PSM 6/11, 12 OCR-Kandidaten) bleibt als Default erhalten. Zwei separate Regressionstests wurden ergänzt.
+
+**Grenzen und Abnahme:** Die relativen Ausschnittkoordinaten müssen im echten PDF anhand der neuen PNGs kontrolliert werden. Keine automatische Korrektur aus erwarteten Überschriftstexten, kein Review-Statuswechsel und keine Indexfreigabe. Der Code ist im Staging-Branch committed; **Ruff, Pytest und Live-Poseidon-Lauf für das neue Profil stehen aus**. Zunächst Ergebnisse mit dem bisherigen kombinierten Überschriften-Crop vergleichen, erst danach CER/WER anhand unabhängiger Referenzen.
+
 ## E. Empfohlene Reihenfolge und Freigabe-Gates
 
 | Reihenfolge | Paket | Abschlussbedingung |
