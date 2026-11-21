@@ -118,6 +118,12 @@ Die PDF-Extraktion unterscheidet nun vorsichtig zwischen **strukturell leerer** 
 - Auf Poseidon wurde eine **separate Arbeitskopie** unter `/data/retro-rag/v2/ocr-evaluation/cubx-103-f10dc04911aa-p0111/` angelegt und die OCR-Ausgabe der SHA-geprüften Original-PDF-Seite erneut mittels PyMuPDF/Tesseract, `eng+deu`, 200 DPI erzeugt: **1.723 Zeichen**, `ocr.txt` und `ocr_run.json` gespeichert. Backup auf Atlas unverändert; keine OCR-Qualitätsfreigabe.
 - **Noch offen:** unabhängige, anhand des Originalseitenbilds manuell geprüfte vollständige `reference.txt`; erst danach `review_status` sachgerecht setzen und CER/WER/kritische Terme mit `ocr_evaluation` ermitteln. Zeichenlängengleichheit ist kein Byteidentitäts- oder Qualitätsnachweis. Lokale Rohtexte/Seitenbilder nicht nach GitHub committen.
 
+### Sichtprüfung der OCR-Ausgabe anhand des CUBX-Seitenbilds (21.11.2026)
+
+- Die Originalabbildung der ASUS-AGP-V6800-Werbeanzeige (CUBX PDF S. 111) und die aktuelle lokale `ocr.txt` (Tesseract `eng+deu`, 200 DPI, 1.723 Zeichen) wurden gemeinsam betrachtet. Die technische Liste im unteren schwarzen Bereich ist teilweise gut lesbar: u. a. 300 MHz DDR-Speicher, 32 MB DDR SGRAM, 704×480 Video-Capture und AGP-V6800/Deluxe. Überschrift (`AGP-V6800)Seties:`), Slogan (`Spam tie Grap ... Globe`) und grafischer Hintergrund sind dagegen deutlich fehlerhaft; zahlreiche Artefakte und falsche Textreihenfolge.
+- Ein **visueller Transkriptionsentwurf** wurde außerhalb des Repos als Arbeitsdatei erstellt. Die endgültige vollständige Referenz erfordert eine unabhängige manuelle Nachprüfung der kleinen Icon-/Trademark-Texte und der Lesereihenfolge. Bis dahin: `review_status=unreviewed`, keine CER/WER-Abnahme und keine Indexfreigabe. Qualitätsverbesserung durch Bereichs-/Layout-OCR als separater Kandidat; Referenz und Kandidat müssen denselben Seitenumfang abdecken.
+- Rohtexte und Originalbilder verbleiben lokal/privat; nicht nach GitHub übernehmen.
+
 ## E. Empfohlene Reihenfolge und Freigabe-Gates
 
 | Reihenfolge | Paket | Abschlussbedingung |
