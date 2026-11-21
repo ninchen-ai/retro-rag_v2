@@ -124,6 +124,14 @@ Die PDF-Extraktion unterscheidet nun vorsichtig zwischen **strukturell leerer** 
 - Ein **visueller Transkriptionsentwurf** wurde außerhalb des Repos als Arbeitsdatei erstellt. Die endgültige vollständige Referenz erfordert eine unabhängige manuelle Nachprüfung der kleinen Icon-/Trademark-Texte und der Lesereihenfolge. Bis dahin: `review_status=unreviewed`, keine CER/WER-Abnahme und keine Indexfreigabe. Qualitätsverbesserung durch Bereichs-/Layout-OCR als separater Kandidat; Referenz und Kandidat müssen denselben Seitenumfang abdecken.
 - Rohtexte und Originalbilder verbleiben lokal/privat; nicht nach GitHub übernehmen.
 
+### Bereichs-OCR-Experiment CUBX-Seite 111 (21.11.2026)
+
+Im **separaten Staging-Branch** sind `experiments/ocr_regions_cubx.py` und `tests/test_ocr_regions_cubx.py` hinzugefügt. Der Versuchsaufbau lädt ausschließlich eine **explizit gewählte** Nextcloud-PDF-Datei, überprüft den bekannten SHA-256 der Originalbytes und rendert drei feste, **vorläufige** Ausschnitte direkt aus PDF-Seite 111 (Überschrift, Spezifikationen, Icon-/Randtexte) jeweils mit 200 und 300 DPI. Für jeden Bildausschnitt werden Tesseract-PSM 6 und 11 mit `eng+deu` getestet: **6 PNG-Ausschnitte und 12 OCR-Textkandidaten** plus JSON-Bericht, ohne Original-PDF, Archiv, PostgreSQL, Nextcloud oder den Importworker zu verändern. Bestehende Zielverzeichnisse werden nicht überschrieben; temporäre Versuche werden bei Fehlern entfernt. Der Bericht verbleibt `not_evaluated`, `quality_approved=false`, `indexing_allowed=false`, ohne automatisches Review.
+
+Die Koordinaten sind **experimentell** und müssen anhand der ausgegebenen PNGs überprüft werden; keine automatische Behauptung eines besseren Ergebnisses. Zeichenzahl, Wortzahl und Kandidatenhash sind **keine** Genauigkeitsmetrik. Für CER/WER pro Region braucht es je Region eine unabhängig geprüfte Referenz mit gleichem Textumfang. Insbesondere darf der vorläufige Vollseitentext nicht als Referenz für nur einen Ausschnitt verwendet werden.
+
+**Validierungsstand:** Sechs isolierte Regressionstests wurden außerhalb Poseidons mit synthetischem PDF/MOCK-OCR bestanden. **Noch offen auf Poseidon:** `python -m ruff check .`, vollständige Pytest-Suite sowie Live-Experiment mit `fileid=172` und Hash `f10dc04911aa75241adcb29731af62fc4ce4c5e5a21b0a69ff621778c784f82b`; kein Merge oder Freigabe vor deren Prüfung.
+
 ## E. Empfohlene Reihenfolge und Freigabe-Gates
 
 | Reihenfolge | Paket | Abschlussbedingung |
