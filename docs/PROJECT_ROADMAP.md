@@ -147,6 +147,12 @@ Die 12 lokalen OCR-Textkandidaten auf Poseidon wurden qualitativ gegenüber dem 
 - **Seitliche Badges:** Alle Kandidaten erzeugen überwiegend sinnloses Zeichenrauschen. Vor erneuter OCR zuerst Bildzuschnitte/Positionierung und nutzbare Ausgangsauflösung visuell prüfen.
 - **Nächster Schritt:** PNG-Crops für alle drei Regionen kontrollieren; ggf. Regionengrenzen korrigieren und Spezialvorverarbeitung experimentell separat prüfen. CER/WER nur gegen unabhängig, manuell verifizierte **regionsgleiche** Referenztexte. Kein automatischer Übergang zu Indexierung oder bestätigten Fakten. Vollständiger Ruff-/Pytest-Regressionslauf für den neuen Experimentcode weiterhin nicht vom Nutzer nachgewiesen.
 
+### Drei OCR-Crops visuell geprüft und Ruff-Korrektur (21.11.2026)
+
+- Poseidon-Regressionslauf vor Ruff-Korrektur: `151 passed, 11 skipped` in 0,65 s, `git diff --check` ohne Ausgabe; Ruff meldete **UP035** (`Callable` aus `typing` statt `collections.abc`) und **UP022** (separate `stdout/stderr=PIPE` statt `capture_output=True`) in `experiments/ocr_regions_cubx.py`. Beide Hinweise behoben in Commit `f5ad301`; **Ruff-Neulauf auf Poseidon noch offen**.
+- Bildkontrolle der hochgeladenen 300-DPI-Ausschnitte: `headline` umfasst vollständige Überschrift und Slogan, aber Schatten/komplexe Farbflächen beeinträchtigen Texterkennung. `specifications` enthält die relevanten technischen Zeilen auf schwarzem Grund, gut abgegrenzt. `badges` enthält die vertikale komplette Badge-Leiste, doch Schrift und Hintergrund haben schwierigen Kontrast; als **nächste Hypothese** einzelne Badges separat segmentieren und ggf. bildvorverarbeiten. **Keine gemessene Qualitätssteigerung** nachgewiesen, keine Änderung an `read_pdf()` oder Indexfreigabe.
+- Weiter offen: echte OCR-Referenzen je Region, CER/WER, kritische Begriffe, isolierter C1-Parallelitätstest und persistente Importverarbeitung.
+
 ## E. Empfohlene Reihenfolge und Freigabe-Gates
 
 | Reihenfolge | Paket | Abschlussbedingung |
