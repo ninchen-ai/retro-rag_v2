@@ -38,8 +38,15 @@ REGIONS = (
     Region("specifications", 0.06, 0.67, 0.68, 0.94),
     Region("badges", 0.08, 0.19, 0.23, 0.52),
 )
+# Three text lines from the visually inspected CUBX advertisement (PDF page 111).
+# Coordinates are provisional, relative to the full PDF page; inspect output crops.
+HEADLINE_LINES = (
+    Region("title_line", 0.08, 0.025, 0.91, 0.085),
+    Region("slogan_line1", 0.20, 0.086, 0.96, 0.125),
+    Region("slogan_line2", 0.20, 0.123, 0.94, 0.166),
+)
 DPI_OPTIONS = (200, 300)
-PSM_OPTIONS = (6, 11)
+PSM_OPTIONS = (6, 7, 11)
 
 
 def render_region(page: pymupdf.Page, region: Region, dpi: int) -> bytes:
@@ -161,6 +168,10 @@ def main() -> None:
     parser.add_argument("--page", type=int, default=111)
     parser.add_argument("--language", default="eng+deu")
     parser.add_argument(
+        "--profile", choices=("regions", "headline-lines"), default="regions",
+        help="regions: bisheriges 3-Regionen-Experiment; headline-lines: drei Textzeilen mit PSM 7",
+    )
+    parser.add_argument(
         "--url",
         default=os.environ.get("RETRO_V2_WEBDAV_URL")
         or os.environ.get("RETRO_V2_NEXTCLOUD_URL"),
@@ -191,6 +202,8 @@ def main() -> None:
     report = run_region_experiment(
         data, expected_sha256=args.expected_sha256, output_dir=args.output,
         page_number=args.page, language=args.language,
+        regions=HEADLINE_LINES if args.profile == "headline-lines" else REGIONS,
+        psm_options=(7,) if args.profile == "headline-lines" else (6, 11),
     )
     print(json.dumps({
         "output": str(args.output),
