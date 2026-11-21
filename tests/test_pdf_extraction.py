@@ -31,7 +31,8 @@ def test_pdf_page_references_and_no_writes(tmp_path):
     assert "ASUS CUBX" in result.chunks[0].text
     assert result.indexing_allowed is False
     assert result.fact_proposals == []
-    assert any("Seite 2" in warning for warning in result.warnings)
+    assert result.document.metadata["blank_pages"] == [2]
+    assert not any("Seite 2" in warning for warning in result.warnings)
 
 
 def test_pdf_rejects_bad_signature(tmp_path):
@@ -91,3 +92,28 @@ def test_split_preserves_whitespace_at_boundaries():
     text = ("alpha beta\n\n" * 23) + "final\n"
     assert "".join(split_page(text, max_chars=37)) == text
     assert all(len(p) <= 37 for p in split_page(text, max_chars=37))
+
+
+def test_blank_page_keeps_indexing_disabled_and_no_ocr_warning(tmp_path):
+    path = tmp_path / "empty.pdf"
+    with pymupdf.open() as doc:
+        doc.new_page()
+        doc.save(path)
+    result = read_pdf(path, "nc:empty", ocr_mode="auto")
+    assert result.chunks == []
+    assert result.document.metadata["blank_pages"] == [1]
+    assert result.document.metadata["ocr_failed_pages"] == []
+    assert result.warnings == ["Keine Textinhalte extrahiert; OCR/Review erforderlich"]
+    assert result.indexing_allowed is False
+
+
+def test_vector_only_page_not_silently_classified_blank(tmp_path):
+    path = tmp_path / "vector.pdf"
+    with pymupdf.open() as doc:
+        page = doc.new_page()
+        page.draw_rect(pymupdf.Rect(20, 20, 100, 100))
+        doc.save(path)
+    result = read_pdf(path, "nc:vector")
+    assert result.document.metadata["blank_pages"] == []
+    assert any("Seite 1" in warning for warning in result.warnings)
+    assert result.indexing_allowed is False
