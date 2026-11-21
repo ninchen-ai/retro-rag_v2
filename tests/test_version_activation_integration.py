@@ -155,10 +155,9 @@ def test_savepoint_rollback_restores_both_states(db):
     document = make_document(db)
     old = add_version(db, document, 1, active=True)
     new = add_version(db, document, 2)
-    with pytest.raises(RuntimeError, match="simulierter Abbruch"):
-        with db.transaction():
-            activate_version(db, new)
-            raise RuntimeError("simulierter Abbruch")
+    with pytest.raises(RuntimeError, match="simulierter Abbruch"), db.transaction():
+        activate_version(db, new)
+        raise RuntimeError("simulierter Abbruch")
     assert state(db, old)[0] == "active"
     assert state(db, new)[0] is None
 
