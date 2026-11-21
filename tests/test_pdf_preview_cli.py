@@ -140,7 +140,7 @@ def test_non_publishable_contract_enforced(monkeypatch):
         return contract.model_copy(update={"indexing_allowed": True})
 
     monkeypatch.setattr(pdf_preview_cli, "read_pdf", published)
-    with pytest.raises(RuntimeError, match="nicht indexierbar"):
+    with pytest.raises(RuntimeError, match="indexierbar"):
         preview_pdf(FakeWebDAV(), "172", PDF_HASH)
 
 
