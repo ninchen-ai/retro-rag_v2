@@ -104,6 +104,14 @@ Auf dem **Staging-Branch** wurde der schreibfreie Adapter `src/retro_rag/importe
 - **Interpretation anhand des vorhandenen visuell geprüften Goldstandards:** Seite 111 ist eine bildbasierte Anzeige mit echtem OCR-Bedarf; Seite 112 ist eine **bestätigte weiße Leerseite ohne OCR-Bedarf**. Die Fehlermeldung auf Seite 112 resultiert aus der erzwungenen OCR und bedeutet nicht, dass relevanter Inhalt verloren ging.
 - **Nächster Kontrolllauf:** Ausschließlich `ocr_pages={111}` erzwingen und Seite 112 nicht explizit bearbeiten; bei funktionierender Auto-Heuristik dürfte Seite 112 nicht in `ocr_failed_pages` erscheinen. Die technische OCR-Ausführung ist **keine Qualitätsfreigabe**: CER/WER und Fachbegriffe getrennt anhand des bestehenden OCR-Goldstandards prüfen. Persistente Job-/Chunk-/Embedding-Integration weiterhin offen.
 
+### PDF-Leerseiten-Routing – Korrektur im Staging, 21.11.2026
+
+Der echte `cubx-103.pdf`-Test mit `ocr_pages={111}` ergab 112 Seiten, 114 Chunks, `ocr_pages=[111]`, `ocr_failed_pages=[]`, aber bislang die irreführende Warnung `Seite 112: kein extrahierbarer Text; OCR erforderlich`. Der überprüfte Goldstandard klassifiziert Seite 112 als vollständig weiß und leer.
+
+Die PDF-Extraktion unterscheidet nun vorsichtig zwischen **strukturell leerer** Seite (keine Zeichen-/Bildoperationen im PyMuPDF-BBox-Log und keine Annotationen/Widgets) und textloser Seite **mit möglichem sichtbarem Inhalt**, für die Review/OCR weiterhin angemessen ist. Leere Seiten werden in `document.metadata.blank_pages` gemeldet; die Indexfreigabe bleibt `false`. Neue Regressionstests prüfen eine tatsächlich leere Seite sowie eine rein vektorbasierte Seite, die **nicht** als leer durchrutschen darf. Absichtlich erzwungene OCR auf einer leeren Seite bleibt ein separat ausgewiesener Fehlerfall.
+
+**Noch nicht auf Poseidon ausgeführt:** aktualisierte Pytest-/Ruff-Regression und Wiederholung des realen CUBX-PDF-Laufs mit `ocr_pages={111}`. Keine Aussage zur tatsächlichen OCR-Texterkennungsqualität oder zur E2E-Persistenz.
+
 ## E. Empfohlene Reihenfolge und Freigabe-Gates
 
 | Reihenfolge | Paket | Abschlussbedingung |
