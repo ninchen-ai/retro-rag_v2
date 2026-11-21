@@ -103,7 +103,7 @@ def test_blank_page_keeps_indexing_disabled_and_no_ocr_warning(tmp_path):
     assert result.chunks == []
     assert result.document.metadata["blank_pages"] == [1]
     assert result.document.metadata["ocr_failed_pages"] == []
-    assert result.warnings == ["Keine Textinhalte extrahiert; OCR/Review erforderlich"]
+    assert result.warnings == []
     assert result.indexing_allowed is False
 
 
