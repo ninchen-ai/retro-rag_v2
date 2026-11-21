@@ -1,5 +1,6 @@
 -- Retro-RAG V2: universeller Wissenskern, additive Strukturmigration 0006.
--- ENTWURF: vor einer Anwendung reviewen und auf Poseidon testen.
+-- Stand 20.11.2026: auf retro_rag_v2_test angewendet und dort technisch geprüft.
+-- Für weitere Datenbanken weiterhin vor Anwendung reviewen und separat freigeben.
 -- Ausführung nur in genehmigter V2-Datenbank, als rag_v2_migrator.
 \set ON_ERROR_STOP on
 BEGIN;
