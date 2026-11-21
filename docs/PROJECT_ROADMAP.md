@@ -1,6 +1,6 @@
 # Retro-RAG V2 – Projekt-Roadmap und offene Aufgaben
 
-**Stand:** 20.11.2026 · **Arbeitsbranch:** `feat/universal-knowledge-schema-0006`  
+**Stand:** 21.11.2026 · **Integrationsbranch:** `integration/import-pipeline-2026-11-09`  
 **Geltung:** Universelle Wissensplattform, bestehende Importpipeline und technische Abschlussarbeiten.  
 **Statusregel:** `Erledigt` = nachgewiesen im genannten Scope; `Teilweise` = Grundlage vorhanden, Akzeptanzkriterien nicht vollständig; `Offen` = nächste Umsetzung/Abnahme ausstehend. Ein freigegebenes Architekturziel ist keine implementierte Funktion.
 
@@ -12,7 +12,7 @@ Diese Datei ist der **zentrale Aufgabenindex**. Detaillierte Architektur- und Te
 - Migration `0006` ist in der bestehenden **Testdatenbank** `retro_rag_v2_test` dauerhaft installiert: **43 Tabellen, 15 Entitätstypen, geschlossenes Write-Gate**, nach Testbereinigung jeweils null Themen, Beziehungen und Wissensvorschläge. Keine produktive Wissensfreigabe.
 - Nachweise: [0006-Testprotokoll](UNIVERSAL_KNOWLEDGE_SCHEMA_0006.md), [Schema-Status](../db/SCHEMA_CURRENT.md), [real exportierter Snapshot](../db/schema/retro_rag_v2_test.sql); 24 reguläre Pytest-Tests, separat 10 rollback-only DB-Integrationstests, eigene 0006-Mehrverbindungstests, Rollen- und SQL-Prüfungen bestanden.
 - Pre-0006-Dump auf Poseidon erfolgreich **innerhalb des bestehenden Clusters** in eine temporäre Datenbank wiederhergestellt (Version 5, 37 Tabellen, Gate geschlossen). Kein vollständiger Disaster-Recovery-Test eines neuen Clusters.
-- Der Branch `feat/universal-knowledge-schema-0006` wurde **noch nicht** nach `integration/import-pipeline-2026-11-09` oder `main` integriert. Auch ältere PDF/OCR/WebDAV-Arbeitsbranches/PRs sind nicht automatisch Bestandteil dieser Integrationslinie.
+- Migration `0006` und die begleitenden Prüf-/Dokumentationsänderungen wurden über [PR #10](https://github.com/ninchen-ai/retro-rag_v2/pull/10) am **21.11.2026** nach `integration/import-pipeline-2026-11-09` gemergt (Merge-Commit `4c09576`). **Nicht** nach `main` übernommen; ältere PDF/OCR/WebDAV-Branches/PRs sind weiterhin getrennt.
 
 ## A. Offene Punkte des universellen Wissensmodells
 
@@ -45,11 +45,11 @@ Diese Datei ist der **zentrale Aufgabenindex**. Detaillierte Architektur- und Te
 
 | ID | Aufgabe | Status am 20.11.2026 | Restarbeit und Akzeptanzkriterium | Abhängigkeit/Nachweis |
 |---|---|---|---|---|
-| **C-01** | Architekturbranches konsolidieren | **Erledigt im 0006-Featurebranch** | Zwölf Ziele, vier Entscheidungen, README, Konventionen und Freeplane im selben Featurebranch nachgewiesen. Kein Merge in Integrationsbranch impliziert | `docs/ARCHITECTURE_*.md`, Mindmap |
+| **C-01** | Architekturbranches konsolidieren | **Erledigt, integriert 21.11.2026** | Zwölf Ziele, vier Entscheidungen, README, Konventionen und Freeplane im selben Integrationsbranch über PR #10 nachgewiesen | `docs/ARCHITECTURE_*.md`, Mindmap |
 | **C-02** | Reales Schema-Snapshot aktualisieren | **Erledigt** | Exportskript verlangt Version 6, geschlossenes Gate, 43 Tabellen und neue 0006-Objekte; Poseidon-Export unter Commit `64de205` gepusht und GitHub geprüft | `scripts/export_schema_v2.sh`, `db/schema/retro_rag_v2_test.sql` |
-| **C-03** | Alte Statusdokumentation bereinigen | **Erledigt im 0006-Featurebranch (21.11.2026)** | README und Schema-Status mit Roadmap abgeglichen, ältere Zwischenstände als historisch eingeordnet; erneute Prüfung nach Branchintegration empfohlen | README, `db/SCHEMA_CURRENT.md`, 0006-Protokoll |
+| **C-03** | Alte Statusdokumentation bereinigen | **Erledigt und integriert (21.11.2026)** | README und Schema-Status mit Roadmap abgeglichen, ältere Zwischenstände als historisch eingeordnet; erneute Prüfung nach Branchintegration empfohlen | README, `db/SCHEMA_CURRENT.md`, 0006-Protokoll |
 | **C-04** | Technische Abnahme 0006 abschließen | **Erledigt im Scope Testdatenbank** | Migration, Integritäts-, Rollen-, Parallelitäts-, Regressionstests und Restore eines Pre-0006-Dumps dokumentiert; keine Produktivfreigabe behaupten | [0006-Abnahme](UNIVERSAL_KNOWLEDGE_SCHEMA_0006.md) |
-| **C-05** | Branchintegration | **Offen** | Branch-Diff, Tests und Merge-Konflikte prüfen; kontrollierte PR nach `integration/import-pipeline-2026-11-09`; erst nach Review mergen. `main` gesondert entscheiden | C-01–C-04, IP-xx |
+| **C-05** | Branchintegration | **Erledigt für Integrationsbranch (21.11.2026)** | [PR #10](https://github.com/ninchen-ai/retro-rag_v2/pull/10) gemergt (`4c09576`); 17 geänderte Dateien, keine fehlenden Basiscommits. Testnachweise stammen vom Poseidon-Lauf 20.11.; keine erneute Live-Ausführung durch GitHub. `main` gesondert entscheiden | C-01–C-04, IP-xx |
 | **C-06** | Vollständige Disaster-Recovery-Prüfung | **Offen** | Globale Rollen, HBA-/Konfiguration, Extensions, Borg-/Originalarchiv und Abhängigkeiten auf einem **neu aufgebauten Cluster** kontrolliert wiederherstellen; V1/Nextcloud schützen | Backupkonzept, Wartungsplanung |
 | **C-07** | Migration `0007` spezifizieren | **Offen** | Entwurf zu fachneutralen Eigenschaften/Fakten/Belegen inkl. Migration, Rollen, Write-Gate, Rückwärtskompatibilität und Negativtests; erst nach Review anwenden | A-01–A-06, C-05 |
 | **C-08** | Entwicklungs- und Abnahmestände verzahnen | **Offen** | PR- und Branchstatus zu PDF/OCR, WebDAV und OCR-Qualität mit der Integrationslinie abgleichen; Implementierung, Testabnahme und Merge getrennt markieren | IP-E bis IP-G |
@@ -85,7 +85,7 @@ Diese Datei ist der **zentrale Aufgabenindex**. Detaillierte Architektur- und Te
 | Reihenfolge | Paket | Abschlussbedingung |
 |---|---|---|
 | **1** | C-03, C-08: Dokumentation/Branches abgleichen | Widerspruchsfreie aktuelle Statusseite; alte Zwischenstände deutlich historisch; Integrationsdiff nachvollziehbar |
-| **2** | C-05: 0006-Branch integrieren | Reviewed PR/Merge in den Integrationsbranch, unverändertes Write-Gate, Tests erneut dokumentiert |
+| **2** | C-05: 0006-Branch integrieren – erledigt 21.11. | PR #10 gemergt; Gate im letzten Poseidon-Test geschlossen, keine neue DB-Schreibfreigabe |
 | **3** | IP-E/F/G + IP-C1/C2/D: Importpfad verbinden | Echte PDF/OCR-/WebDAV-Datenflussprüfungen mit geeigneten Testdateien, kein ungeprüfter Massen-Apply |
 | **4** | C-07 + A-01 bis A-06: Entwurf Migration 0007 | Fachmodell und DB-Migration als Entwurf, Prüfung von Rückwärtskompatibilität, Provenienz und Rollen |
 | **5** | A-09 bis A-13: Extraktion, Vorschläge und Freigabe | Regelversionen, echte Reviews, unabhängige Freigabe, Negativtests, Audit; kein Selbstgenehmigen |
