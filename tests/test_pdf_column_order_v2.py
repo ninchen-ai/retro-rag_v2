@@ -67,21 +67,19 @@ def test_column_proposal_preserves_all_source_lines(tmp_path):
 
 def test_no_two_columns_fails_closed(tmp_path):
     data, image, run = sample(tmp_path, both=False)
-    with pymupdf.open(stream=data, filetype="pdf") as doc:
-        with pytest.raises(ValueError, match="Zwei getrennte"):
-            columns.propose_page(
-                doc[0], image, run, pdf_sha256=columns.sha256(data), page_number=1
-            )
+    with pymupdf.open(stream=data, filetype="pdf") as doc, pytest.raises(ValueError, match="Zwei getrennte"):
+        columns.propose_page(
+            doc[0], image, run, pdf_sha256=columns.sha256(data), page_number=1
+        )
 
 
 def test_mismatched_image_sha_fails_closed(tmp_path):
     data, image, run = sample(tmp_path)
     run["image_sha256"] = "a" * 64
-    with pymupdf.open(stream=data, filetype="pdf") as doc:
-        with pytest.raises(ValueError, match="Bild-SHA"):
-            columns.propose_page(
-                doc[0], image, run, pdf_sha256=columns.sha256(data), page_number=1
-            )
+    with pymupdf.open(stream=data, filetype="pdf") as doc, pytest.raises(ValueError, match="Bild-SHA"):
+        columns.propose_page(
+            doc[0], image, run, pdf_sha256=columns.sha256(data), page_number=1
+        )
 
 
 def test_rotation_is_not_silently_transformed(tmp_path):
