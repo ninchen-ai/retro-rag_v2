@@ -15,7 +15,7 @@
 
 ### Live-Schema-Snapshot
 
-Die bestehende Datei [`db/schema/retro_rag_v2_test.sql`](schema/retro_rag_v2_test.sql) wurde auf einem älteren Stand exportiert und darf **bis zu einem erneuten Export auf Poseidon** nicht als 0006-Live-Snapshot gelten. Das aktualisierte Skript `scripts/export_schema_v2.sh` verlangt explizit Version 6 und 43 Tabellen; erst sein erfolgreicher Lauf ersetzt das Snapshot-Artefakt mit tatsächlich aus PostgreSQL exportiertem SQL.
+Der [DDL-Snapshot](schema/retro_rag_v2_test.sql) wurde nach Migration 0006 auf Poseidon erneut aus der tatsächlich installierten V2-Testdatenbank exportiert und im Featurebranch versioniert (Commit `64de205`; siehe [Roadmap C-02](../docs/PROJECT_ROADMAP.md)). Das aktualisierte Skript `scripts/export_schema_v2.sh` verlangt Version 6, 43 Tabellen und ein geschlossenes Write-Gate. Der Snapshot enthält ausschließlich Schema-DDL und ersetzt weder Migrationen noch ein vollständiges Backup.
 
 ```bash
 cd ~/projects/retro-rag_v2
