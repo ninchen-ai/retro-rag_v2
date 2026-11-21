@@ -62,7 +62,7 @@ def choose_cases(report: dict[str, Any], limit: int = 0) -> list[dict[str, Any]]
         hashes = {e["sha256"] for e in options}
         if len(hashes) != 1:
             raise ValueError(f"Mehrdeutige PDF-Version unter demselben Namen: {filename}")
-        entry = sorted(options, key=lambda e: e["source_key"])[0]
+        entry = min(options, key=lambda e: e["source_key"])
         if not 1 <= page_number <= entry["page_count"]:
             raise ValueError(f"Testseite außerhalb PDF: {filename}, Seite {page_number}")
         metric = next((p for p in entry.get("pages", [])
