@@ -76,25 +76,24 @@ def test_two_concurrent_activations_are_serialized():
 
     # Der Cluster-Name ist ein zwingendes zusätzliches Schutzmerkmal:
     # die vorhandene V2-Testdatenbank ist KEIN zulässiges Testziel.
-    with psycopg.connect(dsn, autocommit=True) as check:
-        with check.cursor() as cur:
-            cur.execute("SELECT current_database(), current_setting('cluster_name'), session_user")
-            dbname, cluster_name, username = cur.fetchone()
-            if (dbname, cluster_name, username) != (
-                "retro_rag_v2_test", "retro-rag-v2-c1-isolated", "postgres"
-            ):
-                raise RuntimeError("C1-Konkurrenztest nur im isolierten Testcluster als postgres")
-            cur.execute("SELECT MAX(version) FROM rag_v2.schema_migration")
-            if cur.fetchone()[0] != 5:
-                raise RuntimeError("Isolierter Cluster benötigt vollständiges Schema bis 0005")
-            cur.execute("SELECT writes_enabled FROM rag_v2.write_gate WHERE id=true")
-            if cur.fetchone()[0] is not False:
-                raise RuntimeError("Isolierter Cluster muss mit geschlossenem Gate starten")
-            # Ausschließlich der isolierte Cluster erhält eine committed Freigabe.
-            cur.execute(
-                """UPDATE rag_v2.write_gate SET writes_enabled=true,
-                   reason='Nur C1-Test in isoliertem Docker-Cluster' WHERE id=true"""
-            )
+    with psycopg.connect(dsn, autocommit=True) as check, check.cursor() as cur:
+        cur.execute("SELECT current_database(), current_setting('cluster_name'), session_user")
+        dbname, cluster_name, username = cur.fetchone()
+        if (dbname, cluster_name, username) != (
+            "retro_rag_v2_test", "retro-rag-v2-c1-isolated", "postgres"
+        ):
+            raise RuntimeError("C1-Konkurrenztest nur im isolierten Testcluster als postgres")
+        cur.execute("SELECT MAX(version) FROM rag_v2.schema_migration")
+        if cur.fetchone()[0] != 5:
+            raise RuntimeError("Isolierter Cluster benötigt vollständiges Schema bis 0005")
+        cur.execute("SELECT writes_enabled FROM rag_v2.write_gate WHERE id=true")
+        if cur.fetchone()[0] is not False:
+            raise RuntimeError("Isolierter Cluster muss mit geschlossenem Gate starten")
+        # Ausschließlich der isolierte Cluster erhält eine committed Freigabe.
+        cur.execute(
+            """UPDATE rag_v2.write_gate SET writes_enabled=true,
+               reason='Nur C1-Test in isoliertem Docker-Cluster' WHERE id=true"""
+        )
 
     with psycopg.connect(dsn, autocommit=False) as setup:
         with setup.cursor() as cur:
