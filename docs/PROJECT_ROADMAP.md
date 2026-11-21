@@ -138,6 +138,15 @@ Die Koordinaten sind **experimentell** und müssen anhand der ausgegebenen PNGs 
 - **Zeichenmengen (200/PSM6, 200/PSM11, 300/PSM6, 300/PSM11):** Überschrift `51, 60, 52, 65`; Spezifikationen `525, 529, 524, 530`; Randbeschriftungen `11, 32, 16, 35`. PSM 11 erzeugt überall mehr Zeichen, aber Zeichenmenge ist **keine Genauigkeitsmetrik**. Bilder/Crops und Kandidatentexte sind noch nicht einzeln kontrolliert, insbesondere Seitenrand-Crops.
 - **Nächste Abnahme:** Gerenderte PNG-Ausschnitte und erkannte Textvarianten visuell vergleichen; anschließend pro Region unabhängige, identisch abgegrenzte Referenztexte erstellen und CER/WER sowie kritische Bezeichnungen prüfen. **Noch nicht nachgewiesen:** vollständiger Poseidon-Ruff-/Pytest-Lauf für das Experiment (zuletzt nur sechs synthetische isolierte Tests außerhalb Poseidons), qualitative Verbesserung oder irgendeine Produktions-/Indexfreigabe.
 
+### Bereichs-OCR – Vergleich der tatsächlichen Texte (21.11.2026)
+
+Die 12 lokalen OCR-Textkandidaten auf Poseidon wurden qualitativ gegenüber dem Bild der CUBX-Seite 111 betrachtet (DPI 200/300, PSM 6/11, jeweils `eng+deu`):
+
+- **Überschrift/Slogan:** Keine Variante erkennt die stilisierte Hauptüberschrift `AGP-V6800 Series` zuverlässig; Slogan nur fragmentarisch und teils mit zusätzlichen Artefakten. PSM 11 gibt mehr Zeichen aus, aber keine nachgewiesen höhere Genauigkeit.
+- **Technische Spezifikationen:** Alle Varianten erfassen wesentliche Werte und Modellnamen weitgehend richtig (`300MHz`, `32MB DDR SGRAM`, `704x480`, AGP-V6800/Deluxe). 200 DPI / PSM 6 ist bereits gut lesbar und als Baseline sinnvoll; 300 DPI / PSM 11 verschlechtert mindestens `video/picture` zu `videolpicture`. Ohne verifizierte Referenz keine quantitative Rangfolge.
+- **Seitliche Badges:** Alle Kandidaten erzeugen überwiegend sinnloses Zeichenrauschen. Vor erneuter OCR zuerst Bildzuschnitte/Positionierung und nutzbare Ausgangsauflösung visuell prüfen.
+- **Nächster Schritt:** PNG-Crops für alle drei Regionen kontrollieren; ggf. Regionengrenzen korrigieren und Spezialvorverarbeitung experimentell separat prüfen. CER/WER nur gegen unabhängig, manuell verifizierte **regionsgleiche** Referenztexte. Kein automatischer Übergang zu Indexierung oder bestätigten Fakten. Vollständiger Ruff-/Pytest-Regressionslauf für den neuen Experimentcode weiterhin nicht vom Nutzer nachgewiesen.
+
 ## E. Empfohlene Reihenfolge und Freigabe-Gates
 
 | Reihenfolge | Paket | Abschlussbedingung |
