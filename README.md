@@ -13,7 +13,7 @@ Der Nutzen entsteht durch die Verknüpfung beider Quellen, etwa bei der Frage *�
 
 Alles läuft lokal auf dem Homelab-Server **Poseidon**. Es gibt keine Cloud-Dienste, und eine Internetrecherche durch das LLM ist vorerst nicht vorgesehen.
 
-> **Status (09.11.2026):** Phase 0 und Import-Staging sind als Entwicklungsstand vorhanden. C1 (atomare Versionsaktivierung) ist mit sieben PostgreSQL-Tests abgenommen, jedoch noch nicht an einen echten Verarbeitungs-Worker angebunden. Der Metadatenvertrag aus `feat/import-contract-metadata` ist im Integrationsbranch zusätzlich konsolidiert; ein gemeinsamer Testlauf auf Poseidon ist noch ausstehend. Kein produktiver Import freigegeben; Write-Gate geschlossen. Verbindliche Regeln: [`conventions.md`](conventions.md).
+> **Historischer Zwischenstand (09.11.2026; nicht aktueller Projektstatus):** Phase 0 und Import-Staging sind als Entwicklungsstand vorhanden. C1 (atomare Versionsaktivierung) ist mit sieben PostgreSQL-Tests abgenommen, jedoch noch nicht an einen echten Verarbeitungs-Worker angebunden. Der Metadatenvertrag aus `feat/import-contract-metadata` ist im Integrationsbranch zusätzlich konsolidiert; ein gemeinsamer Testlauf auf Poseidon ist noch ausstehend. Kein produktiver Import freigegeben; Write-Gate geschlossen. Verbindliche Regeln: [`conventions.md`](conventions.md).
 
 ---
 
@@ -243,7 +243,7 @@ retro-rag/
 
 ---
 
-## Phase 0 – Stand auf Poseidon (08.11.2026)
+## Historischer Phase-0-Stand auf Poseidon (08.11.2026; durch Migration 0006 überholt)
 
 Die Testdatenbank `retro_rag_v2_test` läuft im bestehenden Container `codeanalyse-postgres`
 (PostgreSQL 16.15, pgvector 0.8.6). `0001_init.sql` wurde ausgeführt und
