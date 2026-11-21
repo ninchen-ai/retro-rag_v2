@@ -132,6 +132,12 @@ Die Koordinaten sind **experimentell** und müssen anhand der ausgegebenen PNGs 
 
 **Validierungsstand:** Sechs isolierte Regressionstests wurden außerhalb Poseidons mit synthetischem PDF/MOCK-OCR bestanden. **Noch offen auf Poseidon:** `python -m ruff check .`, vollständige Pytest-Suite sowie Live-Experiment mit `fileid=172` und Hash `f10dc04911aa75241adcb29731af62fc4ce4c5e5a21b0a69ff621778c784f82b`; kein Merge oder Freigabe vor deren Prüfung.
 
+### Bereichs-OCR – erster echter Poseidon-Lauf (21.11.2026)
+
+- Ausgeführt: `python -m experiments.ocr_regions_cubx` mit Nextcloud-`fileid=172`, CUBX-Seite 111, Original-SHA-256 `f10dc04911aa75241adcb29731af62fc4ce4c5e5a21b0a69ff621778c784f82b`, Tesseract `eng+deu`, PSM 6/11 und 200/300 DPI. Das lokale Ergebnis unter `/data/retro-rag/v2/ocr-evaluation/cubx-regions-experiment-01/` enthält **12 OCR-Kandidaten** und 6 gerenderte Regionen, `status=not_evaluated`, `indexing_allowed=false`.
+- **Zeichenmengen (200/PSM6, 200/PSM11, 300/PSM6, 300/PSM11):** Überschrift `51, 60, 52, 65`; Spezifikationen `525, 529, 524, 530`; Randbeschriftungen `11, 32, 16, 35`. PSM 11 erzeugt überall mehr Zeichen, aber Zeichenmenge ist **keine Genauigkeitsmetrik**. Bilder/Crops und Kandidatentexte sind noch nicht einzeln kontrolliert, insbesondere Seitenrand-Crops.
+- **Nächste Abnahme:** Gerenderte PNG-Ausschnitte und erkannte Textvarianten visuell vergleichen; anschließend pro Region unabhängige, identisch abgegrenzte Referenztexte erstellen und CER/WER sowie kritische Bezeichnungen prüfen. **Noch nicht nachgewiesen:** vollständiger Poseidon-Ruff-/Pytest-Lauf für das Experiment (zuletzt nur sechs synthetische isolierte Tests außerhalb Poseidons), qualitative Verbesserung oder irgendeine Produktions-/Indexfreigabe.
+
 ## E. Empfohlene Reihenfolge und Freigabe-Gates
 
 | Reihenfolge | Paket | Abschlussbedingung |
