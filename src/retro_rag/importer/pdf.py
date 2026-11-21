@@ -152,7 +152,7 @@ def read_pdf(
                     )
                 )
 
-    if not chunks:
+    if not chunks and len(blank_pages) != page_count:
         warnings.append("Keine Textinhalte extrahiert; OCR/Review erforderlich")
     return ImportContract(
         source=Source(
