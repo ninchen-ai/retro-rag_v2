@@ -47,6 +47,7 @@ HEADLINE_LINES = (
 )
 DPI_OPTIONS = (200, 300)
 PSM_OPTIONS = (6, 7, 11)
+DEFAULT_PSM_OPTIONS = (6, 11)
 
 
 def render_region(page: pymupdf.Page, region: Region, dpi: int) -> bytes:
@@ -87,7 +88,7 @@ def run_region_experiment(
     language: str = "eng+deu",
     regions: tuple[Region, ...] = REGIONS,
     dpi_options: tuple[int, ...] = DPI_OPTIONS,
-    psm_options: tuple[int, ...] = PSM_OPTIONS,
+    psm_options: tuple[int, ...] = DEFAULT_PSM_OPTIONS,
     ocr: Callable[..., str] = tesseract_ocr,
 ) -> dict:
     """Create only local unreviewed candidates; never overwrite outputs."""
