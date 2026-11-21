@@ -1,6 +1,5 @@
 """Dokumentidentität: unabhängige Quellen und identische Bytes."""
 from contextlib import contextmanager
-from types import SimpleNamespace
 
 from retro_rag.importer.staging import plan_file, stage_file
 from retro_rag.importer.webdav import RemoteFile
