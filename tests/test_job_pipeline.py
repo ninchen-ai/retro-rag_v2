@@ -138,7 +138,7 @@ def test_prepare_job_refuses_finished_job(tmp_path):
 
 
 def test_persist_contract_refuses_missing_transaction(tmp_path):
-    conn, job_id, version, root, path, sha = make_job(tmp_path)
+    conn, job_id, version, _root, path, sha = make_job(tmp_path)
     chunk_text = "ASUS AGP 4X"
     contract = ImportContract(
         source=Source(
