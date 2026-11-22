@@ -195,3 +195,15 @@ python -m pytest -q -rs
 Bei bisher unveränderten Quell-/DB-Inhalten wird `READ ONLY planned_action=new source_key=480` erwartet. Den Abschluss nur nach tatsächlicher Betreiber-Ausgabe und unabhängiger DB-Gate-/Zählerkontrolle protokollieren.
 
 **C1-Parallelität:** Der vorhandene `test_version_activation_concurrency.py` committet Fixtures und Gate-Freigabe und darf unverändert nicht auf dieser Datenbank ausgeführt werden. Eine vollständig reale Konkurrenz zweier erfolgreicher Versionenaktivierungen setzt sichtbare, committete Testversionen und ein verbindungsübergreifend offenes Gate voraus. Rollback-only mit geschlossenem Gate kann hingegen die Gate-Serialisierung/Blockierung und Ablehnung, nicht zwei erfolgreiche konkurrierende Aktivierungen, nachweisen. Diese beiden Abnahmekriterien nicht verwechseln.
+
+
+### Reale Pipe-Planung auf Poseidon – PASS (22.11.2026)
+
+Die Betreiberin führte den `fetch | nsenter ... plan`-Aufruf mit den dokumentierten WebDAV-Umgebungsvariablen am Host und dem dedizierten `rag_v2_importer_login` über das PostgreSQL-Netzwerk-Namespace aus. Die Brücke prüfte Nextcloud-`source_key=480` (`test-mainboard.md`) mit SHA-256 `70e1b0ce4dc3d7cc3497763c4e907f1f3df65843cb3b5cef7c38bf8ee66efab6` und plante ausschließlich lesend:
+
+```text
+READ ONLY planned_action=new source_key=480 sha256=70e1b0ce4dc3d7cc3497763c4e907f1f3df65843cb3b5cef7c38bf8ee66efab6
+WEBDAV_DB_PLAN_EXIT=0
+```
+
+Damit ist die **reale WebDAV → PostgreSQL-Importplanung im selben Aufruf bestanden**. Die Pipe überträgt keine WebDAV-Zugangsdaten; die Datenbanksitzung verwendet `BEGIN READ ONLY`. Dieser Test archiviert keine Originale, erzeugt keine Jobs/Chunks und ist kein persistenter `--apply`. Eine unabhängige Gate-/Zählerprüfung **nach genau diesem** Lauf wurde noch nicht geliefert. Ferner wurde die Ruff-Typfehlerkorrektur `624dbbe` auf Poseidon noch nicht durch neue Testausgaben bestätigt.
