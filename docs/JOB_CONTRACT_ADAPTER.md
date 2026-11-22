@@ -151,3 +151,47 @@ JOB_ROLLBACK_TEST_EXIT=0
 Der gezielte Test lief im PostgreSQL-Netzwerk-Namespace mit `rag_v2_migrator_login` gegen `retro_rag_v2_test` (Migration 0006). Er prüfte den synthetischen PDF-/Job-/Chunk-/Artefakt-/Embedding-/Aktivierungspfad und danach Rollback sowie erneute DB-Anmeldung auf geschlossenen Gate-Zustand und Abwesenheit der künstlichen IDs. Die aktuelle reguläre Suite überspringt den Positivtest ohne `RETRO_V2_JOB_ROLLBACK_DSN`; sein separater Erfolg ist daher gesondert zu zählen. **Positiver SQL-Transaktionspfad PASS.**
 
 **Nachkontrolle PASS (22.11.2026):** Nach diesem Lauf unabhängige administrative `BEGIN READ ONLY`-Sitzung als `codeanalyse` bestätigt: Migration `6`, `writes_enabled=f`, Sperrgrund `Parallelitätstest erfolgreich; Freigabe ausstehend`; `document`, `document_source`, `document_version`, `processing_job`, `processing_step`, `processing_artifact`, `chunk`, `chunk_embedding`, `review_item`, `knowledge_proposal` jeweils `0`. Weiter offen ist die reproduzierbare WebDAV-/DB-Importplanung. Für C1-Concurrency ist der vorhandene Test wegen mehrerer verbindungsübergreifender Commits unverändert nicht für diesen Testdatenbank-Lauf geeignet. Die Embeddings wurden synthetisch erzeugt, kein Embedding-Worker bewiesen. Kein Gate persistent geöffnet.
+
+
+## WebDAV → PostgreSQL: reproduzierbarer schreibfreier Pipe-Test (22.11.2026, noch auszuführen)
+
+`src/retro_rag/importer/plan_bridge.py` verbindet die beiden **bestehenden**, getrennten Netzwerkzugänge, ohne Passwörter oder Rohdateien zu speichern:
+
+- **`fetch` auf Poseidon-Host:** WebDAV-Protokoll nur über HTTP-Loopback `127.0.0.1` / `localhost` (ausdrücklich keine Docker-Bridge); Auswahl genau einer `fileid`, bedingter Nextcloud-GET, Inhalts-Hash-Vergleich. Auf `stdout` wird eine binär gerahmte Nachricht aus kleinen JSON-Metadaten + maximal 1 MB Originalbytes ausgegeben. **Nicht direkt im Terminal ohne Pipe ausführen.**
+- **`plan` im PostgreSQL-Netz-Namespace:** nimmt ausschließlich diese Pipe entgegen, prüft Längen, Identität und Hash erneut und verlangt `retro_rag_v2_test` sowie `rag_v2_importer_login` und ein geschlossenes Gate. Danach `BEGIN READ ONLY`, `plan_file()` und `ROLLBACK`.
+- Kein `--apply`, keine Archivdatei, keine HBA-/Docker-Änderung, kein V1-/Nextcloud-Schreibzugriff. Im Test werden für die `fileid=480` ausschließlich die zuvor bestätigten Originalbytes erwartet.
+
+**Noch nicht auf Poseidon ausgeführt.** Vorab `python -m ruff check .` und `python -m pytest -q -rs` auf dem separaten Featurebranch. Für den Live-Durchlauf sind die bereits funktionierenden `RETRO_V2_WEBDAV_*`-Variablen auf dem Host erforderlich und der Importer-Login wird nur im empfangenden Prozess benötigt.
+
+```bash
+cd ~/projects/retro-rag_v2
+source .venv/bin/activate
+git pull --ff-only
+python -m ruff check .
+python -m pytest -q tests/test_plan_bridge.py -rs
+python -m pytest -q -rs
+
+(
+  set -o pipefail
+  PG_PID="$(docker inspect -f '{{.State.Pid}}' codeanalyse-postgres)"
+  test "$PG_PID" -gt 1 || exit 1
+  read -rsp "V2-Importer-Passwort: " PGPASSWORD
+  echo
+  export PGPASSWORD
+  export RETRO_V2_JOB_TEST_DSN='host=127.0.0.1 port=5432 dbname=retro_rag_v2_test user=rag_v2_importer_login connect_timeout=5'
+
+  python -m retro_rag.importer.plan_bridge fetch \
+    --source-key 480 \
+    --expected-sha256 70e1b0ce4dc3d7cc3497763c4e907f1f3df65843cb3b5cef7c38bf8ee66efab6 |
+  sudo --preserve-env=PGPASSWORD,RETRO_V2_JOB_TEST_DSN \
+    nsenter --target "$PG_PID" --net -- \
+    setpriv --reuid "$(id -u)" --regid "$(id -g)" --init-groups \
+    "$(pwd)/.venv/bin/python" -m retro_rag.importer.plan_bridge plan \
+      --expected-sha256 70e1b0ce4dc3d7cc3497763c4e907f1f3df65843cb3b5cef7c38bf8ee66efab6
+  echo "WEB_DAV_DB_PLAN_EXIT=$?"
+)
+```
+
+Bei bisher unveränderten Quell-/DB-Inhalten wird `READ ONLY planned_action=new source_key=480` erwartet. Den Abschluss nur nach tatsächlicher Betreiber-Ausgabe und unabhängiger DB-Gate-/Zählerkontrolle protokollieren.
+
+**C1-Parallelität:** Der vorhandene `test_version_activation_concurrency.py` committet Fixtures und Gate-Freigabe und darf unverändert nicht auf dieser Datenbank ausgeführt werden. Eine vollständig reale Konkurrenz zweier erfolgreicher Versionenaktivierungen setzt sichtbare, committete Testversionen und ein verbindungsübergreifend offenes Gate voraus. Rollback-only mit geschlossenem Gate kann hingegen die Gate-Serialisierung/Blockierung und Ablehnung, nicht zwei erfolgreiche konkurrierende Aktivierungen, nachweisen. Diese beiden Abnahmekriterien nicht verwechseln.
