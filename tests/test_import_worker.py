@@ -63,6 +63,7 @@ def test_no_work_is_noop(monkeypatch, tmp_path):
 def test_pdf_with_unverified_chunks_fails_before_db_write():
     contract = SimpleNamespace(
         source=SimpleNamespace(content_hash="a" * 64, kind="pdf"),
+        document=SimpleNamespace(metadata={}),
         indexing_allowed=False,
         fact_proposals=[],
         chunks=[object()],
@@ -70,12 +71,13 @@ def test_pdf_with_unverified_chunks_fails_before_db_write():
     )
     job = ("job-1", "version-1", "a" * 64, "file:///unused.pdf", "manual.pdf")
     with pytest.raises(ValueError, match="Extraktion erfordert Prüfung"):
-        worker.finish_job(object(), job, "worker-1", contract)
+        worker.finish_job(object(), job, "worker-1", Path("/does-not-exist"), contract)
 
 
 def test_fact_proposals_fail_before_db_write():
     contract = SimpleNamespace(
         source=SimpleNamespace(content_hash="a" * 64, kind="markdown"),
+        document=SimpleNamespace(metadata={}),
         indexing_allowed=False,
         fact_proposals=[{"unreviewed": True}],
         chunks=[object()],
@@ -83,7 +85,7 @@ def test_fact_proposals_fail_before_db_write():
     )
     job = ("job-1", "version-1", "a" * 64, "file:///unused.md", "doc.md")
     with pytest.raises(ValueError, match="Automatische Index"):
-        worker.finish_job(object(), job, "worker-1", contract)
+        worker.finish_job(object(), job, "worker-1", Path("/does-not-exist"), contract)
 
 
 def test_worker_failure_is_isolated_and_reported(monkeypatch, tmp_path):
@@ -97,10 +99,19 @@ def test_worker_failure_is_isolated_and_reported(monkeypatch, tmp_path):
     assert events == ["job-1"]
 
 
-def test_indexing_or_fact_approval_never_implicitly_allowed():
-    # The worker's SQL only persists chunks and sets processing_state='processing'.
+def test_worker_keeps_incomplete_job_until_embeddings():
     source = Path(worker.__file__).read_text()
-    assert "processing_state='processing'" in source
-    assert "processing_state='indexed'" not in source
+    assert "_persist_contract_rows(conn, prepared, lease_owner=owner)" in source
     assert "activate_version(" not in source
-    assert "contract.indexing_allowed or contract.fact_proposals" in source
+    assert "processing_state='indexed'" not in source
+    assert "status='completed'" not in source
+    assert "step_name='text_extracted'" in source
+    assert "step_name='source_archived'" in source
+
+
+def test_claim_job_requires_unextracted_document():
+    source = Path(worker.__file__).read_text()
+    assert "FOR UPDATE OF j SKIP LOCKED LIMIT 1" in source
+    assert "s.step_name='text_extracted'" in source
+    assert "j.lease_until < now()" in source
+    assert "j.attempts < j.max_attempts" in source
