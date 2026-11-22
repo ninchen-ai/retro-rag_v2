@@ -124,7 +124,7 @@ Damit sind der geschlossene Gate-Zustand und **alle zehn überprüften Tabellenz
 5. Keine automatische Freigabe, kein Merge ohne explizite Architektur-/Testabnahme.
 
 
-## Rollback-only Positivtest auf bestehender V2-Testdatenbank (22.11.2026, noch auszuführen)
+## Rollback-only Positivtest auf bestehender V2-Testdatenbank (22.11.2026, auf Poseidon bestanden)
 
 **Testdatei:** `tests/test_job_pipeline_rollback_integration.py`. Kein weiterer Cluster und keine neue Datenbank nötig. Der Test akzeptiert ausschließlich `retro_rag_v2_test` mit `rag_v2_migrator_login`, Migration `0006`, **anfänglich geschlossenem** Gate. Alle Testdaten (inklusive Gate-Update) verbleiben in **einer einzigen Transaktion ohne Commit**, die in `finally` zurückgerollt wird. Der Test schreibt **nur ein synthetisches PDF** in ein privates temporäres Pytest-Verzeichnis, niemals in das vorhandene V2-Originalarchiv.
 
@@ -138,4 +138,16 @@ Prüfpfad: synthetisches archiviertes PDF → Dokumentversion + Importjob + `sou
 - Der bestehende C1-Konkurrenztest in `tests/test_version_activation_concurrency.py` ist **separat zu betrachten**: Er führt Commits aus und verlangt ausdrücklich einen isolierten Cluster. Ihn nicht gegen die laufende Testdatenbank umbiegen.
 - Erst nach einem bestandenen Lauf und unabhängiger read-only SQL-Zählerprüfung wird die Rollback-Teststufe abgenommen.
 
-Zum Ausführen vom PostgreSQL-Netzwerk-Namespace aus `RETRO_V2_JOB_ROLLBACK_DSN` auf `rag_v2_migrator_login` und `retro_rag_v2_test` setzen; kein Skript startet selbst neue Container. Der ausführbare Befehl und die Passwortübergabe werden in der gesonderten Testanweisung angegeben. Noch **kein** PASS behauptet.
+**Echter Poseidon-Lauf nach Fast-forward auf `d393c44` (22.11.2026):**
+
+```text
+python -m ruff check .                 → All checks passed!
+python -m pytest -q -rs                → 163 passed, 13 skipped in 0.71s
+python -m pytest -q -rs tests/test_job_pipeline_rollback_integration.py
+                                        → 1 passed in 0.22s
+JOB_ROLLBACK_TEST_EXIT=0
+```
+
+Der gezielte Test lief im PostgreSQL-Netzwerk-Namespace mit `rag_v2_migrator_login` gegen `retro_rag_v2_test` (Migration 0006). Er prüfte den synthetischen PDF-/Job-/Chunk-/Artefakt-/Embedding-/Aktivierungspfad und danach Rollback sowie erneute DB-Anmeldung auf geschlossenen Gate-Zustand und Abwesenheit der künstlichen IDs. Die aktuelle reguläre Suite überspringt den Positivtest ohne `RETRO_V2_JOB_ROLLBACK_DSN`; sein separater Erfolg ist daher gesondert zu zählen. **Positiver SQL-Transaktionspfad PASS.**
+
+**Noch ausstehend:** unabhängige administrative `BEGIN READ ONLY`-Zählerkontrolle nach diesem Lauf und ein echter gemeinsam durchlaufener WebDAV-/DB-Planungsprozess. Für C1-Concurrency ist der vorhandene Test wegen mehrerer verbindungsübergreifender Commits unverändert nicht für diesen Testdatenbank-Lauf geeignet. Die Embeddings wurden synthetisch erzeugt, kein Embedding-Worker bewiesen. Kein Gate persistent geöffnet.
