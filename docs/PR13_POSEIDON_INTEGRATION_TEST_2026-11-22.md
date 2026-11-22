@@ -173,6 +173,23 @@ Die Test-Fixtures aktivieren ein Gate nur **innerhalb der lokalen, am Ende zurü
 
 **Abnahme:** Zehn DB-Integrationstests auf diesem Integrationsstand erfolgreich; keine persistierten Fixtures in den sechs geprüften Tabellen und Gate weiterhin geschlossen. Zusammen mit dem separaten Basislauf sind **153 reguläre + 10 separate DB-Tests erfolgreich**; der isolierte Konkurrenztest wurde nicht ausgeführt. Die Datenbankkontrolle umfasst die ausdrücklich aufgeführten Tabellen und behauptet keinen vollständigen Vergleich aller 43 Tabellen.
 
+### 5.8 Wiederholter Live-PDF/OCR-Test mit gezwungener Leerseiten-OCR (22.11.2026)
+
+Nach Fast-forward auf den Dokumentationsstand `9ae76ea` erfolgte auf Poseidon erneut ein **schreibfreier** Durchlauf von `python -m retro_rag.importer.pdf_preview_cli` für Nextcloud `poseidon-nextcloud`, Datei-ID `172`, `cubx-103.pdf`, mit geprüftem SHA-256 `f10dc04911aa75241adcb29731af62fc4ce4c5e5a21b0a69ff621778c784f82b`. Parameter: `--ocr-mode auto --ocr-page 111 --ocr-page 112 --ocr-language eng+deu --ocr-dpi 200`.
+
+| Wert | Live-Ergebnis |
+| --- | --- |
+| `page_count` / `chunk_count` | `112` / `114` |
+| `ocr_pages` | `[111]` |
+| `ocr_failed_pages` | `[112]` |
+| `warnings` | `Seite 112: OCR lieferte keinen Text` |
+| `indexing_allowed` / `fact_proposal_count` | `false` / `0` |
+| `PDF_PREVIEW_EXIT` | `0` |
+
+**Korrekte Einordnung:** Der Goldstandard und die Roadmap vom **21.11.2026** hatten bereits gezeigt, dass Seite **112 eine weiße Leerseite** ist und deshalb keine sinnvollen OCR-Inhalte erwartet werden. Die Warnung entsteht durch den ausdrücklich angeforderten OCR-Versuch auf dieser Leerseite; sie ist **kein nachgewiesener Verlust relevanten Texts**. Seite **111** wurde erkannt, ohne dass daraus eine Vollseiten-CER/WER-Freigabe folgt. Bereits am **21.11.2026** wurde ein separater Live-Kontrolllauf mit ausschließlich `ocr_pages={111}` dokumentiert: `ocr_pages=[111]`, `ocr_failed_pages=[]`, `warnings=[]`, 114 Chunks, Indexierung weiterhin gesperrt. Diese Ergebnisse dürfen nicht als Widerspruch oder als neue unbehobene Regression dargestellt werden.
+
+**Abnahmegrenze:** Exitcode 0 bedeutet erfolgreiche schreibfreie Vorschau einschließlich korrekt ausgewiesenem OCR-Teilfehler, nicht OCR-Erfolg auf allen angeforderten Seiten. Der Vorschauvertrag führt zu keiner Speicherung, Freigabe oder Indexierung. Offene fachliche Prüfung bleibt die manuell belegte CER/WER-Qualität und technische Terminologie auf Seite 111 sowie die persistente Gesamtintegration. Der Abschnitt ergänzt den früheren OCR-Nachtrag in [`PROJECT_ROADMAP.md`](PROJECT_ROADMAP.md), ohne den historischen Befund zu überschreiben.
+
 ## 6. Offene Abnahme von PR #13
 
 1. **Erledigt 22.11.:** zehn rollback-only DB-Integrationstests auf dem geprüften Branch bestanden, inklusive unabhängiger Gate-/Zählerkontrolle (siehe Abschnitt 5.7). **Offen:** isolierter C1-Konkurrenztest in eigenständigem Cluster.
