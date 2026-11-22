@@ -209,7 +209,7 @@ WEBDAV_DB_PLAN_EXIT=0
 Damit ist die **reale WebDAV → PostgreSQL-Importplanung im selben Aufruf bestanden**. Die Pipe überträgt keine WebDAV-Zugangsdaten; die Datenbanksitzung verwendet `BEGIN READ ONLY`. Dieser Test archiviert keine Originale, erzeugt keine Jobs/Chunks und ist kein persistenter `--apply`. Eine unabhängige Gate-/Zählerprüfung **nach genau diesem** Lauf wurde noch nicht geliefert. Ferner wurde die Ruff-Typfehlerkorrektur `624dbbe` auf Poseidon noch nicht durch neue Testausgaben bestätigt.
 
 
-## Gate-Sperrkonkurrenz auf `retro_rag_v2_test` – vorbereitet, noch nicht ausgeführt
+## Gate-Sperrkonkurrenz auf `retro_rag_v2_test` – Poseidon-Test PASS (22.11.2026)
 
 `tests/test_gate_concurrency_rollback.py` führt einen echten Test mit **drei gleichzeitigen Datenbankverbindungen** durch: zweimal `rag_v2_migrator_login` (Writer, Observer) und einmal `rag_v2_importer_login` (Reader). Die dedizierten Rollen/Passwörter sind erforderlich; ein echter `rag_v2_migrator`-`SET LOCAL ROLE` wird nur für das Rollback-Update verwendet.
 
@@ -243,5 +243,15 @@ python -m pytest -q -rs
   echo "GATE_CONCURRENCY_EXIT=$?"
 )
 ```
+
+**Echter Poseidon-Lauf:** Nach lokalem Fast-forward auf `bdcd889` meldeten `python -m ruff check .` **All checks passed!** und `python -m pytest -q -rs` **174 passed, 14 skipped** (0,71 s), Git-Arbeitsbaum sauber. Der gezielte Gate-Test wurde anschließend im PostgreSQL-Netzwerk-Namespace unter Verwendung der echten `rag_v2_migrator_login`- und `rag_v2_importer_login`-Anmeldungen erfolgreich ausgeführt:
+
+```text
+. [100%]
+1 passed in 0.15s
+GATE_CONCURRENCY_EXIT=0
+```
+
+Die Assertions des Tests prüfen die PostgreSQL-Blockierer-PID, die erwartete Abweisung `SQLSTATE 42501` nach Rollback sowie den unveränderten Sperrgrund und `writes_enabled=false` durch die gesonderte Observer-Verbindung. **Nach diesem Test steht eine zusätzliche, unabhängige administrative `BEGIN READ ONLY`-Nachkontrolle der zehn Tabellenzähler noch aus.** Der Test erzeugt keine Dokument-/Chunk-Fixtures und hat keine persistente Gate-Freigabe durchgeführt.
 
 **Diese Prüfung deckt die Gate-Serialisierung ab, nicht die eigentliche Konkurrenz zweier erfolgreicher C1-Aktivierungen.** Der bestehende C1-Test mit committed Fixtures ist weiterhin nur für eine entsprechend isolierte Umgebung sicher. Nach dem Betreiberlauf Gate und zehn Tabellensummen unabhängig per read-only SQL prüfen; erst danach Teilabnahme vermerken. Ohne beide Test-DSNs/Passwörter wird der neue Test übersprungen.
