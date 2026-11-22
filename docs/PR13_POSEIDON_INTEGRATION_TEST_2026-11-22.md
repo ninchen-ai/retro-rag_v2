@@ -233,3 +233,94 @@ Der Synthese-Test verwendet **synthetische Embeddings**, keinen echten Embedding
 5. **Betriebliche Freigabe:** Keine automatische Agenten-/Faktenfreigabe, kein produktiver Import und kein Merge von PR #13 in seinen Basisbranch oder `main` ohne ausdrückliche Freigabe.
 
 **Freigabeschranke:** PR #13 bleibt **Draft**, `rag_v2.write_gate.writes_enabled=false`; keine HBA-, Docker-, Archiv- oder Betriebskonfigurationsänderung durch diese Abnahme.
+
+
+## 7. Nachtrag 22.11.2026 – Real-Dokument-E2E im isolierten PR13-Cluster
+
+**Umgebung:** neuer Container `retro-rag-v2-pr13-e2e` mit `--network none`,
+PostgreSQL 16.15/pgvector, Clusterkennung
+`retro-rag-v2-pr13-e2e-isolated`, privater Unix-Socket
+`/data/retro-rag/v2/e2e-isolated/socket-v2`, eigene Datenbank
+`retro_rag_v2_test`. Migrationen `0001` bis `0006` aus dem Repository
+wurden dort erfolgreich angewandt. Unabhängige Kontrolle: **6 Migrationen,
+43 Tabellen, 15 Entitätstypen, Write-Gate false**. Der Cluster ist nicht
+der laufende `codeanalyse-postgres`; keine HBA-Änderung und keine
+Netzwerkfreigabe. `rag_v2_migrator_login` nur im isolierten Cluster aktiviert.
+Die Testtransaktionen öffnen das **isolierte** Gate ausschließlich
+uncommitted und führen im `finally` einen Rollback aus.
+
+### 7.1 Echte Markdown-Quelle – PASS
+
+- Nextcloud `poseidon-nextcloud`, Datei-ID `480`,
+  `test-mainboard.md`, **371 Bytes**; SHA-256
+  `70e1b0ce4dc3d7cc3497763c4e907f1f3df65843cb3b5cef7c38bf8ee66efab6`.
+- SHA-verifizierte lokale Staging-Kopie; `stage_file` im
+  isolierten, rollback-only Test; archivierte Testkopie, `prepare_job`,
+  Chunk-Persistierung, reale lokale Ollama-Embeddings mit
+  `nomic-embed-text` (768 Dimensionen), technische Job-Finalisierung
+  und `activate_version` im Testcode.
+- Der erste Testlauf schlug **ausschließlich** wegen einer fehlerhaften
+  Testannahme fehl: Der Markdown-Adapter liefert absichtlich die Warnung,
+  dass Quellenautorisierung, Schema- und Konfliktprüfung noch nicht
+  implementiert sind. Die Testassertion wurde in Commit `3c7aae1`
+  korrigiert, **nicht** die Warnung entfernt. `indexing_allowed=false`
+  bleibt zwingend.
+- Nach erneutem Start: **`1 passed in 0.70s`**, anschließend getrennte
+  DB-Verbindung: Gate `false`, Dokumente/Versionen/Jobs `(0,0,0)`.
+  Abschlussausgabe `PR13 MARKDOWN-E2E PASS`.
+
+### 7.2 Echtes PDF mit OCR und 114 Ollama-Embeddings – PASS
+
+- Nextcloud `poseidon-nextcloud`, Datei-ID `172`,
+  `cubx-103.pdf`, **4.914.302 Bytes**, SHA-256
+  `f10dc04911aa75241adcb29731af62fc4ce4c5e5a21b0a69ff621778c784f82b`.
+  SHA sowohl direkt nach WebDAV-GET als auch unabhängig an der
+  lokalen Kopie unter
+  `/data/retro-rag/v2/e2e-isolated/cubx-103.pdf` bestätigt,
+  Dateimodus `0600`.
+- Test in Commit `7149ae3`:
+  `tests/test_real_pdf_ocr_e2e_isolated.py`. PDF-Adapter mit
+  `ocr_mode=auto, ocr_pages={111}`:
+  **112 Seiten, 114 Chunks, OCR erfolgreich auf Seite 111,
+  keine fehlgeschlagenen OCR-Seiten, keine Warnungen**.
+  Weiße Seite 112 wurde **nicht** zwangsweise per OCR verarbeitet.
+- Für alle 114 Chunks echte lokale Ollama-`nomic-embed-text`-Embeddings
+  mit **768 Dimensionen** erzeugt und nur im isolierten,
+  uncommitted Test in `pgvector` geschrieben. Vor technischer
+  Job-Finalisierung verhindert `activate_version` die Aktivierung;
+  nach im Test explizit gesetzten technischen Job-/Versionsstatus
+  funktioniert die Aktivierung. Das ist **keine** automatische
+  Produktionsfreigabe: `indexing_allowed=false`, kein
+  tatsächlicher Embedding-/Finalisierungsworker implementiert.
+- Auf Poseidon bestätigt: `ruff check` für die neue Testdatei
+  **PASS**; `pytest`: **`1 passed in 21.46s`**;
+  nachfolgende unabhängige DB-Sitzung:
+  Write-Gate `false` und Dokumente/Versionen/Jobs/Chunks/Embeddings
+  `(0,0,0,0,0)`. Abschlussausgabe `PR13 PDF/OCR-E2E PASS`.
+
+### 7.3 Abnahmegrenzen und Folgeschritte
+
+Die neuen E2E-Prüfungen schließen die zuvor fehlende
+**technische Real-Dokument-Verkettung als isolierte
+Rollback-Smoke-Tests**. Sie ersetzen **nicht** einen produktiven
+WebDAV-`--apply`, einen dauerhaft laufenden Verarbeitungsworker,
+eine automatisierte Indexierungs-/Faktenfreigabe, eine komplette
+OCR-Qualitätsfreigabe oder eine persistente End-to-End-Einspielung.
+Die isolierte Transaktions-Aktivierung ist **nicht** mit dem
+Einverständnis zur automatischen Veröffentlichung gleichzusetzen.
+
+Vor Abschluss dieses PR-Reviews:
+- Abschlussregression einschließlich `ruff check .`,
+  `pytest -q -rs`, `pip check`, `git diff --check`,
+  Git-Status **auf dem aktuellen PR-Head** erneut auf Poseidon ausführen;
+  deren Ergebnis liegt für Commit `7149ae3` noch nicht vor.
+- Originalarchiv-Mount und **Backup-Lesbarkeit** unabhängig prüfen.
+  Das Verzeichnis `/data` ist als `/dev/sda1` ext4 gemountet,
+  `originals` Modus `700`; ein unabhängiger Restore ist nicht
+  hiermit bewiesen.
+- Isolierten Testcontainer nach dokumentierter Schlusskontrolle
+  aufräumen (seine Daten liegen in einem tmpfs).
+- GitHub PR #13 bleibt **Draft, open, unmerged**. Aktuell meldet
+  GitHub zudem **mergeable=false**; vor einer Freigabe muss
+  diese Aussage anhand der PR-Konflikt-/Prüfdetails geklärt werden.
+  Kein Merge und keine Produktivschaltung durch diese Tests.
