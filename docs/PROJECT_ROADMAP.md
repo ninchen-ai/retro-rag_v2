@@ -257,3 +257,26 @@ Diese Reihenfolge ist eine Empfehlung, **keine** Berechtigung, Migrationen anzuw
 3. **Implementiert**, **auf Poseidon getestet**, **im Integrationsbranch enthalten** und **produktiv freigegeben** sind unterschiedliche Zustände; nie gleichsetzen.
 4. Offene PRs/Issues periodisch mit diesem Aufgabenindex abgleichen, erledigte Punkte mit Datum und Nachweis schließen, historische Befunde nicht heimlich umschreiben.
 5. Das Write-Gate in `retro_rag_v2_test` bleibt ohne explizite Betreiberfreigabe **geschlossen**; die Datenbanken V1 und Nextcloud sind außerhalb des V2-Änderungsumfangs.
+
+## Importworker-Entwicklungsnachtrag – 22.11.2026
+
+**Draft [PR #15](https://github.com/ninchen-ai/retro-rag_v2/pull/15):**
+Auf `feat/resumable-import-worker-2026-11-22` ist eine erstmalige
+wiederaufnehmbare Job-Extraktionsstufe implementiert. `processing_job` wird
+per PostgreSQL-Lease und `SKIP LOCKED` beansprucht; Archivhash, Gate,
+PDF-/Markdown-Adapter, `processing_step`, `processing_artifact` und
+versionierte `chunk`-Zeilen sind verbunden. Tests sind im Branch enthalten,
+aber auf Poseidon noch nicht ausgeführt.
+
+**Abgrenzung:** Dies ist noch **kein fertig abgenommener automatisierter
+End-to-End-Importworker**. Nach der Extraktion fehlt insbesondere die
+Embedding-Persistenz; Versionen bleiben `processing` und unveröffentlicht.
+Der Jobstatus `completed` bezeichnet im aktuellen Prototyp nur den
+Abschluss der Extraktion, nicht die vollständige technische Indexierung.
+Vor dem vollständigen Abschluss: Jobstatus-Semantik um Embeddings erweitern,
+OCR-Warnungen als abrufbare Artefakte ablegen, Lease-/Crash- und
+Mehrworker-Tests mit echter Testdatenbank, anschließende gezielte
+`activate_version`-Abnahme und erst danach systemd-Timer freigeben.
+Write-Gate bleibt geschlossen; weder `main` noch produktiver Betrieb betroffen.
+
+Technische Einzelheiten und Abnahmebefehle: [IMPORT_WORKER.md](IMPORT_WORKER.md).
