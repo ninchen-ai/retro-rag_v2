@@ -18,8 +18,8 @@ the completed end-to-end indexing/activation pipeline.
 - The original is read only from an explicitly selected archive root and
   verified against its stored SHA-256. No WebDAV write or re-download.
 - PDF goes through `read_pdf`; Markdown through `read_markdown`. The
-  `content_extracted` step and version-specific chunks commit in the same
-  database transaction. The artifact is a DB reference to those chunks.
+  canonical `text_extracted` step, `chunk_set` artifact and version-specific
+  chunks commit in the same transaction via `job_pipeline.py`.
 - PDF pages with extraction warnings or OCR gaps fail closed. Markdown
   metadata/format validation still applies. Markdown's existing warning
   concerning *unimplemented trust authorization* does **not** approve facts.
@@ -29,11 +29,10 @@ the completed end-to-end indexing/activation pipeline.
   **never** `indexed`. No embeddings, version activation, reviewer approval,
   inventory changes or automatic factual promotion occur here.
 
-A completed `document_import` job currently means *extraction persisted*,
-not *technically indexed*. Version activation remains blocked by the
-`processing_state=indexed` requirement and missing embeddings. Before the
-full pipeline is shipped, extend the job lifecycle to include an explicit
-embedding step and only mark complete after the index is ready.
+The extraction stage now releases its lease while leaving `document_import`
+`running` and `document_version.processing_state=processing`. Jobs with a
+completed `text_extracted` step are not claimed again. Embeddings and technical
+indexing must finish before the job is marked completed or a version activated.
 
 ## Operator workflow
 
@@ -87,3 +86,11 @@ concurrency, crash/restart and read-only permission checks pass on Poseidon.
 5. Ship a disabled-by-default systemd service/timer only after those tests.
 
 No migration applied, no Gate changed, no production job started by this PR.
+
+## Poseidon safety check and follow-up (22.11.2026)
+
+The operator confirmed on the earlier revision: 184 passed, 16 skipped,
+Ruff clean; dry-run did not claim work and the DB gate was `false`.
+**These results precede the canonical-persistence refactoring.** Run the
+full suite again; concurrency/retry tests and isolated DB acceptance remain
+outstanding. No `--apply` or timer activation is authorized.
