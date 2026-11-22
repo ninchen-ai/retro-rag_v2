@@ -1,6 +1,6 @@
 # OCR-Qualitätsbewertung – Retro-RAG V2
 
-**Status:** Entwurf – zur fachlichen Freigabe  
+**Status:** Entwurf – zur fachlichen Freigabe; bisherige Testergebnisse berücksichtigt  
 **Datum:** 22.11.2026  
 **Arbeitsbranch:** `feat/ocr-quality-evaluation`  
 **Umfang:** ausschließlich isolierte Dateievaluation, kein Eingriff in die Importpipeline
@@ -38,7 +38,7 @@ Die Evaluation erteilt **keine** Freigabe zur Indexierung, Versionsaktivierung o
 
 ## 4. Testkorpus: zehn vorgeschlagene Seitenplätze
 
-**Nur Kategorien und Anforderungen; keine konkrete Testseite ist ausgewählt oder freigegeben.** Nach Freigabe sollen folgende Seiten bereitgestellt werden, bevorzugt aus lokal vorhandenen, rechtmäßig nutzbaren Handbüchern/Datenblättern:
+**Nur Kategorien und Anforderungen für die neue Bewertung; keine konkrete Seite für den neuen Zehner-Korpus ist ausgewählt oder freigegeben.** Bereits zuvor unabhängig visuell untersuchte Seiten und lokale Versuchsdaten werden als vorhandene Baseline dokumentiert; ihre erneute Auswahl für den neuen Korpus ist nicht vorweggenommen. Nach Freigabe sollen folgende Seiten bereitgestellt werden, bevorzugt aus lokal vorhandenen, rechtmäßig nutzbaren Handbüchern/Datenblättern:
 
 | ID | Kategorie | Bereitzustellende Seite / gewünschte Merkmale |
 | --- | --- | --- |
@@ -142,3 +142,83 @@ Schlechte OCR-Qualität, fehlgeschlagene Erkennung und eine dokumentierte Warnun
 - `docs/OCR_QUALITY_EVALUATION.md` – vorhandene Qualitätsmessung und provisorische Baselines.
 - `docs/PDF_OCR_STAGE4.md` – vorhandene Tesseract-/PyMuPDF-Seiten-OCR.
 - `docs/PDF_LAYOUT_ROUTING_DOCLAYOUT_YOLO.md` – Trennung von Text, Layout und Tabellenstruktur.
+
+## 13. Historische Test- und Messbefunde als verbindliche Ausgangslage
+
+Dieser Abschnitt dokumentiert **bereits vorhandene** Ergebnisse des Entwicklungsbranches und der dort referenzierten Poseidon-Läufe. Er ist weder eine erneute Ausführung noch die Freigabe des zukünftigen Testkorpus. Frühere Ergebnisse bleiben im jeweiligen Geltungsbereich gültig und werden nicht stillschweigend als vollständige OCR-Qualitätsabnahme bezeichnet.
+
+### 13.1 PDF-Survey und technische Baseline (10.11.2026)
+
+- Der schreibfreie Vollbericht untersuchte **29/29 PDFs mit 5.064/5.064 Seiten**, ohne technische Seiten- oder Tabellenerkennungsfehler. Inhaltsgleiches Duplikat herausgerechnet: **28 eindeutige PDFs / 4.953 Seiten**.
+- Unter diesen eindeutigen Seiten waren **22 ohne extrahierten Text**, **26 mit weniger als 40 Zeichen**, **4 heuristische OCR-Kandidaten** und **78 Seiten mit Mehrspaltenverdacht**. Heuristische Kandidaten sind keine verifizierten OCR-Fälle.
+- Auf der Gesamtmenge wurden **3.720 PyMuPDF-Tabellenerkennungen** gezählt; diese sind keine bestätigten, korrekt rekonstruierten Tabellen.
+- Der Vollbericht enthält keine belastbaren Laufzeitwerte für die OCR-Bewertung. Die technische Fehlerfreiheit belegt keine korrekte Lesereihenfolge oder korrekte technische Werte.
+
+Quelle: `docs/PDF_QUALITY_BASELINE_2026-11-10.md`.
+
+### 13.2 Bereits überprüfte Seitenklassifikationen und Layoutprobleme
+
+- Die vorhandenen **14 Goldstandard-Prüfpakete** wurden vorbereitet; **7 Seiten** sind laut dokumentiertem Review visuell geprüft, nicht sämtliche 14.
+- `cubx-103.pdf` S. 111: bildbasierte Werbeseite, OCR-Bedarf visuell bestätigt; S. 112: tatsächlich leere Seite, OCR nicht erforderlich.
+- `3C905CX.pdf` S. 1 und DirectX-Guide S. 2: bildbasierte Titelseiten mit begründetem OCR-Bedarf.
+- `usb_20.pdf` S. 601 und 606: `sort=True` verschränkt die beiden Indexspalten; korrekte Folge ist linke Spalte vollständig, danach rechte. **Kein OCR-Problem, sondern Lesereihenfolge/Struktur**.
+- `MGA-G200_199811.pdf` S. 522: Pinmatrix verliert in einfacher Textrepräsentation die verlässliche 2D-Zell-/Signalbeziehung. Verlustfreies Zeichen-Chunking behebt dies nicht.
+- Vorhandene Goldstandard-Review-Urteile zu Seitenklassifikation dürfen als historische Befunde genutzt werden; sie ersetzen **keine unabhängig verifizierte vollständige Texttranskription** für CER/WER.
+
+Quelle: `docs/PDF_GOLDSTANDARD_REVIEW.md`.
+
+### 13.3 Tesseract-Stufe 4: technisch erfolgreich, fachlich offen
+
+- Für `cubx-103.pdf` S. 111 dokumentiert: **0 native Zeichen**, **94,26 % Bildabdeckung**; Tesseract 5.5.0 über PyMuPDF mit `eng+deu`, **200 DPI** lieferte **1.723 Zeichen** und keine OCR-Laufzeitwarnung.
+- Der Kopfbereich enthielt erkennbare Fehler/Artefakte. Dies ist **kein** Nachweis einer ausreichenden Texterkennungsqualität oder einer Freigabe zur Indexierung.
+- Vorhandene OCR-Funktionstests (synthetische PDFs/Mocks) prüfen Kontrollfluss und Fehlerverhalten, keine CER/WER an echten Scans.
+
+Quelle: `docs/PDF_OCR_STAGE4.md`.
+
+### 13.4 Vorläufige OCR-Qualitätsmessung und Reproduzierbarkeit (12.11.2026)
+
+Das vorhandene Evaluationswerkzeug wurde auf Poseidon durch **8 bestandene Tests** und erfolgreiche Ruff-Prüfung technisch überprüft; diese Tests verwendeten synthetische Texte.
+
+Für einen **maskierten PNG-Ausschnitt** aus der CUBX-Seite 111 mit Tesseract PSM 6 wurden folgende Werte gegen eine **provisorische, nicht abschließend freigegebene Referenz** reproduziert:
+
+| Sprachvariante | CER | WER | Nachweisstatus |
+| --- | ---: | ---: | --- |
+| `eng` | 2,32 % | 15,00 % | Poseidon-Messung; Text später bytegenau gegen Vergleichsdatei bestätigt |
+| `eng+deu` | 2,51 % | 16,25 % | Poseidon-Messung; Text später bytegenau gegen Vergleichsdatei bestätigt |
+
+**Folgerungen:** In diesem **einen Ausschnittversuch** war `eng` besser als `eng+deu`. Das ist keine globale Sprachkonfigurationsempfehlung. Die hier beobachteten WER-Werte überschreiten den für *saubere Scans* vorgeschlagenen Grenzwert von 10 %: 15,00 % bzw. 16,25 % sind größer als der Entwurfswert von 10 %. Der Ausschnitt ist aber keine nach den neuen Regeln als „sauberer Scan“ klassifizierte, freigegebene Testseite; daher **keine formale Grenzwertverletzung der neuen Evaluation**.
+
+Die Reproduzierbarkeit belegt nur dieses PNG-/PSM-6-Experiment, **nicht** eine Ganzseiten-OCR gegen die SHA-256-verifizierte Original-PDF bei 200 DPI. Identische Ausgangsregion und endgültig manuell bestätigte Referenz bleiben Voraussetzung für einen belastbaren Vergleich.
+
+Das vorhandene Werkzeug berechnet bereits **CER, WER und `critical_term_recall`** (exakte Vorkommen markierter Fachbegriffe, ohne Unterscheidung von Groß-/Kleinschreibung). Dieses Merkmal berücksichtigt noch keine zusätzlich **erfundenen** kritischen Angaben. Die im Plan getrennt vorgeschlagenen Metriken für Zahlen-/Einheiten-Paare und erfundene Angaben sind daher **Evaluationsanforderungen**, nicht als implementiert zu behaupten. Bestehende Tests bleiben unberührt.
+
+Quelle: `docs/OCR_QUALITY_EVALUATION.md`.
+
+### 13.5 DocLayout-YOLO und Strukturversuche (10.–11.11.2026)
+
+Auf Poseidon wurden drei gezielte CPU-Detektionsläufe mit dem bereits vorhandenen Goldstandard-Bildmaterial durchgeführt:
+
+| Seite | Gemeldete Inferenzzeit | Detektionen | Fachliche Grenze |
+| --- | ---: | --- | --- |
+| USB 2.0 S. 601 | 1,8840 s | 8 Boxen | Zwei Spalten als Regionen erkennbar, Konflikt `title`/`abandon` |
+| USB 2.0 S. 606 | 0,7302 s | 4 Boxen | Spalten erkennbar, aber damit keine automatisch bestätigte Leseordnung |
+| Matrox G200 S. 522 | 0,7220 s | 7 Boxen | Pinmatrix gleichzeitig als `table` und `figure` klassifiziert |
+
+Die Zeiten messen **nur die dokumentierten YOLO-Inferenzläufe**, nicht OCR-/Layout-Gesamtverarbeitung. Die Konflikterkennung bestand später **16 Unit-Tests** und Ruff; dies ist kein Zellstruktur- oder OCR-Gütesiegel.
+
+Die anschließenden USB-Spaltenadapter-Ausgaben sind als `REVIEW_REQUIRED` und `approved=false` dokumentiert. Neuere Vorschlagsausgaben ordnen `Index` auf S. 601 am Anfang ein und führen `ClearHubFeature()` auf S. 606 vor `clock model (continued)`; die fachliche Abnahme und die semantische Gliederung des Indexes sind weiterhin offen.
+
+Quellen: `docs/PDF_DOCLAYOUT_BENCHMARK.md`, `docs/PDF_LAYOUT_CONFLICTS_V2.md`, `docs/PDF_COLUMN_READING_ORDER_V2.md`.
+
+### 13.6 Konsequenzen für den noch freizugebenden Evaluationsumfang
+
+1. **Keine Wiederholung nur zum Nachweis technischer Ausführbarkeit:** Bestehende PDF-, OCR- und YOLO-Smoke-Tests als Baseline anführen. Erneute Ausführung nur, wenn sie für vergleichbare Messbedingungen oder eine spätere Regression erforderlich ist.
+2. **Vorhandenes Goldstandard-Material vorrangig prüfen:** Die bereits dokumentierten Fälle (u. a. CUBX, 3Com, USB, Matrox) sind **Kandidaten**, keine automatisch für den neuen Zehner-Korpus ausgewählten Seiten. Zuerst den tatsächlichen lokalen Referenzstatus verifizieren; fehlende/ungeprüfte Transkriptionen bleiben offen.
+3. **OCR-Güte und Layoutgüte trennen:** Die USB-Spalten und die Matrox-Pinmatrix sind primär Struktur- und nicht OCR-Fälle. Für die zehn geplanten Seitenplätze gegebenenfalls echte Bildtextfälle und separate Layoutkontrollen unterscheiden.
+4. **Sprachen gezielt vergleichen:** `eng` und `eng+deu` sind wegen der dokumentierten unterschiedlichen Ergebnisse auf identischem Inhalt einzubeziehen; keine Verallgemeinerung aus nur einem Ausschnitt.
+5. **Kritische technische Aussagen vorrangig bewerten:** Genauigkeit von Modellnummern, Zahlen und Wert-Einheit-Paaren sowie erfundene Angaben getrennt von CER/WER ausweisen; `critical_term_recall` als vorhandene Messmöglichkeit nutzen.
+6. **Zeitvergleich methodisch sauber halten:** Vorhandene reine YOLO-Inferenzzeiten und OCR-Durchlaufzeiten dürfen nicht als gleiche Messgröße gegenübergestellt werden.
+7. **Schwellenwerte bleiben Vorschläge:** Auch nach Einbeziehung der älteren Ergebnisse sind die Grenzwerte in Abschnitt 8 weiterhin **zur Freigabe** und nicht nachträglich für die alten Versuche anzuwenden.
+8. **Offene technische Integrationen nicht vortäuschen:** Vision-LLM- und layoutgestützte OCR-Varianten vor einem Vergleich auf Implementierung und identischen Quellen-/Referenzstand prüfen; bestehende Abnahme- und PR-#15-Tests weder ersetzen noch erweitern.
+
+**Stand nach Übernahme dieser Befunde:** Ausschließlich der Plan wurde aktualisiert. Es wurden keine zusätzlichen Seiten ausgewählt, keine Referenztexte angelegt und keine Messläufe gestartet.
