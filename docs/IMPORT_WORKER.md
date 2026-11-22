@@ -125,3 +125,38 @@ unset RETRO_V2_WORKER_ISOLATED_DSN
 No real Nextcloud, Ollama, documents, or production storage are accessed.
 The 185-pass baseline predates the addition of this isolated test and the
 source-id correction. Those new changes require a fresh Poseidon regression.
+
+
+## Three isolated acceptance tests (22.11.2026)
+
+`tests/test_import_worker_isolated_acceptance.py` adds three **opt-in** real
+PostgreSQL acceptance tests in the *same disposable isolated cluster*:
+
+1. **Crash/rollback/recovery:** terminate a PostgreSQL backend in an open
+   transaction after inserting a chunk, step and artifact, verify none survive,
+   expire the abandoned job lease, reclaim with the real importer login and
+   persist via `finish_job`. Version stays `processing`, not `active`.
+2. **Gate closure during processing:** claim the job, close only the disposable
+   cluster's gate, verify the later `finish_job` is rejected before any chunk
+   appears.
+3. **Importer RBAC and activation barrier:** enable
+   `rag_v2_importer_login` only inside the disposable cluster, verify the role
+   cannot update the gate or insert confirmed facts, persist extraction with
+   that role and verify `activate_version` refuses missing index/embeddings.
+
+These tests check `cluster_name=retro-rag-v2-worker-isolated`,
+`current_database=retro_rag_v2_test`, `session_user=postgres`, migration
+version 6, initially closed gate, empty job queue and initially disabled
+importer login **before any mutation**. Each case uses a synthetic original
+in the pytest private temp directory; it does not read the real document
+archive or Nextcloud. Cleanup removes synthetic rows, closes the gate and
+restores `rag_v2_importer_login NOLOGIN`.
+
+Use the same verified `nsenter --net` invocation as for the earlier lease
+test, but point pytest at `tests/test_import_worker_isolated_acceptance.py`.
+Run tests serially, **not** with pytest-xdist. A hard kill during the test
+can leave the disposable cluster's gate open or login role enabled: stop
+and discard the entire disposable container in that case.
+
+No production write authorization, embedding generation or version activation
+is added by these tests. The tests have not been executed on Poseidon yet.
