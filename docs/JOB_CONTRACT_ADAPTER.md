@@ -122,3 +122,20 @@ Damit sind der geschlossene Gate-Zustand und **alle zehn überprüften Tabellenz
 3. Bei einem kontrollierten synthetischen Positivtest müssen Chunks, Schritt, Artefakt und Jobstatus gemeinsam zurückgerollt werden; kein persistierter Datenbankinhalt.
 4. Fehler- und Reviewzustände, Embedding-Handoff und Crash-/Retry-Verhalten definieren, bevor der Adapter produktive `processing_job`-Daten bearbeitet.
 5. Keine automatische Freigabe, kein Merge ohne explizite Architektur-/Testabnahme.
+
+
+## Rollback-only Positivtest auf bestehender V2-Testdatenbank (22.11.2026, noch auszuführen)
+
+**Testdatei:** `tests/test_job_pipeline_rollback_integration.py`. Kein weiterer Cluster und keine neue Datenbank nötig. Der Test akzeptiert ausschließlich `retro_rag_v2_test` mit `rag_v2_migrator_login`, Migration `0006`, **anfänglich geschlossenem** Gate. Alle Testdaten (inklusive Gate-Update) verbleiben in **einer einzigen Transaktion ohne Commit**, die in `finally` zurückgerollt wird. Der Test schreibt **nur ein synthetisches PDF** in ein privates temporäres Pytest-Verzeichnis, niemals in das vorhandene V2-Originalarchiv.
+
+Prüfpfad: synthetisches archiviertes PDF → Dokumentversion + Importjob + `source_archived` → `prepare_job` → `_persist_contract_rows` → versionengebundene Chunks + `text_extracted` + `chunk_set` → **synthetische** 3D-Embeddings → technische Aktivierung → Rollback → unabhängige DB-Wiedereinwahl und Prüfung des geschlossenen Gates sowie der Test-IDs.
+
+**Sicherheits-/Abnahmegrenzen:**
+
+- Der produktive `persist_contract`-Einstieg behält die exakte Importer-Sessionprüfung und `assert_import_write_gate()`. `_persist_contract_rows` ist ein **interner, nicht als Anwendungsschnittstelle zulässiger** SQL-Kern für den Rollbacktest.
+- Nur die Test-Transaktion setzt `writes_enabled=true`. Es gibt **keine persistente Freigabe**, keinen echten `--apply` und keine Arbeit an realen Archivdateien.
+- Die technischen Embeddings sind Testvektoren; dieser Test belegt **nicht** das Funktionieren eines Embedding-Workers, eine semantisch korrekte Suche oder eine End-to-End-Verarbeitung mit realem WebDAV.
+- Der bestehende C1-Konkurrenztest in `tests/test_version_activation_concurrency.py` ist **separat zu betrachten**: Er führt Commits aus und verlangt ausdrücklich einen isolierten Cluster. Ihn nicht gegen die laufende Testdatenbank umbiegen.
+- Erst nach einem bestandenen Lauf und unabhängiger read-only SQL-Zählerprüfung wird die Rollback-Teststufe abgenommen.
+
+Zum Ausführen vom PostgreSQL-Netzwerk-Namespace aus `RETRO_V2_JOB_ROLLBACK_DSN` auf `rag_v2_migrator_login` und `retro_rag_v2_test` setzen; kein Skript startet selbst neue Container. Der ausführbare Befehl und die Passwortübergabe werden in der gesonderten Testanweisung angegeben. Noch **kein** PASS behauptet.
