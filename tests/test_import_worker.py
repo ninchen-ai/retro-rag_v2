@@ -70,7 +70,7 @@ def test_pdf_with_unverified_chunks_fails_before_db_write():
         warnings=["Page requires OCR review"],
     )
     job = ("job-1", "version-1", "a" * 64, "file:///unused.pdf", "manual.pdf")
-    with pytest.raises(ValueError, match="Extraktion erfordert Prüfung"):
+    with pytest.raises(ValueError, match="PDF-Warnungen erfordern vor Persistierung ein Review"):
         worker.finish_job(object(), job, "worker-1", Path("/does-not-exist"), contract)
 
 
@@ -84,7 +84,7 @@ def test_fact_proposals_fail_before_db_write():
         warnings=[],
     )
     job = ("job-1", "version-1", "a" * 64, "file:///unused.md", "doc.md")
-    with pytest.raises(ValueError, match="Automatische Index"):
+    with pytest.raises(ValueError, match="Verarbeitungsadapter darf keine Freigaben übernehmen"):
         worker.finish_job(object(), job, "worker-1", Path("/does-not-exist"), contract)
 
 
