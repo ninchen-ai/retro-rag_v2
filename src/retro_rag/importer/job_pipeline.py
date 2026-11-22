@@ -134,6 +134,17 @@ def persist_contract(conn: psycopg.Connection, prepared: PreparedJob) -> int:
         if cur.fetchone() != ("retro_rag_v2_test", "rag_v2_importer_login"):
             raise RuntimeError("Persistierung nur mit dediziertem Importer-Login auf V2-Test")
         cur.execute("SELECT rag_v2.assert_import_write_gate()")
+    return _persist_contract_rows(conn, prepared)
+
+
+def _persist_contract_rows(conn: psycopg.Connection, prepared: PreparedJob) -> int:
+    """DB-Kern ohne Commit, nur für explizit rollback-only Migator-Integrationstests.
+
+    Kein eigenständiger Anwendungseinstiegspunkt: die produktive Funktion
+    persist_contract() erzwingt Importer-Login und Write-Gate davor.
+    """
+    contract = prepared.contract
+    with conn.cursor() as cur:
         cur.execute(
             """SELECT j.status, j.attempts, j.max_attempts,
                       v.id, v.content_hash, v.processing_state, v.state
