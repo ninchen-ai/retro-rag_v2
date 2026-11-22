@@ -115,6 +115,8 @@ def persist_contract(conn: psycopg.Connection, prepared: PreparedJob) -> int:
         raise ValueError("Verarbeitungsadapter darf keine Freigaben übernehmen")
     if contract.document.metadata.get("ocr_failed_pages"):
         raise ValueError("OCR-Fehlerseiten müssen vor Persistierung geprüft werden")
+    if contract.source.kind == "pdf" and contract.warnings:
+        raise ValueError("PDF-Warnungen erfordern vor Persistierung ein Review")
     if not contract.chunks or len(contract.chunks) > 10_000:
         raise ValueError("Leerer oder übergroßer Chunk-Satz nicht zulässig")
     if contract.source.source_id != "document_version:" + str(prepared.version_id):
