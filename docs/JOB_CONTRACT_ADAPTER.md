@@ -101,7 +101,19 @@ JOB_DB_TEST_EXIT=0
 
 Das Testskript kontrolliert Datenbank, Sessionuser und geschlossenes Gate und erwartet eine `psycopg.errors.InsufficientPrivilege` wegen `V2-Schreibsperre ist geschlossen` beim Versuch `persist_contract()`. Es verwendet ausschließlich synthetische lokale Originalbytes und keine realen Dokument-/Job-IDs; seine Verbindung wird im `finally` zurückgerollt. Das **bestätigt die Gate-Ablehnung**, nicht den positiven Chunk-/Artefakt-Schreibpfad.
 
-**Noch ausstehend:** eine **zweite, unabhängige read-only SQL-Sitzung** muss das unverändert geschlossene Gate und die Tabellenzähler `document`, `document_source`, `document_version`, `processing_job`, `processing_step`, `processing_artifact`, `chunk`, `chunk_embedding`, `review_item` und `knowledge_proposal` nachkontrollieren. Es gab keinen positiven Import, keine Datenbank-Migration, keine Gate-Freigabe. Die positive Transaktionsprüfung gehört in einen getrennten Testaufbau.
+**Unabhängige read-only SQL-Nachkontrolle – PASS (22.11.2026):** Die Betreiberin hat nach dem echten Importer-Gate-Negativtest eine separate Sitzung mittels `docker exec -i codeanalyse-postgres psql -X -v ON_ERROR_STOP=1 -U codeanalyse -d retro_rag_v2_test` mit `BEGIN READ ONLY` / `COMMIT` ausgeführt. Ergebnisse:
+
+| Kontrollpunkt | Nachkontrolle |
+| --- | --- |
+| Migration `MAX(schema_migration.version)` | `6` |
+| `write_gate.writes_enabled` | `f` |
+| Sperrgrund | `Parallelitätstest erfolgreich; Freigabe ausstehend` |
+| `document`, `document_source`, `document_version` | jeweils `0` |
+| `processing_job`, `processing_step`, `processing_artifact` | jeweils `0` |
+| `chunk`, `chunk_embedding` | jeweils `0` |
+| `review_item`, `knowledge_proposal` | jeweils `0` |
+
+Damit sind der geschlossene Gate-Zustand und **alle zehn überprüften Tabellenzähler** nach dem Negativtest unabhängig bestätigt. Diese Kontrolle betrifft die aufgelisteten Tabellen, nicht einen Vollvergleich der gesamten Datenbank. Es gab keinen positiven Import, keine DB-Migration und keine Gate-Freigabe. Die positive Transaktionsprüfung bleibt ein eigenständiges, strikt isoliertes Arbeitspaket.
 
 ## Abnahmekriterien vor späterer Integration
 
