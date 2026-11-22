@@ -65,7 +65,7 @@ def read_pipe(stream, expected_sha256: str) -> tuple[RemoteFile, bytes]:
         raise ValueError("Unvollständige Metadaten")
     meta = json.loads(header)
     if not isinstance(meta, dict):
-        raise ValueError("Metadaten müssen ein Objekt sein")
+        raise TypeError("Metadaten müssen ein Objekt sein")
     required = ("source_key", "instance_id", "uri", "name", "byte_size", "sha256")
     if any(field not in meta for field in required):
         raise ValueError("Unvollständige WebDAV-Metadaten")
