@@ -27,7 +27,8 @@ LEASE_MINUTES = 60
 def verified_original(uri: str, root: Path, expected_hash: str) -> Path:
     """Verify the archived original before reuse; reject arbitrary paths/links."""
     parsed = urlparse(uri)
-    if parsed.scheme != "file" or parsed.netloc not in ("", "localhost"):
+    if (parsed.scheme != "file" or parsed.netloc not in ("", "localhost")
+            or parsed.query or parsed.fragment):
         raise ValueError("Originalarchiv benötigt eine lokale file:-URI")
     path = Path(unquote(parsed.path))
     if path.is_symlink() or not path.is_file():
