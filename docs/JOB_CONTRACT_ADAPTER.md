@@ -66,6 +66,23 @@ git diff --check
 
 Die Ausgabe ist noch **nicht** nachgewiesen. Die reguläre Suite darf weiterhin DB-Tests ohne explizit gesetzten DSN skippen. Für den isolierten C1-Konkurrenztest einen separaten Cluster verwenden.
 
+## PostgreSQL-Negativtest mit echter Importer-Rolle (vorbereitet 22.11.2026)
+
+`tests/test_job_pipeline_integration.py` enthält jetzt einen **explizit aktivierbaren** Negativtest. Er stellt eine echte `psycopg`-Verbindung mit `rag_v2_importer_login` zu `retro_rag_v2_test` her, kontrolliert das geschlossenene Write-Gate und ruft `persist_contract()` mit synthetischem Text und nicht existierenden Job-/Versions-IDs auf. Erwartet ist **SQLSTATE 42501** (`V2-Schreibsperre ist geschlossen`). Eine Rolle, Datenbank oder Gate-Freigabe wird weder erstellt noch geändert. Der synthetische Originaltext liegt nur in einer temporären lokalen Pytest-Datei. Die Verbindung führt im `finally` ein Rollback aus.
+
+**Noch nicht auf Poseidon ausgeführt.** Für den Test einen gesicherten Importer-Login und den bereits geprüften PostgreSQL-Netzwerk-Namespace nutzen; keine Ausweitung des Docker-HBA-Netzes.
+
+```bash
+cd ~/projects/retro-rag_v2
+git pull --ff-only
+source .venv/bin/activate
+
+python -m ruff check .
+python -m pytest -q -rs
+```
+
+Die reguläre Suite überspringt diesen realen DB-Test ohne `RETRO_V2_JOB_TEST_DSN`; der Umgebungsschlüssel wird nur für eine explizite Testausführung gesetzt. Der negative SQL-Test darf **nicht** als erfolgreicher positiver Chunk-Apply gewertet werden. Ein Positivtest benötigt eine separate Isolation; auf der vorhandenen V2-Testdatenbank wird das Gate nicht geöffnet. Nach dem Negativlauf sind das Gate und die Tabellenzähler über eine **zweite** DB-Sitzung unabhängig zu kontrollieren.
+
 ## Abnahmekriterien vor späterer Integration
 
 1. Alle schreibfreien Tests PASS; keine unerwarteten Änderungen an bestehender Testanzahl oder Ruff.
