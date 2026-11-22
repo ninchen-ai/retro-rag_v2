@@ -375,3 +375,20 @@ Draft-/Merge-Status. Quellenautorisierung, automatischer Worker,
 fachliche Freigabe und OCR-Qualitätsoptimierung bleiben eigene
 Entwicklungsaufgaben und werden nicht als durch den Smoke-Test
 implementiert bezeichnet.
+
+
+### 8.1 Isolierte Testumgebung entfernt (22.11.2026)
+
+Betreiberseitiger Abschluss auf Poseidon:
+
+```text
+docker stop retro-rag-v2-pr13-e2e  -> retro-rag-v2-pr13-e2e
+docker rm retro-rag-v2-pr13-e2e    -> retro-rag-v2-pr13-e2e
+docker ps -a --filter name=retro-rag-v2-pr13-e2e -> keine Containerzeilen
+```
+
+**PASS:** Der separate, netzwerklose PostgreSQL-E2E-Container ist gestoppt und entfernt. Sein flüchtiges tmpfs-Datenverzeichnis wird damit verworfen. Die lokal abgelegte CUBX-PDF-Testkopie und sonstige Host-Dateien sind davon nicht betroffen. Eine vollständige Entfernung aller Host-Testdateien ist **nicht** behauptet.
+
+**Technischer PR13-Testabschluss:** Echte Markdown- und PDF/OCR-Integrationstests mit realen Ollama-Embeddings, unabhängige DB-Rollback-Kontrollen, Schlussregression auf `1f311b3` sowie Isolations-Cleanup sind erledigt. Die fachlichen und produktiven Freigabegrenzen gelten unverändert; das Backup-Thema ist bewusst in die Roadmap vertagt.
+
+**Formaler PR-Status:** Kein Merge erfolgt. PR #13 bleibt open/Draft. Die GitHub-Mergeability kann während der Neuberechnung zeitweise `false` melden und ist vor einem tatsächlich gewünschten Merge erneut zu prüfen.
