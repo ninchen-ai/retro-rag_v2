@@ -262,3 +262,25 @@ Die Leerseitenwarnung ist **kein belegter Verlust relevanten Texts und keine unb
 - Vollständige OCR-Qualitätsbewertung, strukturierte Tabellen-/Pinmatrixprüfung und Vision-LLM-Gegenprüfung bleiben offen und freigabepflichtig.
 
 Quelle: `docs/PR13_POSEIDON_INTEGRATION_TEST_2026-11-22.md` auf `integration/pdf-ocr-webdav-2026-11-21`. Historische Dokumentation bleibt unverändert; alle hier genannten Nachweise gelten nur für die ausdrücklich dokumentierten Testläufe.
+
+## 15. Freigegebener geplanter Ablauf (22.11.2026)
+
+**Freigabestatus:** Der nachfolgende **fünfphasige Ablaufplan** wurde am **22.11.2026** vom Betreiber ausdrücklich zur Aufnahme in dieses Dokument freigegeben. Die Freigabe gilt ausschließlich für die **Planung und Reihenfolge der Arbeitsschritte**. Sie ist **keine** Freigabe zur Auswahl konkreter Seiten, Erstellung von Referenzen, Durchführung von OCR-/Layout-/Vision-LLM-Versuchen, Änderung von Tests oder produktiver Verarbeitung.
+
+**Arbeitsbranch:** `feat/ocr-quality-evaluation`  
+**Geltungsbereich:** Isolierte Auswertung lokaler Dateien, ohne Datenbank, Worker, `--apply`, Nextcloud-/Archiv-/Originaländerung oder Veränderung des Write-Gates.  
+**Verbindliche Abnahme:** `docs/ocr_quality_test_matrix.md` mit 29 eingefrorenen IDs (23 M, 3 S, 3 O). Die gesonderte PR-#15-Abnahme bleibt vollständig unberührt.
+
+| Phase | Schwerpunkt | Zuordnung zur eingefrorenen Matrix | Geplante Tätigkeit |
+| --- | --- | --- | --- |
+| 1 | Isolation und Referenzgrundlage | A1–A5 | Lokale, schreibgeschützte Quellen und Ausgaben abgrenzen; Quell-/Renderidentität nachweisen; unabhängige, zweitgeprüfte Referenztexte und deren Prüfstatus festlegen. Ungeprüfte Referenzen nicht bewerten. |
+| 2 | OCR-Routing und Texterkennung | B1–B10 | Native PyMuPDF-Ausgabe und OCR-Routing vergleichen; Leerseiten separat klassifizieren; CER/WER sowie `eng` gegen `eng+deu`, 200 gegen 300 DPI und geeignete PSM-6/7/11-Regionen vergleichen. Ganzseiten- und Regionsmessungen nur mit identischem Textumfang gegenüberstellen. |
+| 3 | Technische Genauigkeit und Struktur | B6–B8, C1–C4 | Modellnummern, Zahlen, Einheiten und unbelegte zusätzliche technische Angaben einzeln bewerten; Lesereihenfolge, Tabellenzellen und Pin-/Registermatrizen unabhängig von OCR-Zeichenwerten prüfen. Klassenkonflikte dem Review zuordnen. |
+| 4 | Optionale Methoden und Schutzbewertung | E1–E5 | Machbarkeit und Grenzen von DocLayout-YOLO-gestützter Regions-OCR und selektivem regelbasiertem Vision-LLM-Zweitkandidaten prüfen. E1–E3 nur bei gesonderter Freigabe ausführen, E4 als Soll-Prüfung behandeln; E5 als verpflichtende Schutzbewertung ohne implizite VLM-Ausführungsfreigabe berücksichtigen. |
+| 5 | Bewertung und Abschluss | D1–D5 | Variantenvergleich, Reproduzierbarkeit, getrennte Zeitmessung (OCR/Layout/E2E), Qualitätsgrenzen, Einzelabweichungen und manuellen Reviewbedarf berichten; Empfehlungen für spätere OCR-Strategien begründen, ohne automatische Indexierungs-/Faktenfreigabe. |
+
+**Geltende Reihenfolge:** Erst die noch offenen Einzelentscheidungen einholen (zehn Seitenkategorien und konkrete Seiten, Referenz-/Normalisierungs-/Strukturregeln, A–D-Varianten, Schwellenwerte, optionale E/F-Ausführung), danach die jeweilige fachlich freigegebene Phase durchführen. Die bereits dokumentierten historischen Poseidon-, PR-#13-, Tesseract- und DocLayout-Ergebnisse bleiben Ausgangsbefunde, aber keine neu bestandenen Matrixprüfungen.
+
+**Stoppregel:** Bis zu den gesonderten Ausführungsfreigaben bleiben alle 29 Matrix-IDs im bisherigen Status. Keine neuen Testfälle, keine Codeänderungen, keine Messläufe und keine Änderung der Matrix oder der PR-#15-Unterlagen.
+
+**Freigabeprotokoll:** 22.11.2026 – Nutzerfreigabe zur Aufnahme des geplanten fünfphasigen Ablaufs in `docs/ocr-quality-plan.md`. **Nur der Ablaufplan ist freigegeben; die konkreten Evaluationsschritte bleiben freigabepflichtig.**
