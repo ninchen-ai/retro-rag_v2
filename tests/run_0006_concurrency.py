@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Migration 0006: konkurrierende PostgreSQL-Sitzungen auf retro_rag_v2_test.
 
 NUR nach dauerhaft angewendeter Migration 0006. Echte SCRAM-Logins; die

@@ -72,24 +72,24 @@ def test_excluded_directories_are_not_traversed():
     calls = []
     responses = {
         root: (
-            '<d:multistatus xmlns:d="DAV:" xmlns:oc="http://owncloud.org/ns">'
-            '<d:response><d:href>/remote.php/dav/files/nina/Retro-Computing/</d:href></d:response>'
-            '<d:response><d:href>/remote.php/dav/files/nina/Retro-Computing/Import/</d:href>'
-            '<d:propstat><d:prop><d:resourcetype><d:collection/></d:resourcetype>'
-            '</d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response>'
-            '<d:response><d:href>/remote.php/dav/files/nina/Retro-Computing/Hardware/</d:href>'
-            '<d:propstat><d:prop><d:resourcetype><d:collection/></d:resourcetype>'
-            '</d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response>'
-            '</d:multistatus>'
-        ).encode(),
+            b'<d:multistatus xmlns:d="DAV:" xmlns:oc="http://owncloud.org/ns">'
+            b'<d:response><d:href>/remote.php/dav/files/nina/Retro-Computing/</d:href></d:response>'
+            b'<d:response><d:href>/remote.php/dav/files/nina/Retro-Computing/Import/</d:href>'
+            b'<d:propstat><d:prop><d:resourcetype><d:collection/></d:resourcetype>'
+            b'</d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response>'
+            b'<d:response><d:href>/remote.php/dav/files/nina/Retro-Computing/Hardware/</d:href>'
+            b'<d:propstat><d:prop><d:resourcetype><d:collection/></d:resourcetype>'
+            b'</d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response>'
+            b'</d:multistatus>'
+        ),
         root + "Hardware/": (
-            '<d:multistatus xmlns:d="DAV:" xmlns:oc="http://owncloud.org/ns">'
-            '<d:response><d:href>/remote.php/dav/files/nina/Retro-Computing/Hardware/</d:href></d:response>'
-            '<d:response><d:href>/remote.php/dav/files/nina/Retro-Computing/Hardware/board.md</d:href>'
-            '<d:propstat><d:prop><oc:fileid>321</oc:fileid></d:prop>'
-            '<d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response>'
-            '</d:multistatus>'
-        ).encode(),
+            b'<d:multistatus xmlns:d="DAV:" xmlns:oc="http://owncloud.org/ns">'
+            b'<d:response><d:href>/remote.php/dav/files/nina/Retro-Computing/Hardware/</d:href></d:response>'
+            b'<d:response><d:href>/remote.php/dav/files/nina/Retro-Computing/Hardware/board.md</d:href>'
+            b'<d:propstat><d:prop><oc:fileid>321</oc:fileid></d:prop>'
+            b'<d:status>HTTP/1.1 200 OK</d:status></d:propstat></d:response>'
+            b'</d:multistatus>'
+        ),
     }
 
     def fake_request(url, method, data=None):
