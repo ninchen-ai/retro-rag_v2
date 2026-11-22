@@ -156,7 +156,7 @@ def process_one(conn, root: Path, owner: str, *, ocr_mode: str = "off") -> bool:
         path = verified_original(uri, root, expected_hash)
         if path.suffix.lower() != Path(filename).suffix.lower():
             raise ValueError("Archivformat und Quelldateiname unterscheiden sich")
-        source_id = f"version:{version_id}"
+        source_id = f"document_version:{version_id}"
         if path.suffix.lower() == ".pdf":
             contract = read_pdf(path, source_id, ocr_mode=ocr_mode)
         else:
