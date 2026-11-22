@@ -25,7 +25,7 @@ Rückgabe: `PreparedJob` mit Job-/Versions-ID, Archivpfad und `ImportContract`. 
 
 ### `persist_contract(conn, prepared)`
 
-**Schreibende Funktion, nur als ausdrücklich freizugebender Folgeschritt.** Sie verlangt eine bereits offene DB-Transaktion, die Anmeldung als `rag_v2_importer_login` in `retro_rag_v2_test` und die serverseitige Funktion `rag_v2.assert_import_write_gate()`. Sie verweigert OCR-Fehlerseiten, leere oder übergroße Chunk-Sätze, geänderte Quell-/Chunk-Hashes, ungültige Chunk-Reihenfolge sowie inzwischen veränderte Job-/Versionszustände. Die betroffenen Job-/Versionszeilen werden gesperrt. Vorhandene `text_extracted`-Schritte sind nicht erneut übertragbar, damit keine Doppel-Chunks entstehen.
+**Schreibende Funktion, nur als ausdrücklich freizugebender Folgeschritt.** Sie verlangt eine bereits offene DB-Transaktion, die Anmeldung als `rag_v2_importer_login` in `retro_rag_v2_test` und die serverseitige Funktion `rag_v2.assert_import_write_gate()`. Sie verweigert OCR-Fehlerseiten und PDF-Extraktionswarnungen, leere oder übergroße Chunk-Sätze, geänderte Quell-/Chunk-Hashes, ungültige Chunk-Reihenfolge sowie inzwischen veränderte Job-/Versionszustände. Die betroffenen Job-/Versionszeilen werden gesperrt. Vorhandene `text_extracted`-Schritte sind nicht erneut übertragbar, damit keine Doppel-Chunks entstehen.
 
 Bei geöffneter, gültiger Freigabe erzeugt sie innerhalb der **vom Aufrufer kontrollierten** Transaktion:
 
