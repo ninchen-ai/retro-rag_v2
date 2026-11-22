@@ -324,3 +324,54 @@ Vor Abschluss dieses PR-Reviews:
   GitHub zudem **mergeable=false**; vor einer Freigabe muss
   diese Aussage anhand der PR-Konflikt-/Prüfdetails geklärt werden.
   Kein Merge und keine Produktivschaltung durch diese Tests.
+
+
+## 8. Schlussregression und bewusste Abgrenzung der Backup-Aufgabe (22.11.2026)
+
+**Poseidon, Code- und Dokumentationsstand `1f311b3`:** Fast-forward,
+`python -m ruff check .` **PASS**;
+`python -m pytest -q -rs` **174 passed, 16 skipped in 0.71s**;
+`python -m pip check` **No broken requirements found**;
+`git diff --check` ohne Ausgabe; `git status --short` leer.
+Branch `integration/pdf-ocr-webdav-2026-11-21`, HEAD `1f311b3`.
+Die 16 Skips betreffen nicht aktivierte, separat opt-in ausgeführte
+DB-/E2E-Tests; insbesondere die beiden echten Markdown- und
+CUBX-PDF/OCR-Tests bestanden zuvor einzeln mit `1 passed`.
+Die Schlussregression fand **vor diesem Dokumentationsnachtrag**
+statt; eine erneute Regression nach reinen Markdown-Dokumentationscommits
+ist damit nicht behauptet.
+
+**Originalarchiv:** `findmnt -T /data/retro-rag/v2/originals` zeigte
+`/dev/sda1` (ext4, rw,noatime) an `/data`, und
+`stat` ergab `700 nina:nina`: Mount-/Berechtigungsprüfung **PASS**.
+
+**Backup nicht abgenommen, ausdrücklich vertagt:**
+Drei lokale V2-`*.dump`-Dateien sind vorhanden (09.11., 11.11. und
+20.11.2026). Der zunächst versuchte Lesetest konnte wegen
+fehlendem `pg_restore` auf dem Poseidon-Host **nicht ausgeführt**
+werden; die ausgegebenen FAIL-Zeilen sind daher **kein Beleg beschädigter
+Dumps**. `borg-backup.service` meldete für den 22.11.2026
+`Result=exit-code`, `ExecMainStatus=1`; laut Betreiber war das
+Rotationsmedium zu diesem Termin nicht eingelegt, ist nun wieder
+eingelegt. Ein erfolgreicher Nachhol- oder Restore-Lauf ist nicht belegt.
+Wichtiger: Im gesonderten Infrastruktur-Repository umfasst die
+Borg-Quellliste bislang **nicht** `/data/retro-rag/v2`; auch ein
+wiederkehrender Dump von `retro_rag_v2_test` fehlt. Die
+Backup-Erweiterung und Restore-Abnahme sind als **separater späterer
+Roadmap-Punkt** dokumentiert; sie werden **nicht als erledigt
+ausgewiesen** und sollen den technischen Testabschluss von PR #13
+nicht blockieren. Vor produktivem Schreibbetrieb gesondert freigeben.
+
+**GitHub-Prüfung:** PR #13 weiterhin `open`, `Draft`, `merged=false`,
+auf `integration/import-pipeline-2026-11-09`, zuletzt
+`mergeable=true`. Der frühere `mergeable=false`-Zwischenwert ist
+durch den neueren Befund überholt. **Keine Merge-/Produktivfreigabe**
+aus der Testabnahme ableiten.
+
+**Restarbeiten vor formalem Abschluss:** isolierten temporären
+Testcontainer `retro-rag-v2-pr13-e2e` mit tmpfs-Datenbank sauber
+stoppen/entfernen; dann bewusste Entscheidung zum
+Draft-/Merge-Status. Quellenautorisierung, automatischer Worker,
+fachliche Freigabe und OCR-Qualitätsoptimierung bleiben eigene
+Entwicklungsaufgaben und werden nicht als durch den Smoke-Test
+implementiert bezeichnet.
