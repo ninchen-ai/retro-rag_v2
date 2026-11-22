@@ -22,7 +22,7 @@
 | `python -m pytest -q -rs` | **153 passed, 11 skipped in 0.67s**, Exitcode 0 |
 | `python -m ruff check .` | **All checks passed!**, Exitcode 0 |
 
-**Elf Skips, keine Fehltests:** vier `tests/test_document_identity_integration.py` (`RETRO_V2_IDENTITY_TEST_DSN` fehlt), sechs `tests/test_version_activation_integration.py` (`RETRO_V2_C1_TEST_DSN` fehlt), einer `tests/test_version_activation_concurrency.py` (`RETRO_V2_C1_ISOLATED_DSN` fehlt). Die zehn rollback-only DB-Tests wurden **in diesem erneuten Durchlauf** nicht ausgeführt; frühere erfolgreiche Tests auf einem älteren Staging-Commit sind davon zu unterscheiden. Der isolierte C1-Konkurrenztest ist nicht für den laufenden V2-Testcluster vorgesehen.
+**Elf Skips, keine Fehltests:** vier `tests/test_document_identity_integration.py` (`RETRO_V2_IDENTITY_TEST_DSN` fehlt), sechs `tests/test_version_activation_integration.py` (`RETRO_V2_C1_TEST_DSN` fehlt), einer `tests/test_version_activation_concurrency.py` (`RETRO_V2_C1_ISOLATED_DSN` fehlt). Die zehn rollback-only DB-Tests wurden **in diesem regulären Pytest-Durchlauf** übersprungen, anschließend aber separat erfolgreich ausgeführt (siehe Abschnitt 5.7). Der isolierte C1-Konkurrenztest ist nicht für den laufenden V2-Testcluster vorgesehen.
 
 ## 2. Echte OCR-Laufzeit (ohne DB und Originalarchiv)
 
@@ -147,9 +147,35 @@ docker port codeanalyse-postgres
 
 **Keine Änderung** an HBA, Docker-Netzen, PostgreSQL-Ports, Anwendungsrechten oder Write-Gate erfolgt. Ein geeigneter gemeinsamer Netzwerkpfad für den nur lesenden `sync_cli`-Test ist weiterhin offen. Für getrennte rollback-only DB-Tests ist die bereits bekannte Ausführung im PostgreSQL-Netzwerk-Namespace mit echten, auf den V2-Testcluster begrenzten Loginrollen ein möglicher Weg; sie muss pro Durchlauf unabhängig verifiziert werden. Diese Ausgabe belegt noch nicht die Nextcloud-Erreichbarkeit aus dem PostgreSQL-Namespace. `ai-network` wird auch für andere Dienste verwendet: **keine pauschalen Subnetzfreigaben**.
 
+### 5.7 Zehn DB-Integrationstests und unabhängige Rollback-Kontrolle (22.11.2026)
+
+Auf Poseidon wurde nach Git-Fast-forward auf den Dokumentationsstand `196f74aa7c3e90fc8fe9908d128d97a9bc21c99a` der laufende Container `codeanalyse-postgres` mit PID `1942` bestätigt. Unter Nutzung von `nsenter --target "$PG_PID" --net` und anschließendem `setpriv` zurück auf den lokalen Benutzer wurden die beiden vorgesehenen Umgebungsvariablen `RETRO_V2_IDENTITY_TEST_DSN` und `RETRO_V2_C1_TEST_DSN` ausschließlich für `retro_rag_v2_test` mit `rag_v2_migrator_login` gesetzt. Das Passwort wurde interaktiv eingelesen und nicht im Git-Repository gespeichert.
+
+```text
+python -m pytest -q -rs \
+  tests/test_document_identity_integration.py \
+  tests/test_version_activation_integration.py
+
+.......... [100%]
+10 passed in 0.23s
+DB_TEST_EXIT=0
+```
+
+Die Test-Fixtures aktivieren ein Gate nur **innerhalb der lokalen, am Ende zurückgerollten DB-Transaktion**; es gibt keine persistente Freigabe. Im Anschluss erfolgte durch eine **separate SQL-Sitzung** mit `BEGIN READ ONLY` / `COMMIT` eine unabhängige Zustandserhebung:
+
+| Kontrollpunkt | Nachher |
+| --- | --- |
+| `MAX(rag_v2.schema_migration.version)` | `6` |
+| `rag_v2.write_gate.writes_enabled` | `f` |
+| Gate-Grund | `Parallelitätstest erfolgreich; Freigabe ausstehend` |
+| `document` / `document_source` / `document_version` | jeweils `0` |
+| `processing_job` / `review_item` / `knowledge_proposal` | jeweils `0` |
+
+**Abnahme:** Zehn DB-Integrationstests auf diesem Integrationsstand erfolgreich; keine persistierten Fixtures in den sechs geprüften Tabellen und Gate weiterhin geschlossen. Zusammen mit dem separaten Basislauf sind **153 reguläre + 10 separate DB-Tests erfolgreich**; der isolierte Konkurrenztest wurde nicht ausgeführt. Die Datenbankkontrolle umfasst die ausdrücklich aufgeführten Tabellen und behauptet keinen vollständigen Vergleich aller 43 Tabellen.
+
 ## 6. Offene Abnahme von PR #13
 
-1. **Zehn** rollback-only DB-Integrationstests auf dem geprüften Branch ausführen, sichere DSNs nur an den vorgesehenen Migrator-Login/Test-DB binden; nach Test per unabhängiger SQL-Sitzung Gate und Tabellenzähler vergleichen. Der isolierte C1-Konkurrenztest bleibt separat.
+1. **Erledigt 22.11.:** zehn rollback-only DB-Integrationstests auf dem geprüften Branch bestanden, inklusive unabhängiger Gate-/Zählerkontrolle (siehe Abschnitt 5.7). **Offen:** isolierter C1-Konkurrenztest in eigenständigem Cluster.
 2. Gemeinsamen, sicheren WebDAV-/DB-Lesezugriff herstellen und `sync_cli --source-key 480 --max-bytes 1000000` **ohne `--apply`** ausführen; Ergebnis und unveränderte DB prüfen.
 3. Echte PDF-/OCR-Goldstandardfälle inkl. Fehler- und Reviewpfad; Tesseract, DocLayout und optionale Modelle getrennt bewerten.
 4. Archiv-Mount, Originalintegrität und vorhandene Backups lesend validieren; keine Archivänderung aus diesem Test.
