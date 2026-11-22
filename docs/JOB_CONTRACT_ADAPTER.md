@@ -68,7 +68,7 @@ Die Ausgabe ist noch **nicht** nachgewiesen. Die reguläre Suite darf weiterhin 
 
 ## PostgreSQL-Negativtest mit echter Importer-Rolle (vorbereitet 22.11.2026)
 
-`tests/test_job_pipeline_integration.py` enthält jetzt einen **explizit aktivierbaren** Negativtest. Er stellt eine echte `psycopg`-Verbindung mit `rag_v2_importer_login` zu `retro_rag_v2_test` her, kontrolliert das geschlossenene Write-Gate und ruft `persist_contract()` mit synthetischem Text und nicht existierenden Job-/Versions-IDs auf. Erwartet ist **SQLSTATE 42501** (`V2-Schreibsperre ist geschlossen`). Eine Rolle, Datenbank oder Gate-Freigabe wird weder erstellt noch geändert. Der synthetische Originaltext liegt nur in einer temporären lokalen Pytest-Datei. Die Verbindung führt im `finally` ein Rollback aus.
+`tests/test_job_pipeline_integration.py` enthält jetzt einen **explizit aktivierbaren** Negativtest. Er stellt eine echte `psycopg`-Verbindung mit `rag_v2_importer_login` zu `retro_rag_v2_test` her, kontrolliert das geschlossene Write-Gate und ruft `persist_contract()` mit synthetischem Text und nicht existierenden Job-/Versions-IDs auf. Erwartet ist **SQLSTATE 42501** (`V2-Schreibsperre ist geschlossen`). Eine Rolle, Datenbank oder Gate-Freigabe wird weder erstellt noch geändert. Der synthetische Originaltext liegt nur in einer temporären lokalen Pytest-Datei. Die Verbindung führt im `finally` ein Rollback aus.
 
 **Noch nicht auf Poseidon ausgeführt.** Für den Test einen gesicherten Importer-Login und den bereits geprüften PostgreSQL-Netzwerk-Namespace nutzen; keine Ausweitung des Docker-HBA-Netzes.
 
