@@ -110,6 +110,28 @@ docker exec codeanalyse-postgres \
 
 `pg_hba_file_rules` liest den Dateistand; dies **beweist allein nicht**, dass neu editierte Regeln bereits vom Server geladen wurden. Für eine HBA-Änderung wären gesonderte Prüfung, Freigabe und Reload erforderlich. Bis dahin ist der aktuelle Zugriffspfad **bewusst nicht zu erweitern**.
 
+### 5.5 Nachtrag: tatsächliche HBA-Datei lesend überprüft (22.11.2026)
+
+**Betreiberseitiger Nachweis:** `docker exec -i codeanalyse-postgres psql -X -v ON_ERROR_STOP=1 -U codeanalyse -d retro_rag_v2_test` mit `BEGIN READ ONLY`, `SHOW hba_file` über `current_setting('hba_file')`, `pg_hba_file_rules` und abschließendem `COMMIT`. Aktuelle HBA-Datei: **`/var/lib/postgresql/data/pg_hba.conf`**. Die Abfrage lieferte **17 wirksame/ausgewertete Regelzeilen ohne Fehlerwert** in der Spalte `error`.
+
+| Zeile(n) | Typ / Ziel | Rollen | Adresse / Authentifizierung |
+| --- | --- | --- | --- |
+| 2 | local / all | `rag_v2_reader_login` | `reject` |
+| 3–4 | host / `retro_rag_v2_test` | `rag_v2_reader_login` | `127.0.0.1`, `::1`; `scram-sha-256` |
+| 5–6 | host / all | `rag_v2_reader_login` | `0.0.0.0`, `::`; `reject` |
+| 125 | local / all | `rag_v2_importer_login`, `rag_v2_migrator_login` | `reject` |
+| 126–127 | host / `retro_rag_v2_test` | `rag_v2_importer_login`, `rag_v2_migrator_login` | `127.0.0.1`, `::1`; `scram-sha-256` |
+| 128–129 | host / all | `rag_v2_importer_login`, `rag_v2_migrator_login` | `0.0.0.0`, `::`; `reject` |
+| 131, 133, 135 | local bzw. host / all | all | Socket bzw. `127.0.0.1`, `::1`; `trust` |
+| 138–140 | lokale/Loopback-Replikation | all | `trust` |
+| 142 | host / all | all | `all`; `scram-sha-256` |
+
+**Auswertung:** Die V2-spezifischen Regeln stehen vor den allgemeinen Regeln. Die gelisteten HBA-Adressen wurden genau wie von `pg_hba_file_rules` ausgegeben übernommen; die Netzmasken sind in dieser Auswertung nicht separat ausgewiesen und werden hier nicht aus der Darstellung abgeleitet. Für die geprüfte Verbindung vom Poseidon-Host meldete PostgreSQL `172.19.0.1`, worauf `reject` für Importer greift. Die Container-interne Loopback-Anmeldung mit `rag_v2_importer_login` gelang. Damit ist die HBA-Grenze nicht nur anhand der Vorlage plausibel, sondern anhand des aktuellen Dateistands und des beobachteten Anmeldeverhaltens bestätigt. **Die SQL-Sicht auf die Datei allein bestätigt nicht den Zeitpunkt des letzten HBA-Reloads.** 
+
+**Gate-Nachkontrolle:** `writes_enabled=f`, Grund `Parallelitätstest erfolgreich; Freigabe ausstehend`. Die Prüfung erfolgte rein lesend; kein Reload, kein Regel-Edit und keine DB-Schreiboperation. Weiter offen bleibt eine gemeinsame WebDAV-/DB-Netzwerkführung ohne pauschale Bridge-Freigabe.
+
+Die vorherige Aussage in 5.3 („noch nicht ausgelesen“) beschreibt ausdrücklich den **früheren Zwischenstand vor diesem Nachtrag** und ist seit dieser Prüfung überholt.
+
 ## 6. Offene Abnahme von PR #13
 
 1. **Zehn** rollback-only DB-Integrationstests auf dem geprüften Branch ausführen, sichere DSNs nur an den vorgesehenen Migrator-Login/Test-DB binden; nach Test per unabhängiger SQL-Sitzung Gate und Tabellenzähler vergleichen. Der isolierte C1-Konkurrenztest bleibt separat.
