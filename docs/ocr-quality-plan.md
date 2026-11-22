@@ -222,3 +222,43 @@ Quellen: `docs/PDF_DOCLAYOUT_BENCHMARK.md`, `docs/PDF_LAYOUT_CONFLICTS_V2.md`, `
 8. **Offene technische Integrationen nicht vortäuschen:** Vision-LLM- und layoutgestützte OCR-Varianten vor einem Vergleich auf Implementierung und identischen Quellen-/Referenzstand prüfen; bestehende Abnahme- und PR-#15-Tests weder ersetzen noch erweitern.
 
 **Stand nach Übernahme dieser Befunde:** Ausschließlich der Plan wurde aktualisiert. Es wurden keine zusätzlichen Seiten ausgewählt, keine Referenztexte angelegt und keine Messläufe gestartet.
+
+## 14. Ergänzende Branchprüfung und PR-#13-Integrationsnachweise (22.11.2026)
+
+**Abgeglichene Dokumentationsstände:**
+- `feat/pdf-ocr-stage4/docs`
+- `integration/pdf-ocr-webdav-2026-11-21/docs`
+- `feat/ocr-quality-evaluation/docs`
+
+Die gemeinsamen OCR-, Goldstandard-, Qualitätsbaseline-, DocLayout- und Spaltenordnungsdateien haben auf diesen Branches denselben Git-Blob-SHA; sie liefern deshalb **keine drei unabhängigen Beweisquellen**. `docs/OCR_QUALITY_EVALUATION.md` liegt nicht auf `feat/pdf-ocr-stage4`, aber identisch auf den beiden anderen Branches. **Neu und für den OCR-Plan relevant** ist besonders `docs/PR13_POSEIDON_INTEGRATION_TEST_2026-11-22.md` auf dem Integrationsbranch.
+
+### 14.1 Reale technische PDF/OCR-Verkettung
+
+Der auf Poseidon dokumentierte isolierte PR-#13-Test mit der **echten** `cubx-103.pdf` (112 Seiten) bestätigte:
+- SHA-verifizierte lokale PDF-Datei und seitenweise Verarbeitung mit `ocr_mode=auto`, `ocr_pages={111}`.
+- **114 Chunks**, OCR auf Seite **111**, **0 fehlgeschlagene OCR-Seiten**, **keine Warnungen**. Die bekannte leere Seite **112** wurde bewusst nicht zur OCR gezwungen.
+- **114 echte** lokale Ollama-`nomic-embed-text`-Embeddings mit **768 Dimensionen** wurden im isolierten, nur transaktional geöffneten Testcluster erzeugt/geschrieben.
+- Der Test bestand mit **`1 passed in 21.46s`**. Das ist die **gesamte E2E-Testdauer** einschließlich anderer Arbeitsschritte, **keine OCR-Zeit pro Seite**.
+- Die unabhängige Nachkontrolle fand das externe Write-Gate geschlossen sowie keine verbliebenen Dokument-, Versions-, Job-, Chunk- oder Embedding-Zeilen. Das zuvor verwendete isolierte Container-Testsystem wurde später entfernt.
+- Die Schlussregression des Integrationsstands `1f311b3` ergab **174 passed, 16 skipped** und Ruff **PASS**. Diese Regression ist ein technischer Nachweis und keine neue fachliche OCR-Messung.
+
+**Grenze:** Weder 114 Chunks noch 114 Embeddings bestätigen korrekte Textinhalte, Lesereihenfolge, Tabellenstruktur oder technisch richtige Fakten. Es gibt weiterhin **keine endgültig freigegebene Vollseiten-CER/WER-Referenz für CUBX S. 111**. Der E2E-Nachweis berührt nicht die eingefrorene PR-#15-Testmatrix.
+
+### 14.2 Leerseitenversuch als Beispiel zur Warnungsbewertung
+
+Bei einem separaten realen PDF-Vorschaulauf wurde die tatsächlich leere CUBX-Seite **112 absichtlich zusätzlich zur OCR gezwungen**. Das führte zur erwartbaren Warnung `Seite 112: OCR lieferte keinen Text`, bei erfolgreichem Vorschau-Exitcode 0. Ein früherer Kontrolllauf ausschließlich mit S. 111 zeigte dagegen `ocr_failed_pages=[]` und `warnings=[]`.
+
+Die Leerseitenwarnung ist **kein belegter Verlust relevanten Texts und keine unbehobene Regression**. Der neue Evaluationsplan muss deshalb:
+1. **Richtig erkannte Leerseite** von `ocr_failed` oder fehlendem Text einer nichtleeren Seite unterscheiden.
+2. Den Nenner für OCR-Güte nur aus Seiten mit tatsächlich relevantem Referenztext bilden; Leerseiten separat als Routing-/Warnungsfall ausweisen.
+3. OCR-Warnungen stets mit visueller Seitenklassifikation bewerten, nicht nur zählen.
+
+### 14.3 Auswirkungen auf die geplanten Versuche
+
+- Bereits bestandene technische E2E-/Rollback-/Regressionstests **nicht nochmals als neue Qualitätsmessung aufführen**.
+- Den noch fehlenden **Vollseiten-Ground-Truth-Abgleich** und die Genauigkeit von Modellnummern/Zahlen/Einheiten stärker priorisieren als einen weiteren allgemeinen OCR-Smoke-Test.
+- Eine **Leerseiten-/Routing-Kontrolle** getrennt vom 10-seitigen Kernkorpus vorsehen, unter Nutzung bereits visuell geprüfter historischer Befunde; dies ist **keine Auswahl einer neuen Testseite**.
+- Für einen fairen Laufzeitvergleich **reine OCR-Dauer, Layout-Inferenz und E2E-Gesamtdauer getrennt messen**.
+- Vollständige OCR-Qualitätsbewertung, strukturierte Tabellen-/Pinmatrixprüfung und Vision-LLM-Gegenprüfung bleiben offen und freigabepflichtig.
+
+Quelle: `docs/PR13_POSEIDON_INTEGRATION_TEST_2026-11-22.md` auf `integration/pdf-ocr-webdav-2026-11-21`. Historische Dokumentation bleibt unverändert; alle hier genannten Nachweise gelten nur für die ausdrücklich dokumentierten Testläufe.
