@@ -102,7 +102,7 @@ def finish_job(conn, job, owner: str, contract) -> None:
         raise ValueError("Extraktionsvertrag weicht vom Originalhash ab")
     if contract.indexing_allowed or contract.fact_proposals:
         raise ValueError("Automatische Index-/Faktenfreigabe ist verboten")
-    if not contract.chunks or contract.warnings:
+    if not contract.chunks or (contract.source.kind == "pdf" and contract.warnings):
         raise ValueError("Extraktion erfordert Prüfung: " + "; ".join(contract.warnings or [
             "Keine Text-Chunks vorhanden"
         ]))
@@ -161,19 +161,20 @@ def finish_job(conn, job, owner: str, contract) -> None:
                  chunk.page, chunk.page, chunk.heading_path,
                  json.dumps({"page": chunk.page, "origin": "import_worker"})),
             )
-        # Extraction metadata is a compact DB artifact, not a second copy of the original.
+        # Durable artifact points at the transactionally persisted chunks.
         summary = {
             "contract_version": contract.contract_version,
             "chunks": len(contract.chunks),
             "metadata": contract.document.metadata,
             "indexing_allowed": False,
+            "warnings": contract.warnings,
         }
+        summary_hash = hashlib.sha256(json.dumps(summary, sort_keys=True, default=str).encode()).hexdigest()
         cur.execute(
             """INSERT INTO rag_v2.processing_artifact
                (processing_step_id,artifact_kind,artifact_uri,content_hash)
                VALUES (%s,'extraction_summary',%s,%s)""",
-            (step_id, "inline-json:" + json.dumps(summary, default=str, ensure_ascii=False),
-             expected_hash),
+            (step_id, "db:rag_v2.chunk?version=" + str(version_id), summary_hash),
         )
         cur.execute(
             """UPDATE rag_v2.processing_step SET status='completed',
