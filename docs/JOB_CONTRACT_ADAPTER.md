@@ -83,6 +83,26 @@ python -m pytest -q -rs
 
 Die reguläre Suite überspringt diesen realen DB-Test ohne `RETRO_V2_JOB_TEST_DSN`; der Umgebungsschlüssel wird nur für eine explizite Testausführung gesetzt. Der negative SQL-Test darf **nicht** als erfolgreicher positiver Chunk-Apply gewertet werden. Ein Positivtest benötigt eine separate Isolation; auf der vorhandenen V2-Testdatenbank wird das Gate nicht geöffnet. Nach dem Negativlauf sind das Gate und die Tabellenzähler über eine **zweite** DB-Sitzung unabhängig zu kontrollieren.
 
+## Poseidon-Testnachweis – 22.11.2026
+
+**Code- und Regressionstest:** Nach Fast-forward auf `0ebec66` im separaten Featurebranch:
+
+- `python -m ruff check .` → **All checks passed!**
+- `python -m pytest -q -rs` → **163 passed, 12 skipped** (0,69 s). Zehn DB-Tests für Identity/C1, ein isolierter Concurrency-Test und der neue, optional über DSN aktivierbare Gate-Test blieben im regulären Lauf übersprungen.
+- `git status --short` ohne Ausgabe; Arbeitsbaum sauber.
+
+**Echter PostgreSQL-Gate-Negativtest:** Im Netzwerk-Namespace des laufenden `codeanalyse-postgres` wurde `tests/test_job_pipeline_integration.py` mit `rag_v2_importer_login` an `retro_rag_v2_test` über `127.0.0.1:5432` ausgeführt. DSN in `RETRO_V2_JOB_TEST_DSN`, Passwort interaktiv eingelesen, kein HBA-Edit:
+
+```text
+. [100%]
+1 passed in 0.20s
+JOB_DB_TEST_EXIT=0
+```
+
+Das Testskript kontrolliert Datenbank, Sessionuser und geschlossenes Gate und erwartet eine `psycopg.errors.InsufficientPrivilege` wegen `V2-Schreibsperre ist geschlossen` beim Versuch `persist_contract()`. Es verwendet ausschließlich synthetische lokale Originalbytes und keine realen Dokument-/Job-IDs; seine Verbindung wird im `finally` zurückgerollt. Das **bestätigt die Gate-Ablehnung**, nicht den positiven Chunk-/Artefakt-Schreibpfad.
+
+**Noch ausstehend:** eine **zweite, unabhängige read-only SQL-Sitzung** muss das unverändert geschlossene Gate und die Tabellenzähler `document`, `document_source`, `document_version`, `processing_job`, `processing_step`, `processing_artifact`, `chunk`, `chunk_embedding`, `review_item` und `knowledge_proposal` nachkontrollieren. Es gab keinen positiven Import, keine Datenbank-Migration, keine Gate-Freigabe. Die positive Transaktionsprüfung gehört in einen getrennten Testaufbau.
+
 ## Abnahmekriterien vor späterer Integration
 
 1. Alle schreibfreien Tests PASS; keine unerwarteten Änderungen an bestehender Testanzahl oder Ruff.
