@@ -16,7 +16,9 @@ from urllib.parse import unquote, urlparse
 import psycopg
 
 from retro_rag.importer.job_pipeline import (
-    PreparedJob, _persist_contract_rows, validate_prepared_content,
+    PreparedJob,
+    _persist_contract_rows,
+    validate_prepared_content,
 )
 from retro_rag.importer.markdown import read_markdown
 from retro_rag.importer.pdf import read_pdf
