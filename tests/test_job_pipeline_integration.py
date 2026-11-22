@@ -24,10 +24,11 @@ def test_importer_job_persistence_rejected_by_closed_gate(tmp_path):
     original = tmp_path / "synthetic.md"
     original.write_bytes(b"synthetic test data; no import")
     original_hash = hashlib.sha256(original.read_bytes()).hexdigest()
+    version_id = uuid4()
     chunk_text = "# Synthetischer Test\nNur der Gate-Negativtest."
     contract = ImportContract(
         source=Source(
-            source_id="document_version:" + str(version_id := uuid4()),
+            source_id="document_version:" + str(version_id),
             location=str(original),
             content_hash=original_hash,
             kind="markdown",
