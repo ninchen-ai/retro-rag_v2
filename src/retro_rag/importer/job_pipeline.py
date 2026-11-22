@@ -102,14 +102,8 @@ def prepare_job(
     return PreparedJob(job_id, version_id, path, contract)
 
 
-def persist_contract(conn: psycopg.Connection, prepared: PreparedJob) -> int:
-    """Schreibt nur Chunks und deren Verarbeitungsschritt, niemals Embeddings.
-
-    Die aufrufende Stelle verwaltet Commit/Rollback. Ein bereits begonnenes
-    Transaktionsfenster ist Pflicht; diese Funktion committet nicht.
-    """
-    if conn.info.transaction_status != TransactionStatus.INTRANS:
-        raise RuntimeError("Explizite, offene DB-Transaktion erforderlich")
+def validate_prepared_content(prepared: PreparedJob) -> None:
+    """Pure extraction safeguards, shared by the manual and leased worker paths."""
     contract = prepared.contract
     if contract.indexing_allowed or contract.fact_proposals:
         raise ValueError("Verarbeitungsadapter darf keine Freigaben übernehmen")
@@ -129,6 +123,17 @@ def persist_contract(conn: psycopg.Connection, prepared: PreparedJob) -> int:
         if hashlib.sha256(chunk.text.encode("utf-8")).hexdigest() != chunk.chunk_hash:
             raise ValueError("Chunk-Hash ungültig")
 
+
+def persist_contract(conn: psycopg.Connection, prepared: PreparedJob) -> int:
+    """Schreibt nur Chunks und deren Verarbeitungsschritt, niemals Embeddings.
+
+    Die aufrufende Stelle verwaltet Commit/Rollback. Ein bereits begonnenes
+    Transaktionsfenster ist Pflicht; diese Funktion committet nicht.
+    """
+    if conn.info.transaction_status != TransactionStatus.INTRANS:
+        raise RuntimeError("Explizite, offene DB-Transaktion erforderlich")
+    validate_prepared_content(prepared)
+
     with conn.cursor() as cur:
         cur.execute("SELECT current_database(), session_user")
         if cur.fetchone() != ("retro_rag_v2_test", "rag_v2_importer_login"):
@@ -137,17 +142,21 @@ def persist_contract(conn: psycopg.Connection, prepared: PreparedJob) -> int:
     return _persist_contract_rows(conn, prepared)
 
 
-def _persist_contract_rows(conn: psycopg.Connection, prepared: PreparedJob) -> int:
+def _persist_contract_rows(
+    conn: psycopg.Connection, prepared: PreparedJob, *, lease_owner: str | None = None
+) -> int:
     """DB-Kern ohne Commit, nur für explizit rollback-only Migator-Integrationstests.
 
     Kein eigenständiger Anwendungseinstiegspunkt: die produktive Funktion
     persist_contract() erzwingt Importer-Login und Write-Gate davor.
     """
+    validate_prepared_content(prepared)
     contract = prepared.contract
     with conn.cursor() as cur:
         cur.execute(
             """SELECT j.status, j.attempts, j.max_attempts,
-                      v.id, v.content_hash, v.processing_state, v.state
+                      v.id, v.content_hash, v.processing_state, v.state,
+                      j.lease_owner, (j.lease_until > now())
                FROM rag_v2.processing_job j
                JOIN rag_v2.document_version v ON v.id=j.document_version_id
                WHERE j.id=%s AND j.job_type='document_import'
@@ -157,13 +166,16 @@ def _persist_contract_rows(conn: psycopg.Connection, prepared: PreparedJob) -> i
         row = cur.fetchone()
         if row is None:
             raise ValueError("Unbekannter Importjob")
-        status, attempts, max_attempts, version_id, sha, processing_state, state = row
+        status, attempts, max_attempts, version_id, sha, processing_state, state, owner, valid = row
+        expected_status = "pending" if lease_owner is None else "running"
+        allowed_states = ("discovered",) if lease_owner is None else ("discovered", "processing")
         if (
-            status != "pending"
-            or attempts >= max_attempts
+            status != expected_status
+            or (attempts >= max_attempts if lease_owner is None else attempts > max_attempts)
+            or (lease_owner is not None and (owner != lease_owner or not valid))
             or version_id != prepared.version_id
             or sha != contract.source.content_hash
-            or processing_state != "discovered"
+            or processing_state not in allowed_states
             or state is not None
         ):
             raise ValueError("Job/Version inzwischen verändert oder nicht mehr bearbeitbar")
@@ -217,11 +229,21 @@ def _persist_contract_rows(conn: psycopg.Connection, prepared: PreparedJob) -> i
                SET processing_state='processing' WHERE id=%s""",
             (version_id,),
         )
-        cur.execute(
-            """UPDATE rag_v2.processing_job
-               SET status='running', attempts=attempts+1, updated_at=now()
-               WHERE id=%s""",
-            (prepared.job_id,),
-        )
+        if lease_owner is None:
+            cur.execute(
+                """UPDATE rag_v2.processing_job
+                   SET status='running', attempts=attempts+1, updated_at=now()
+                   WHERE id=%s""",
+                (prepared.job_id,),
+            )
+        else:
+            # Extraction is complete, but embeddings and final indexing are not.
+            # Release claim without completing the document_import job.
+            cur.execute(
+                """UPDATE rag_v2.processing_job
+                   SET lease_owner=NULL, lease_until=NULL, updated_at=now()
+                   WHERE id=%s AND status='running' AND lease_owner=%s""",
+                (prepared.job_id, lease_owner),
+            )
     # Ausdrücklich NICHT indexed/completed/active: Embeddings und Review fehlen.
     return len(contract.chunks)
