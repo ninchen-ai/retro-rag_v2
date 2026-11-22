@@ -220,12 +220,16 @@ Die 14 Skips sind **erwartete, nicht aktivierte** DB-/Konkurrenztests im Standar
 
 Der Synthese-Test verwendet **synthetische Embeddings**, keinen echten Embedding-Worker. Die Gate-Serialisierung ist **kein** Nachweis zweier erfolgreicher konkurrierender C1-Aktivierungen. Die Live-WebDAV-Brücke testet **read-only Planung**, keinen `--apply`, kein Archivieren und keine persistente Ende-zu-Ende-Indexierung. **Keine Gate-/HBA-/Netzwerkänderung oder produktive Freigabe.**
 
-## 6. Offene Abnahme von PR #13
+## 6. Abschlusstand und verbleibende Abnahmen von PR #13 (22.11.2026)
 
-1. **Erledigt 22.11.:** zehn rollback-only DB-Integrationstests auf dem geprüften Branch bestanden, inklusive unabhängiger Gate-/Zählerkontrolle (siehe Abschnitt 5.7). **Offen:** isolierter C1-Konkurrenztest in eigenständigem Cluster.
-2. Gemeinsamen, sicheren WebDAV-/DB-Lesezugriff herstellen und `sync_cli --source-key 480 --max-bytes 1000000` **ohne `--apply`** ausführen; Ergebnis und unveränderte DB prüfen.
-3. Echte PDF-/OCR-Goldstandardfälle inkl. Fehler- und Reviewpfad; Tesseract, DocLayout und optionale Modelle getrennt bewerten.
-4. Archiv-Mount, Originalintegrität und vorhandene Backups lesend validieren; keine Archivänderung aus diesem Test.
-5. Zusammenhängende Datenflussprüfung WebDAV → PDF/OCR → Staging → Jobs/Artefakte → Chunks/Embeddings → Aktivierung bleibt offen. Bestehende Unit-Tests beweisen keine vollständige E2E-Abnahme.
+**Abgeschlossen / nachgewiesen:** Basis- und Abschlussregression auf Poseidon, Ruff und Abhängigkeiten; zehn gesonderte rollback-only DB-Integrationstests, read-only Live-WebDAV-/DB-Einzeldateiplanung über `plan_bridge`, reale PDF-/OCR-Vorschau, synthetische Job-/Chunk-/Artefakt-/Embedding-/Aktivierungskette sowie Gate-Serialisierung einschließlich unabhängiger DB-Nachkontrollen. Alle diese Befunde gelten für die dokumentierten konkreten Testläufe; die auf PR #13 übernommene Branchspitze hat zusätzlich die **vollständige Standard-Regression** bestanden (Abschnitt 5.9).
 
-**Freigabeschranke:** PR #13 bleibt Draft, kein Merge in regulären Integrationsbranch oder `main`; `rag_v2.write_gate.writes_enabled=false`. Das Protokoll dokumentiert Ergebnisse und eine HBA-Zugriffsgrenze, **keine Konfigurationsänderung**.
+**Weiter getrennt offen:**
+
+1. **C1-Konkurrenz zweier erfolgreicher Aktivierungen:** Der bestehende Test committet Fixtures und verlangt ein eigenes isoliertes Cluster. Der auf der bestehenden Testdatenbank erfolgreich getestete **Gate-Blockierungs-/Ablehnungstest** ist kein Ersatz dafür. Keine Änderung der vorhandenen C1-Testschutzschranke ohne gesonderte Entscheidung.
+2. **Echte Embedding-Erzeugung, persistente Job-Finalisierung und vollständiger E2E-Import:** Der synthetische Rollbacktest beweist SQL-Verkettung und technische Aktivierung, nicht die reale automatische Indexierung. Der WebDAV-Durchlauf war `READ ONLY`, ohne `--apply` oder Originalarchivierung.
+3. **OCR-Qualitätsoptimierung und vollständiger Goldstandard:** Die Extraktion und gezielte OCR-Seitenfälle sind geprüft; die vollständig manuell bestätigte Vollseiten-CER/WER-Referenz ist eine separate Qualitätssicherung.
+4. **Archiv-Mount-/Backup-Lesekontrolle:** Vor einer schreibenden Freigabe nochmals mit tatsächlichen Mount- und Backup-Nachweisen validieren.
+5. **Betriebliche Freigabe:** Keine automatische Agenten-/Faktenfreigabe, kein produktiver Import und kein Merge von PR #13 in seinen Basisbranch oder `main` ohne ausdrückliche Freigabe.
+
+**Freigabeschranke:** PR #13 bleibt **Draft**, `rag_v2.write_gate.writes_enabled=false`; keine HBA-, Docker-, Archiv- oder Betriebskonfigurationsänderung durch diese Abnahme.
