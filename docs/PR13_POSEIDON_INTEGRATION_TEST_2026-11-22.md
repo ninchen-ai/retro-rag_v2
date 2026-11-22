@@ -132,6 +132,21 @@ docker exec codeanalyse-postgres \
 
 Die vorherige Aussage in 5.3 („noch nicht ausgelesen“) beschreibt ausdrücklich den **früheren Zwischenstand vor diesem Nachtrag** und ist seit dieser Prüfung überholt.
 
+### 5.6 Netzwerk-Topologie – Docker-Inspect auf Poseidon (22.11.2026)
+
+Zusätzlicher, vom Betreiber direkt auf Poseidon gelieferter Lesebefund:
+
+```text
+docker inspect codeanalyse-postgres --format '...'
+Netz: ai-network, IP: 172.19.0.4, Gateway: 172.19.0.1
+docker port codeanalyse-postgres
+5432/tcp -> 127.0.0.1:5432
+```
+
+**Schlussfolgerung:** PostgreSQL ist als Container `172.19.0.4` an `ai-network` angeschlossen; der Host veröffentlicht dessen Port 5432 nur auf Host-Loopback. Bei der Host-zu-Container-Verbindung über diese Portweiterleitung sieht PostgreSQL tatsächlich den Gateway-`172.19.0.1` als Quelladresse; die V2-HBA-Ausnahmeregeln für Container-`127.0.0.1` passen daher nicht. Das Port-Binding auf Host-Loopback schützt vor direktem externem Zugriff, **umgeht aber nicht** die HBA-Quelladresskontrolle.
+
+**Keine Änderung** an HBA, Docker-Netzen, PostgreSQL-Ports, Anwendungsrechten oder Write-Gate erfolgt. Ein geeigneter gemeinsamer Netzwerkpfad für den nur lesenden `sync_cli`-Test ist weiterhin offen. Für getrennte rollback-only DB-Tests ist die bereits bekannte Ausführung im PostgreSQL-Netzwerk-Namespace mit echten, auf den V2-Testcluster begrenzten Loginrollen ein möglicher Weg; sie muss pro Durchlauf unabhängig verifiziert werden. Diese Ausgabe belegt noch nicht die Nextcloud-Erreichbarkeit aus dem PostgreSQL-Namespace. `ai-network` wird auch für andere Dienste verwendet: **keine pauschalen Subnetzfreigaben**.
+
 ## 6. Offene Abnahme von PR #13
 
 1. **Zehn** rollback-only DB-Integrationstests auf dem geprüften Branch ausführen, sichere DSNs nur an den vorgesehenen Migrator-Login/Test-DB binden; nach Test per unabhängiger SQL-Sitzung Gate und Tabellenzähler vergleichen. Der isolierte C1-Konkurrenztest bleibt separat.
