@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import argparse
 import hashlib
-import json
 import os
 import socket
 import uuid
@@ -16,6 +15,9 @@ from urllib.parse import unquote, urlparse
 
 import psycopg
 
+from retro_rag.importer.job_pipeline import (
+    PreparedJob, _persist_contract_rows, validate_prepared_content,
+)
 from retro_rag.importer.markdown import read_markdown
 from retro_rag.importer.pdf import read_pdf
 
@@ -34,6 +36,8 @@ def verified_original(uri: str, root: Path, expected_hash: str) -> Path:
     root_resolved = root.resolve(strict=True)
     if not resolved.is_relative_to(root_resolved):
         raise ValueError("Original liegt außerhalb des freigegebenen Archivs")
+    if path.name != expected_hash + path.suffix.lower():
+        raise ValueError("Archivdateiname stimmt nicht mit SHA-256 überein")
     if path.suffix.lower() not in (".pdf", ".md"):
         raise ValueError("Originalformat nicht unterstützt")
     if not (root_resolved / expected_hash[:2]).is_dir():
@@ -71,6 +75,17 @@ def claim_job(conn: psycopg.Connection, owner: str):
                    AND j.attempts < j.max_attempts
                    AND v.state IS NULL
                    AND v.processing_state IN ('discovered','processing')
+                   AND EXISTS (
+                       SELECT 1 FROM rag_v2.processing_step s
+                       WHERE s.processing_job_id=j.id
+                         AND s.step_name='source_archived'
+                         AND s.status='completed' AND s.input_hash=v.content_hash
+                   )
+                   AND NOT EXISTS (
+                       SELECT 1 FROM rag_v2.processing_step s
+                       WHERE s.processing_job_id=j.id
+                         AND s.step_name='text_extracted'
+                   )
                    AND NOT EXISTS (
                        SELECT 1 FROM rag_v2.review_batch b
                        JOIN rag_v2.review_item i ON i.review_batch_id=b.id
@@ -96,101 +111,21 @@ def claim_job(conn: psycopg.Connection, owner: str):
         return job_id, version_id, expected_hash, archive_uri, filename
 
 
-def finish_job(conn, job, owner: str, contract) -> None:
+def finish_job(conn, job, owner: str, original_path: Path, contract) -> None:
+    """Persist through the existing canonical job pipeline in one transaction."""
     job_id, version_id, expected_hash, _, _ = job
     if contract.source.content_hash != expected_hash:
         raise ValueError("Extraktionsvertrag weicht vom Originalhash ab")
-    if contract.indexing_allowed or contract.fact_proposals:
-        raise ValueError("Automatische Index-/Faktenfreigabe ist verboten")
-    if not contract.chunks or (contract.source.kind == "pdf" and contract.warnings):
-        raise ValueError("Extraktion erfordert Prüfung: " + "; ".join(contract.warnings or [
-            "Keine Text-Chunks vorhanden"
-        ]))
+    prepared = PreparedJob(job_id, version_id, original_path, contract)
+    validate_prepared_content(prepared)
     with conn.transaction(), conn.cursor() as cur:
         require_test_gate(cur)
-        cur.execute(
-            """SELECT 1 FROM rag_v2.processing_job
-               WHERE id=%s AND status='running' AND lease_owner=%s
-                 AND lease_until > now() FOR UPDATE""", (job_id, owner),
-        )
-        if cur.fetchone() is None:
-            raise RuntimeError("Lease verloren, kein Commit")
-        cur.execute(
-            """SELECT 1 FROM rag_v2.document_version
-               WHERE id=%s AND content_hash=%s AND state IS NULL FOR UPDATE""",
-            (version_id, expected_hash),
-        )
-        if cur.fetchone() is None:
-            raise RuntimeError("Dokumentversion verändert")
-        cur.execute(
-            """SELECT status FROM rag_v2.processing_step
-               WHERE processing_job_id=%s AND step_name='content_extracted'
-               FOR UPDATE""", (job_id,),
-        )
-        existing = cur.fetchone()
-        if existing and existing[0] == 'completed':
-            # Completed steps and their chunks are never overwritten.
-            cur.execute(
-                """UPDATE rag_v2.processing_job SET status='completed',
-                   lease_owner=NULL, lease_until=NULL, updated_at=now(),
-                   completed_at=now() WHERE id=%s""", (job_id,),
-            )
-            return
-        if existing is not None:
-            raise RuntimeError("Unvollständiger Extraktionsschritt: manuelle Klärung")
-        cur.execute(
-            """SELECT 1 FROM rag_v2.chunk WHERE document_version_id=%s LIMIT 1""",
-            (version_id,),
-        )
-        if cur.fetchone():
-            raise RuntimeError("Bereits vorhandene Chunks: manuelle Klärung statt Überschreiben")
-        cur.execute(
-            """INSERT INTO rag_v2.processing_step
-               (processing_job_id,step_name,status,input_hash,attempts)
-               VALUES (%s,'content_extracted','running',%s,1) RETURNING id""",
-            (job_id, expected_hash),
-        )
-        step_id = cur.fetchone()[0]
-        for chunk in contract.chunks:
-            cur.execute(
-                """INSERT INTO rag_v2.chunk
-                   (document_version_id,sequence_no,content,content_hash,
-                    page_from,page_to,section_path,source_locator)
-                   VALUES (%s,%s,%s,%s,%s,%s,%s,%s::jsonb)""",
-                (version_id, chunk.ordinal, chunk.text, chunk.chunk_hash,
-                 chunk.page, chunk.page, chunk.heading_path,
-                 json.dumps({"page": chunk.page, "origin": "import_worker"})),
-            )
-        # Durable artifact points at the transactionally persisted chunks.
-        summary = {
-            "contract_version": contract.contract_version,
-            "chunks": len(contract.chunks),
-            "metadata": contract.document.metadata,
-            "indexing_allowed": False,
-            "warnings": contract.warnings,
-        }
-        summary_hash = hashlib.sha256(json.dumps(summary, sort_keys=True, default=str).encode()).hexdigest()
-        cur.execute(
-            """INSERT INTO rag_v2.processing_artifact
-               (processing_step_id,artifact_kind,artifact_uri,content_hash)
-               VALUES (%s,'extraction_summary',%s,%s)""",
-            (step_id, "db:rag_v2.chunk?version=" + str(version_id), summary_hash),
-        )
-        cur.execute(
-            """UPDATE rag_v2.processing_step SET status='completed',
-               completed_at=now() WHERE id=%s""", (step_id,),
-        )
-        # No embeddings yet. Do not mark as indexed or activate a version.
-        cur.execute(
-            """UPDATE rag_v2.document_version SET processing_state='processing'
-               WHERE id=%s AND state IS NULL""", (version_id,),
-        )
-        cur.execute(
-            """UPDATE rag_v2.processing_job
-               SET status='completed', lease_owner=NULL, lease_until=NULL,
-                   updated_at=now(), completed_at=now()
-               WHERE id=%s""", (job_id,),
-        )
+        cur.execute("SELECT session_user")
+        if cur.fetchone()[0] != "rag_v2_importer_login":
+            raise RuntimeError("Worker benötigt den dedizierten V2-Importer-Login")
+        # The core checks lease ownership, source identity, exact chunks and
+        # the canonical text_extracted/chunk_set step; SQL changes are atomic.
+        _persist_contract_rows(conn, prepared, lease_owner=owner)
 
 
 def fail_job(conn, job_id, owner: str, error: Exception) -> None:
@@ -223,7 +158,7 @@ def process_one(conn, root: Path, owner: str, *, ocr_mode: str = "off") -> bool:
             contract = read_pdf(path, source_id, ocr_mode=ocr_mode)
         else:
             contract = read_markdown(path, source_id)
-        finish_job(conn, job, owner, contract)
+        finish_job(conn, job, owner, path, contract)
         return True
     except Exception as exc:
         fail_job(conn, job_id, owner, exc)
