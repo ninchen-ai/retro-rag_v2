@@ -60,28 +60,30 @@ def test_no_work_is_noop(monkeypatch, tmp_path):
     assert worker.process_one(object(), tmp_path, "worker-1") is False
 
 
-def test_pdf_with_unverified_chunks_fails_without_commit(monkeypatch, tmp_path):
-    path, sha = archived(tmp_path, b"%PDF- mock")
-    renamed = path.with_suffix(".pdf")
-    path.rename(renamed)
-    job = ("job-1", "version-1", sha, renamed.as_uri(), "manual.pdf")
-    fake_contract = SimpleNamespace(
-        source=SimpleNamespace(content_hash=sha, kind="pdf"),
+def test_pdf_with_unverified_chunks_fails_before_db_write():
+    contract = SimpleNamespace(
+        source=SimpleNamespace(content_hash="a" * 64, kind="pdf"),
         indexing_allowed=False,
         fact_proposals=[],
         chunks=[object()],
         warnings=["Page requires OCR review"],
     )
-    events = []
-    monkeypatch.setattr(worker, "claim_job", lambda *_: job)
-    monkeypatch.setattr(worker, "read_pdf", lambda *a, **k: fake_contract)
-    monkeypatch.setattr(worker, "finish_job",
-                        lambda *a, **k: events.append("committed"))
-    monkeypatch.setattr(worker, "fail_job",
-                        lambda *a, **k: events.append("failed"))
-    # Finish guard is separately tested below; here the adapter path is verified.
-    assert worker.process_one(object(), tmp_path, "worker-1") is True
-    assert events == ["committed"]
+    job = ("job-1", "version-1", "a" * 64, "file:///unused.pdf", "manual.pdf")
+    with pytest.raises(ValueError, match="Extraktion erfordert Prüfung"):
+        worker.finish_job(object(), job, "worker-1", contract)
+
+
+def test_fact_proposals_fail_before_db_write():
+    contract = SimpleNamespace(
+        source=SimpleNamespace(content_hash="a" * 64, kind="markdown"),
+        indexing_allowed=False,
+        fact_proposals=[{"unreviewed": True}],
+        chunks=[object()],
+        warnings=[],
+    )
+    job = ("job-1", "version-1", "a" * 64, "file:///unused.md", "doc.md")
+    with pytest.raises(ValueError, match="Automatische Index"):
+        worker.finish_job(object(), job, "worker-1", contract)
 
 
 def test_worker_failure_is_isolated_and_reported(monkeypatch, tmp_path):
