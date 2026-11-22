@@ -190,6 +190,36 @@ Nach Fast-forward auf den Dokumentationsstand `9ae76ea` erfolgte auf Poseidon er
 
 **Abnahmegrenze:** Exitcode 0 bedeutet erfolgreiche schreibfreie Vorschau einschließlich korrekt ausgewiesenem OCR-Teilfehler, nicht OCR-Erfolg auf allen angeforderten Seiten. Der Vorschauvertrag führt zu keiner Speicherung, Freigabe oder Indexierung. Offene fachliche Prüfung bleibt die manuell belegte CER/WER-Qualität und technische Terminologie auf Seite 111 sowie die persistente Gesamtintegration. Der Abschnitt ergänzt den früheren OCR-Nachtrag in [`PROJECT_ROADMAP.md`](PROJECT_ROADMAP.md), ohne den historischen Befund zu überschreiben.
 
+### 5.9 Fast-Forward-Übernahme und Abschluss-Regressionslauf (22.11.2026)
+
+Der separat entwickelte Job-Adapter-Branch `feat/processing-job-contract-adapter-2026-11-22` wurde nach Prüfung eines reinen Vorwärtsstands (**26 Commits voraus, 0 zurück**) per **Fast-Forward** auf `integration/pdf-ocr-webdav-2026-11-21` übernommen. Die GitHub-Branchspitze wurde auf `dfaa75d8a11dd175acb6dff6dd6d87575979be25` verifiziert; PR #13 bleibt **open / Draft / unmerged** gegen `integration/import-pipeline-2026-11-09`. Das ist ausdrücklich **kein Merge von PR #13 in den Basisbranch**.
+
+Auf Poseidon erfolgte danach die unabhängige Aktualisierung des **PR-Branches** auf genau `dfaa75d` und der reguläre Regressionslauf:
+
+```text
+git branch --show-current        integration/pdf-ocr-webdav-2026-11-21
+git rev-parse --short HEAD       dfaa75d
+python -m ruff check .          All checks passed!
+python -m pytest -q -rs         174 passed, 14 skipped in 0.71s
+python -m pip check             No broken requirements found.
+git diff --check                keine Ausgabe
+git status --short              keine Ausgabe
+```
+
+Die 14 Skips sind **erwartete, nicht aktivierte** DB-/Konkurrenztests im Standardlauf; die früheren echten Verbindungs- und Rollbackprüfungen sind als **gesonderte Läufe** auf dem Featurebranch ausgeführt und nach dokumentiertem Fast-Forward inhaltlich unverändert übernommen worden. Der Standardlauf allein behauptet keine erneute Ausführung sämtlicher DB-Tests auf der aktuellen PR-Branchspitze.
+
+**Zusätzliche gesonderte Poseidon-Nachweise auf dem später übernommenen Featurebranch** (siehe [`JOB_CONTRACT_ADAPTER.md`](JOB_CONTRACT_ADAPTER.md)):
+
+| Nachweis | Ergebnis |
+| --- | --- |
+| Live Nextcloud `fileid=480` → Hashvalidierung → DB-`plan_file` über begrenzte Pipe | `READ ONLY planned_action=new`, Exitcode `0` |
+| Importer-Login + geschlossenes Gate, `persist_contract` | Erwartete SQLSTATE `42501`, `1 passed` |
+| Synthetisches PDF → Importvertrag → Chunks/Steps/Artefakte → Test-Embeddings → Aktivierung | Transaktionaler Rollbacktest `1 passed`, Exitcode `0` |
+| Zwei-Rollen-Gate-Serialisierung mit nachgewiesener PostgreSQL-Blockierung | `1 passed`, Exitcode `0` |
+| Administrative unabhängige Nachkontrolle nach diesen DB-Tests | Migration `6`, Gate `false`, zehn Import-/Reviewtabellen je `0` |
+
+Der Synthese-Test verwendet **synthetische Embeddings**, keinen echten Embedding-Worker. Die Gate-Serialisierung ist **kein** Nachweis zweier erfolgreicher konkurrierender C1-Aktivierungen. Die Live-WebDAV-Brücke testet **read-only Planung**, keinen `--apply`, kein Archivieren und keine persistente Ende-zu-Ende-Indexierung. **Keine Gate-/HBA-/Netzwerkänderung oder produktive Freigabe.**
+
 ## 6. Offene Abnahme von PR #13
 
 1. **Erledigt 22.11.:** zehn rollback-only DB-Integrationstests auf dem geprüften Branch bestanden, inklusive unabhängiger Gate-/Zählerkontrolle (siehe Abschnitt 5.7). **Offen:** isolierter C1-Konkurrenztest in eigenständigem Cluster.
