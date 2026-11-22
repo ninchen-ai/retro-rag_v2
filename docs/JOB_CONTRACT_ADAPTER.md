@@ -207,3 +207,41 @@ WEBDAV_DB_PLAN_EXIT=0
 ```
 
 Damit ist die **reale WebDAV → PostgreSQL-Importplanung im selben Aufruf bestanden**. Die Pipe überträgt keine WebDAV-Zugangsdaten; die Datenbanksitzung verwendet `BEGIN READ ONLY`. Dieser Test archiviert keine Originale, erzeugt keine Jobs/Chunks und ist kein persistenter `--apply`. Eine unabhängige Gate-/Zählerprüfung **nach genau diesem** Lauf wurde noch nicht geliefert. Ferner wurde die Ruff-Typfehlerkorrektur `624dbbe` auf Poseidon noch nicht durch neue Testausgaben bestätigt.
+
+
+## Gate-Sperrkonkurrenz auf `retro_rag_v2_test` – vorbereitet, noch nicht ausgeführt
+
+`tests/test_gate_concurrency_rollback.py` führt einen echten Test mit **drei gleichzeitigen Datenbankverbindungen** durch: zweimal `rag_v2_migrator_login` (Writer, Observer) und einmal `rag_v2_importer_login` (Reader). Die dedizierten Rollen/Passwörter sind erforderlich; ein echter `rag_v2_migrator`-`SET LOCAL ROLE` wird nur für das Rollback-Update verwendet.
+
+**Ablauf:** Die Writer-Transaktion prüft Ausgangsdatenbank und initial geschlossenes Gate, aktualisiert die Gate-Zeile auf `true` **ohne Commit** und hält die exklusive Zeilensperre. Parallel wartet ein Importer-Aufruf von `rag_v2.assert_import_write_gate()` auf `FOR SHARE`. Der Observer muss den tatsächlichen PostgreSQL-Blockierer über `pg_blocking_pids` nachweisen. Dann rollt der Writer zurück; der Importer muss danach **SQLSTATE 42501** (`V2-Schreibsperre ist geschlossen`) erhalten. Abschließend sind Gate-Zustand und unveränderter Sperrgrund zu prüfen. Keine Dokument-/Chunk-/Archiv-Fixtures, kein `COMMIT` und kein Gate-Apply.
+
+**Sicherer Start auf Poseidon nach lokaler Regression (nur wenn kein anderer Importer läuft):**
+
+```bash
+cd ~/projects/retro-rag_v2
+source .venv/bin/activate
+git pull --ff-only
+python -m ruff check .
+python -m pytest -q -rs
+
+(
+  PG_PID="$(docker inspect -f '{{.State.Pid}}' codeanalyse-postgres)"
+  test "$PG_PID" -gt 1 || exit 1
+
+  read -rsp "V2-Migrator-Passwort: " RETRO_V2_GATE_MIGRATOR_PASSWORD
+  echo
+  read -rsp "V2-Importer-Passwort: " RETRO_V2_GATE_IMPORTER_PASSWORD
+  echo
+  export RETRO_V2_GATE_MIGRATOR_PASSWORD RETRO_V2_GATE_IMPORTER_PASSWORD
+  export RETRO_V2_GATE_MIGRATOR_DSN='host=127.0.0.1 port=5432 dbname=retro_rag_v2_test user=rag_v2_migrator_login connect_timeout=5'
+  export RETRO_V2_GATE_IMPORTER_DSN='host=127.0.0.1 port=5432 dbname=retro_rag_v2_test user=rag_v2_importer_login connect_timeout=5'
+
+  sudo --preserve-env=RETRO_V2_GATE_MIGRATOR_PASSWORD,RETRO_V2_GATE_IMPORTER_PASSWORD,RETRO_V2_GATE_MIGRATOR_DSN,RETRO_V2_GATE_IMPORTER_DSN \
+    nsenter --target "$PG_PID" --net -- \
+    setpriv --reuid "$(id -u)" --regid "$(id -g)" --init-groups \
+    "$(pwd)/.venv/bin/python" -m pytest -q -rs tests/test_gate_concurrency_rollback.py
+  echo "GATE_CONCURRENCY_EXIT=$?"
+)
+```
+
+**Diese Prüfung deckt die Gate-Serialisierung ab, nicht die eigentliche Konkurrenz zweier erfolgreicher C1-Aktivierungen.** Der bestehende C1-Test mit committed Fixtures ist weiterhin nur für eine entsprechend isolierte Umgebung sicher. Nach dem Betreiberlauf Gate und zehn Tabellensummen unabhängig per read-only SQL prüfen; erst danach Teilabnahme vermerken. Ohne beide Test-DSNs/Passwörter wird der neue Test übersprungen.
