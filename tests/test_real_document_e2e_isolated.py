@@ -55,7 +55,7 @@ def test_real_md_full_pipeline_isolated_rollback(tmp_path):
     if hashlib.sha256(data).hexdigest() != EXPECTED_SHA:
         raise RuntimeError("Source SHA-256 mismatch")
     url = urlsplit(uri)
-    if url.scheme not in ("http", "https") or not url.hostname or url.username:
+    if url.scheme not in ("http", "https") or not url.hostname or url.username or url.password:
         raise RuntimeError("Invalid WebDAV source URI")
     remote = RemoteFile(
         source_key="480", instance_id="poseidon-nextcloud", uri=uri,
@@ -67,14 +67,17 @@ def test_real_md_full_pipeline_isolated_rollback(tmp_path):
     try:
         with conn.cursor() as cur:
             cur.execute("SELECT current_database(), current_setting('cluster_name'), session_user")
-            assert cur.fetchone() == (
+            if cur.fetchone() != (
                 "retro_rag_v2_test", "retro-rag-v2-pr13-e2e-isolated",
                 "rag_v2_migrator_login",
-            ), "Refusing non-isolated database or wrong role"
+            ):
+                raise RuntimeError("Refusing non-isolated database or wrong role")
             cur.execute("SELECT max(version) FROM rag_v2.schema_migration")
-            assert cur.fetchone() == (6,)
+            if cur.fetchone() != (6,):
+                raise RuntimeError("Migration 0006 required")
             cur.execute("SELECT writes_enabled FROM rag_v2.write_gate WHERE id=true")
-            assert cur.fetchone() == (False,)
+            if cur.fetchone() != (False,):
+                raise RuntimeError("Closed write gate required")
             cur.execute("SET LOCAL ROLE rag_v2_migrator")
             cur.execute(
                 "UPDATE rag_v2.write_gate SET writes_enabled=true, "
