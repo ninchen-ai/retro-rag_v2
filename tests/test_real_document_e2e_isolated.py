@@ -97,7 +97,13 @@ def test_real_md_full_pipeline_isolated_rollback(tmp_path):
             version_id, job_id = cur.fetchone()
 
         prepared = prepare_job(conn, job_id, archive)
-        assert prepared.contract.chunks and not prepared.contract.warnings
+        assert prepared.contract.chunks
+        # Die Markdown-Vorstufe meldet die noch fehlenden fachlichen Prüfungen.
+        # Der E2E-Test validiert nur die technische Pipeline (Rollback),
+        # nicht die Freigabe eines Dokuments für den produktiven Index.
+        assert prepared.contract.warnings == [
+            "Quellenautorisierung, Schema- und Konfliktprüfung sind noch nicht implementiert."
+        ]
         assert not prepared.contract.indexing_allowed
         assert not prepared.contract.fact_proposals
         assert _persist_contract_rows(conn, prepared) == len(prepared.contract.chunks)
