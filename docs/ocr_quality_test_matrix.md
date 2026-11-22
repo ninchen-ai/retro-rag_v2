@@ -1,6 +1,6 @@
 # Testmatrix – OCR-Qualitätsbewertung (Retro-RAG V2)
 
-**Status:** Entwurf – fachliche Freigabe ausstehend; keine technische Abnahme erfolgt  
+**Status:** Abnahmeumfang fachlich freigegeben und eingefroren am 22.11.2026; konkrete Testdurchführung nicht freigegeben, technische Abnahme ausstehend  
 **Stand:** 22.11.2026  
 **Branch:** `feat/ocr-quality-evaluation`  
 **Grundlage:** `docs/ocr-quality-plan.md`, `docs/OCR_QUALITY_EVALUATION.md`, `conventions.md` sowie `docs/PROJECT_ROADMAP.md` auf `integration/pdf-ocr-webdav-2026-11-21` (historischer Stand 21./22.11.2026)  
@@ -10,8 +10,8 @@
 
 Diese Matrix ist **eigenständig**. Die fachlich eingefrorene PR-#15-Abnahme unter `docs/test_matrix_pr15.md` auf `feat/resumable-import-worker-2026-11-22` umfasst den Extraktionsworker und bleibt **unberührt**.
 
-1. Die vorliegende Matrix ist zunächst **nur ein Vorschlag**. Ihre IDs, der konkrete Korpus, Messmethoden und Schwellenwerte werden erst durch ausdrückliche Freigabe verbindlich eingefroren.
-2. Bis zu dieser Freigabe **keine** konkreten Testseiten festlegen, keine Referenztexte erstellen und **keine** OCR- oder Layout-Evaluationsläufe durchführen.
+1. Der **Abnahmeumfang von 29 IDs (A1–A5, B1–B10, C1–C4, D1–D5, E1–E5) ist mit ausdrücklicher Freigabe am 22.11.2026 eingefroren**. Prioritäten und Szenariobeschreibungen bleiben ohne gesonderten Änderungsbeschluss unverändert. Neue IDs oder Prioritätsänderungen benötigen eine neue ausdrückliche Freigabe mit Datum und Begründung im Änderungsprotokoll.
+2. Diese Freigabe betrifft **ausschließlich den Prüfumfang**, nicht die konkrete Auswahl der zehn Seiten, die Ground-Truth-Erstellung, die Messverfahren-/Schwellenwertfreigabe oder die Testausführung. Bis zu separaten Freigaben keine konkreten Testseiten auswählen, keine Referenztexte erstellen und keine OCR-/Layout-/VLM-Evaluationsläufe durchführen.
 3. Keine bestehende Datei, Funktion, Variable oder bestehenden Tests verändern; keine neuen Tests eigenmächtig schreiben.
 4. Evaluation ausschließlich gegen lokale Kopien/Dateien: **keine Datenbank, kein Worker, kein `--apply`, kein Index, keine Änderungen an Nextcloud, Archiv, Originalen oder Write-Gate**.
 5. Die Matrix unterscheidet **vorhandene technische Testabdeckung** von **fachlicher Messung am freigegebenen Korpus**. Ein bestandener Unit-Test ist keine bestandene OCR-Qualitätsmessung.
@@ -23,7 +23,7 @@ Diese Matrix ist **eigenständig**. Die fachlich eingefrorene PR-#15-Abnahme unt
 **Status:** `offen`, `grün`, `rot`, `entfällt`; **alle neuen Abnahme-IDs beginnen mit `offen`**.  
 **Vorhandene Abdeckung:** direkt = vorhandener Test für einen technischen Teilaspekt; teilweise = nur angrenzende Prüfung; keine = kein belegter Test. Das ersetzt keinen Laufnachweis der neuen Matrix.
 
-**Matrixumfang (Entwurf): 29 IDs – 23 × M, 3 × S, 3 × O.** Die von der Roadmap motivierten zusätzlichen IDs B9, B10, E4 und E5 wurden mit Zustimmung vom 22.11.2026 ergänzt; die Matrix und ihre Schwellenwerte sind damit **noch nicht fachlich eingefroren oder zur Ausführung freigegeben**.
+**Eingefrorener Matrixumfang: 29 IDs – 23 × M, 3 × S, 3 × O.** B9, B10, E4 und E5 sowie die E2-Präzisierung wurden vor der Freigabe aufgenommen. **Nicht** mitfreigegeben: konkrete Testseiten, Referenztexte, die vorgeschlagenen Schwellenwerte und die Ausführung. E1–E3 bleiben optionale, E4 eine Soll-Prüfung; E5 verpflichtet zur Schutzbewertung, autorisiert aber keine VLM-Ausführung.
 
 ## 2. Freigaben vor der Ausführung
 
@@ -155,7 +155,7 @@ Quellen stehen in `docs/ocr-quality-plan.md`, Abschnitte 12–14; zusätzlich `d
 
 | Feld | Eintrag |
 | --- | --- |
-| Fachliche Freigabe dieser Matrix | ausstehend |
+| Fachliche Freigabe dieser Matrix | **22.11.2026 – 29 IDs und Prioritäten verbindlich eingefroren** |
 | Freigegebener Korpus | ausstehend |
 | Freigegebene Schwellenwerte / Varianten | ausstehend |
 | Datum / Prüferin | — |
@@ -163,7 +163,7 @@ Quellen stehen in `docs/ocr-quality-plan.md`, Abschnitte 12–14; zusätzlich `d
 | Geprüfter Repository-Commit | — |
 | Ergebnis A–E | offen |
 | Ausnahmen / Abweichungen / Entscheidungen | — |
-| Freigabe zu OCR-Evaluation | **nicht erteilt** |
+| Freigabe zu OCR-Evaluation | **nicht erteilt; bisher nur Abnahmeumfang freigegeben** |
 | Freigabe zu Indexierung/Fakten-/Produktivbetrieb | **nicht Gegenstand dieser Matrix** |
 
 ## 13. Vorschläge und Änderungsprotokoll
@@ -178,3 +178,4 @@ Quellen stehen in `docs/ocr-quality-plan.md`, Abschnitte 12–14; zusätzlich `d
 | --- | --- | --- |
 | 22.11.2026 | Erster eigenständiger Matrixentwurf mit 5 Prüfgruppen und bestehenden technischen Testzuordnungen | Reproduzierbare OCR-Qualitätsbewertung unabhängig von der eingefrorenen PR-#15-Abnahme planen |
 | 22.11.2026 | B9, B10, E4, E5 ergänzt und E2 als selektiver, regelbasierter VLM-Zweitkandidat präzisiert | Vom Betreiber ausdrücklich gewünschter Abgleich mit `PROJECT_ROADMAP.md`; dokumentierte PSM-/Regionsversuche und VLM-Fehlermodi in der späteren Qualitätsbewertung berücksichtigen. Keine Testausführung und keine fachliche Freigabe der Gesamtmatrix |
+| 22.11.2026 | **Fachliche Freigabe und Einfrieren des Abnahmeumfangs: 29 IDs, 23 M / 3 S / 3 O** | Ausdrückliche Zustimmung des Betreibers nach akzeptiertem Entwurf. Dies ist keine Freigabe der konkreten Testseiten, der Ground-Truth-Erstellung, der Schwellenwerte oder der Testdurchführung; PR #15 bleibt unberührt |
