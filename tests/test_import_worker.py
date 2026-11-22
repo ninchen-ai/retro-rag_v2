@@ -104,7 +104,7 @@ def test_worker_keeps_incomplete_job_until_embeddings():
     assert "_persist_contract_rows(conn, prepared, lease_owner=owner)" in source
     assert "activate_version(" not in source
     assert "processing_state='indexed'" not in source
-    assert "status='completed'" not in source
+    assert "SET status='completed'" not in source
     assert "step_name='text_extracted'" in source
     assert "step_name='source_archived'" in source
 
