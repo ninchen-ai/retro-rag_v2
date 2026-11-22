@@ -222,6 +222,34 @@ Auf Poseidon wurde der zuvor per SHA-256 verifizierte CUBX-Seite-111-Ausschnitt 
 
 Diese Reihenfolge ist eine Empfehlung, **keine** Berechtigung, Migrationen anzuwenden, Write-Gates zu öffnen oder PRs ungeprüft zu mergen. Abhängigkeiten können Arbeiten parallel erlauben.
 
+## Zurückgestellt – Backup-Abdeckung Retro-RAG V2 (22.11.2026)
+
+**Status: bewusst auf später verschoben; kein Blocker für die technische Abnahme von PR #13.**
+
+- Borg-Skript im separaten Repository `ninchen-ai/homelab-ai-infrastructure`,
+  `scripts/backup/backup.sh`, nimmt derzeit **`/data/retro-rag/v2` nicht in
+  die Borg-Quellliste** auf; insbesondere ist
+  `/data/retro-rag/v2/originals` bislang nicht durch diesen Job abgedeckt.
+- Das Skript erstellt PostgreSQL-Dumps für `codeanalyse`, `retro_rag` und
+  `nextcloud`, aber **keinen eigenen `retro_rag_v2_test`-Dump**.
+  Die vorhandenen manuellen V2-Dumps sind kein Ersatz für die geplante
+  wiederkehrende Sicherung; ihre Lesbarkeit ist bislang nicht bestätigt
+  (`pg_restore` fehlt auf dem Host; Prüfung im PostgreSQL-Container steht aus).
+- Borg-Zeitlauf vom 22.11.2026 um 02:00:17 CET:
+  `borg-backup.service` meldete `Result=exit-code` und
+  `ExecMainStatus=1`; das Backupmedium war nach Betreiberangabe
+  **nicht eingelegt**. Inzwischen ist es eingelegt; ein neuer
+  erfolgreicher Lauf und ein Restore-Nachweis stehen noch aus.
+- **Spätere Umsetzung:** V2-Originalarchiv und benötigte Konfigurationen
+  ergänzen, temporäre `e2e-isolated`-Daten ausschließen, konsistenten
+  `pg_dump -Fc` der V2-Datenbank plus `pg_restore`-Lesekontrolle
+  integrieren, realen Borg-Lauf mit `--no-shutdown` und
+  anschließendem selektiven Restore verifizieren; dabei
+  Backupmedium-Erkennung und Ziel-Mount absichern.
+- **Keine automatische Produktivfreigabe:** Backup-Aufgabe bleibt
+  offen. Vor einem produktiven Write-Gate-Apply ist sie erneut als
+  eigenständiger Betriebsfreigabe-Punkt zu prüfen.
+
 ## Regeln für die Pflege der Roadmap
 
 1. Nach jedem fachlich freigegebenen Architekturentscheid den betroffenen A-Punkt aktualisieren; die unveränderte Zielentscheidung zusätzlich im Architektur-ADR belassen.
