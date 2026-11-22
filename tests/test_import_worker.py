@@ -115,3 +115,19 @@ def test_claim_job_requires_unextracted_document():
     assert "s.step_name='text_extracted'" in source
     assert "j.lease_until < now()" in source
     assert "j.attempts < j.max_attempts" in source
+
+
+def test_worker_uses_canonical_document_version_source_id(monkeypatch, tmp_path):
+    path, sha = archived(tmp_path)
+    job = ("job-1", "version-1", sha, path.as_uri(), "synthetic.md")
+    observed = []
+
+    def fake_read(_path, source_id):
+        observed.append(source_id)
+        return object()
+
+    monkeypatch.setattr(worker, "claim_job", lambda *_: job)
+    monkeypatch.setattr(worker, "read_markdown", fake_read)
+    monkeypatch.setattr(worker, "finish_job", lambda *args: None)
+    assert worker.process_one(object(), tmp_path, "worker-1") is True
+    assert observed == ["document_version:version-1"]
