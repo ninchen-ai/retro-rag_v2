@@ -94,3 +94,34 @@ Ruff clean; dry-run did not claim work and the DB gate was `false`.
 **These results precede the canonical-persistence refactoring.** Run the
 full suite again; concurrency/retry tests and isolated DB acceptance remain
 outstanding. No `--apply` or timer activation is authorized.
+
+
+## Isolated PostgreSQL lease/concurrency test (22.11.2026)
+
+`tests/test_import_worker_isolated_integration.py` exercises competing real
+connections, exclusive claims, simulated worker death/expired lease, recovery,
+live-lease protection and the third/final retry. It creates and commits
+synthetic fixtures, so it **must never run against Poseidon's persistent
+`codeanalyse-postgres` cluster**.
+
+Required: a separately provisioned disposable PostgreSQL 16 cluster,
+`cluster_name='retro-rag-v2-worker-isolated'`, a dedicated
+`retro_rag_v2_test` database with migrations 0001–0006, a completely empty
+`processing_job` table and a **closed** write gate. The test requires
+`session_user=postgres` and checks all those preconditions before any write.
+Its `finally` cleanup deletes synthetic fixtures and closes only the
+disposable cluster's gate. If the test process is hard-killed, destroy the
+disposable cluster rather than reusing its potentially open gate.
+
+Run the test only after verifying the exact container and DSN target:
+
+```bash
+# Example only. Supply an independently verified disposable-cluster DSN.
+export RETRO_V2_WORKER_ISOLATED_DSN='host=127.0.0.1 port=<isolated-port> dbname=retro_rag_v2_test user=postgres'
+python -m pytest -q tests/test_import_worker_isolated_integration.py -rs
+unset RETRO_V2_WORKER_ISOLATED_DSN
+```
+
+No real Nextcloud, Ollama, documents, or production storage are accessed.
+The 185-pass baseline predates the addition of this isolated test and the
+source-id correction. Those new changes require a fresh Poseidon regression.
