@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import hashlib
 import os
-from pathlib import Path
 from uuid import uuid4
 
 import psycopg
@@ -264,9 +263,11 @@ def test_gate_closed_after_claim_refuses_persistence(isolated):
         cur.execute(
             "UPDATE rag_v2.write_gate SET writes_enabled=false WHERE id=true"
         )
-    with psycopg.connect(importer_dsn(dsn), autocommit=True) as conn:
-        with pytest.raises(psycopg.errors.InsufficientPrivilege, match="Schreibsperre"):
-            finish_job(conn, job, "worker-before-close", ids["archive"], ids["contract"])
+    with (
+        psycopg.connect(importer_dsn(dsn), autocommit=True) as conn,
+        pytest.raises(psycopg.errors.InsufficientPrivilege, match="Schreibsperre"),
+    ):
+        finish_job(conn, job, "worker-before-close", ids["archive"], ids["contract"])
     with admin.cursor() as cur:
         cur.execute("SELECT count(*) FROM rag_v2.chunk WHERE document_version_id=%s",
                     (ids["version"],))
@@ -279,14 +280,13 @@ def test_gate_closed_after_claim_refuses_persistence(isolated):
 def test_importer_rbac_and_no_premature_activation(isolated):
     """Actual login inherits importer DML but cannot touch gate or publish."""
     dsn, admin, ids = isolated
-    with psycopg.connect(importer_dsn(dsn), autocommit=True) as conn:
-        with conn.cursor() as cur:
-            cur.execute("SELECT session_user")
-            assert cur.fetchone() == ("rag_v2_importer_login",)
-            with pytest.raises(psycopg.errors.InsufficientPrivilege):
-                cur.execute("UPDATE rag_v2.write_gate SET writes_enabled=false")
-            with pytest.raises(psycopg.errors.InsufficientPrivilege):
-                cur.execute("INSERT INTO rag_v2.fact DEFAULT VALUES")
+    with psycopg.connect(importer_dsn(dsn), autocommit=True) as conn, conn.cursor() as cur:
+        cur.execute("SELECT session_user")
+        assert cur.fetchone() == ("rag_v2_importer_login",)
+        with pytest.raises(psycopg.errors.InsufficientPrivilege):
+            cur.execute("UPDATE rag_v2.write_gate SET writes_enabled=false")
+        with pytest.raises(psycopg.errors.InsufficientPrivilege):
+            cur.execute("INSERT INTO rag_v2.fact DEFAULT VALUES")
     job = claim_as_importer(dsn, "worker-activation-check")
     assert job is not None
     with psycopg.connect(importer_dsn(dsn), autocommit=True) as conn:
