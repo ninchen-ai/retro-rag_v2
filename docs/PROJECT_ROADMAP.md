@@ -200,6 +200,14 @@ Auf Poseidon wurde der zuvor per SHA-256 verifizierte CUBX-Seite-111-Ausschnitt 
 - **Visueller Abgleich gegen den zuvor hochgeladenen Originalausschnitt:** Die ersten neun Labels werden inhaltlich weitgehend korrekt wiedergegeben; **letztes Badge heißt `3D Games Bundled`, nicht `Banned`**. Aus den neun weitgehend richtigen Labels folgt **keine** allgemeine 90-%-OCR-Genauigkeit; die Aussage bezieht sich nur auf diese zehn Textblöcke, nicht auf einzelne Zeichen, CER/WER oder andere Dokumenttypen. Tesseract lieferte zuvor auf diesem Zuschnitt überwiegend Zeichenrauschen.
 - **Qualitätsfolge:** Die VLM-Unterstützung ist nützlich, aber auch semantisch plausible, technisch wichtige Fehler möglich. VLM-Transkriptionen als separate **unbestätigte OCR-Kandidaten** mit Quell-/Crop-/Modell-Provenienz behandeln. Abweichende Begriffe, Zahlen und Modelle zum Review markieren; keine eigenständige Überschreibung bestehender OCR, keine automatische Indexierung oder Faktenfreigabe. Für belastbare Bewertung weitere Seiten sowie unabhängige Wiederholungsläufe und regionsgleiche manuell bestätigte Referenzen nutzen.
 
+### PR #13 – erneute Poseidon-Teilabnahme und HBA-Grenze (22.11.2026)
+
+**Nachweis:** [datierter Integrationstestbericht mit HBA-Diagnose](PR13_POSEIDON_INTEGRATION_TEST_2026-11-22.md), geprüft gegen Code-Commit `7abbc34c85f5`. Auf Poseidon: `153 passed, 11 skipped`, `ruff check .` PASS, `pip check` PASS, sauberes Git; Tesseract 5.5.0 mit `eng+deu` verarbeitet eine synthetische Bild-PDF-Seite bei 200 DPI erfolgreich zu `ASUS CUBX AGP 4X`. `retro_rag_v2_test` steht auf Migration 0006; Gate `false`, Dokument-/Quellen-/Versions-/Job-/Review-Zähler jeweils null.
+
+**Live-WebDAV, nur lesend:** 40 Dateien ermittelt; `fileid=480` (`test-mainboard.md`) mit 371 Bytes und unverändertem SHA-256 abgerufen. **Netzwerk-/HBA-Blocker:** psycopg vom Poseidon-Host an `127.0.0.1:5432` wird als Client `172.19.0.1` durch `pg_hba.conf` abgewiesen. Derselbe Importer-Login funktioniert über Container-Loopback mit korrekter DB und geschlossenem Gate. Die vorhandene HBA-Vorlage erlaubt V2-Logins auf Loopback mit `scram-sha-256` und lehnt andere Quellen ab; der tatsächlich geladene HBA-Dateistand wurde **noch nicht unabhängig gelesen**. **Keine** HBA-Ausweitung, kein `--apply`, keine Gate-Freigabe.
+
+**Offen:** zehn rollback-only DB-Tests auf diesem erneuten Commit; tatsächliche HBA-Regeln lesend prüfen, gemeinsamen sicheren WebDAV-/DB-Pfad für `sync_cli` finden, reale OCR-Goldstandards und vollständige E2E-Verkettung. Frühere bestandene DB-Tests auf einem älteren Staging-Commit bleiben als historische Nachweise bestehen, ersetzen aber den erneuten Lauf nicht. **PR #13 bleibt Draft.**
+
 ## E. Empfohlene Reihenfolge und Freigabe-Gates
 
 | Reihenfolge | Paket | Abschlussbedingung |
