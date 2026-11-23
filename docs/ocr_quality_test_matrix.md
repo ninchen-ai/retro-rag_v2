@@ -1,7 +1,7 @@
 # Testmatrix – OCR-Qualitätsbewertung (Retro-RAG V2)
 
 **Status:** Abnahmeumfang fachlich freigegeben und eingefroren am 22.11.2026; konkrete Testdurchführung nicht freigegeben, technische Abnahme ausstehend  
-**Stand:** 23.11.2026 – historische Nachweise und A5-Zwischenfreigaben OQ-02 sowie OQ-05 bis OQ-10 dokumentiert  
+**Stand:** 23.11.2026 – historische Nachweise und A5-Zwischenfreigaben OQ-01 bis OQ-03 sowie OQ-05 bis OQ-10 dokumentiert  
 **Branch:** `feat/ocr-quality-evaluation`  
 **Grundlage:** `docs/ocr-quality-plan.md`, `docs/OCR_QUALITY_EVALUATION.md`, `conventions.md` sowie `docs/PROJECT_ROADMAP.md` auf `integration/pdf-ocr-webdav-2026-11-21` (historischer Stand 21./22.11.2026)  
 **Umgebung für spätere Versuche:** Poseidon, ausschließlich isolierte lokale Dateien
@@ -30,7 +30,7 @@ Diese Matrix ist **eigenständig**. Die fachlich eingefrorene PR-#15-Abnahme unt
 | Freigabepunkt | Entscheidung | Status |
 | --- | --- | --- |
 | Zehn Kategorien OQ-01 bis OQ-10 als Korpusrahmen | 23.11.2026: Kategorien fachlich freigegeben; keine Seiten ausgewählt | freigegeben |
-| Konkrete zehn Originalseiten und Seiten-/Renderidentitäten | **OQ-02 und OQ-05 bis OQ-10** am 23.11. als sieben Seitenkandidaten fachlich zwischenfreigegeben; OQ-01, OQ-03 und OQ-04 sowie Gesamtkorpus offen; lokale Referenz-/Renderidentität später prüfen | Teilfreigabe 7/10 |
+| Konkrete zehn Originalseiten und Seiten-/Renderidentitäten | **OQ-01, OQ-02, OQ-03 sowie OQ-05 bis OQ-10** am 23.11. als neun Seitenkandidaten fachlich zwischenfreigegeben; OQ-04 und Gesamtkorpus offen; lokale Original-/Renderidentität später prüfen | Teilfreigabe 9/10 |
 | Manuelle Transkription, zweiter visueller Abgleich und eingefrorene Referenz | A3-Verfahren A am 23.11. festgelegt: zwei zeitlich getrennte manuelle Kontrollen durch dieselbe Person; keine personelle Unabhängigkeit; keine Texte erstellen | Verfahren festgelegt, Referenzen offen |
 | Gemeinsame Textnormalisierung, Block-/Zellreferenzregeln | Zur Freigabe | offen |
 | Grenzwerte und kritische Fehlertoleranz aus Qualitätsplan Abschnitt 8 | Zur Freigabe | offen |
@@ -81,7 +81,20 @@ Leerseiten- und OCR-Routingprüfung als **separaten** Kontrollfall dokumentieren
 
 **Grenzen:** Original-PDF sowie spätere lokal ermittelte SHA-256-, Bild-/Renderparameter und Referenzversionen ausschließlich lokal sichern; **kein Upload der Quelle nach Git**. Keine Referenztexte, CER/WER, OCR- oder VLM-Ausführung freigegeben. Die bereits bestehenden OQ-05–OQ-10-Zwischenfreigaben bleiben unverändert. A5 bleibt `offen`, solange die Gesamtauswahl und deren Identitätsprüfung nicht abgeschlossen sind.
 
-**Offene Plätze nach dieser Freigabe:** OQ-01 (CP/M-Handbuch, visuell geeignet), OQ-03 (C64-Programmlisting mit schwachem Kontrast, visuell geeignet), OQ-04 (C64-Assemblerbuch mit Bundschatten und teilweise verdeckter Tabelle, bedingt geeignet) – **noch keine fachliche Seitenfreigabe**.
+**Historischer Zwischenstand nach OQ-02-Freigabe:** OQ-01 und OQ-03 waren zu diesem Zeitpunkt visuell geeignet, aber noch nicht zwischenfreigegeben; OQ-04 war nur bedingt geeignet. **Die nachfolgende ausdrückliche Zwischenfreigabe von OQ-01 und OQ-03 ersetzt diesen alten Status.**
+
+### A5-Zwischenfreigabe – OQ-01 und OQ-03 (23.11.2026)
+
+**Fachliche Entscheidung:** Nach der visuellen Sichtprüfung von vier neu vorgelegten Scanbildern wurde die gemeinsame Zwischenfreigabe der bereits vorgeschlagenen Seiten für **OQ-01 und OQ-03** am 23.11.2026 vom Betreiber bestätigt. Die Freigabe gilt ausschließlich als **fachliche Eignung der beiden Seitenkandidaten**, nicht als Abschluss der vollständigen A5-Abnahme.
+
+| ID | Zwischenfreigegebene Vorlage | Visueller Eignungsbefund | Verbleibende Voraussetzung |
+| --- | --- | --- | --- |
+| OQ-01 – Sauberer Scan | Gedrucktes **CP/M-Handbuch**, Abschnitt **7.2**, gedruckte Seite **7-6** | Gut lesbarer, überwiegend einspaltiger Fließtext mit klaren Zwischenüberschriften, leichter Papieralterung und vergleichsweise hohem Kontrast | Lokale Original-Scanidentität, Scanprofil/Hash und spätere vollständige manuelle Referenz ausstehend |
+| OQ-03 – Schlechter Scan | Gedrucktes **C64-Programmlisting**, gedruckte Seite **104** | Sichtbar schwacher Druck-/Scan-Kontrast, dünne Zeichen und viele verwechselbare BASIC-Zeichen; echter eingescannter Problemfall, nicht nachträglich künstlich verschlechtert | Lokale Original-Scanidentität, Scanprofil/Hash, Lesbarkeitsgrenzen und spätere manuelle Referenz ausstehend |
+
+**Abgrenzung zu OQ-04:** Die separat gesichtete C64-Assemblerbuchseite **92** zeigt Bundschatten und teilweise verdeckte Tabellen. Sie bleibt **nur bedingt geeignet und nicht zwischenfreigegeben**, weil verdeckte Inhalte eine überprüfbare Volltextreferenz verhindern können. Für OQ-04 eine besser prüfbare echte Schräglagen-, Unschärfe- oder Ausleuchtungsvorlage suchen oder nach gesonderter Entscheidung die testbare Region eindeutig eingrenzen.
+
+**Schutzgrenzen:** Die beiden hochgeladenen Bilder sind visuelle Sichtungsgrundlage; die Originaldateien, Bild-/Quellhashes, tatsächlichen Scanparameter und spätere Referenztexte werden ausschließlich lokal dokumentiert. Keine OCR, keine Referenztranskription, keine neuen Tests und keine Datenbank-/Nextcloud-/Archivänderungen freigegeben. **Neun von zehn konkrete Seitenkandidaten sind fachlich zwischenfreigegeben.** A5 und alle 29 eingefrorenen Abnahme-IDs bleiben `offen`.
 
 **Nachweisgrenzen:** Die sechs Seiten sind überwiegend native Text-PDFs; Eignung für Struktur-/Präzisionsprüfungen bedeutet **keine** nachgewiesene Raster-OCR-Qualität. Original-PDF-SHA-256, Versions- und Renderparameter sowie spätere Referenztexte nur lokal sichern. Alle 29 eingefrorenen Test-IDs, Akzeptanzkriterien, Prioritäten und formalen Status bleiben unverändert `offen`. A5 insgesamt noch nicht freigegeben. Keine Testausführung, keine Indexierungs- oder Faktenfreigabe.
 
@@ -93,7 +106,7 @@ Leerseiten- und OCR-Routingprüfung als **separaten** Kontrollfall dokumentieren
 | A2 | Exakte Quell-/Renderidentität | Identischer PDF-Inhalt/Seite/Region mit SHA- und Render-/Modellparametern; kein Vergleich unterschiedlicher Ausschnitte | M | offen | 23.11. echter CUBX-Quellhash gegen Review und OCR-Run identisch; S.111 bei 140 DPI mit PyMuPDF 1.28.2 als 1157×1638 PNG pixelidentisch. **Rest:** andere freigegebene Seiten und Regions-/Engineparameter; kein Beweis bytegleicher 200-DPI-OCR. |
 | A3 | Unabhängiger Referenztext | Manuell vom sichtbaren Original erstellt, zweitgeprüft und vor der Messung eingefroren | M | offen | 23.11. Verfahren A entschieden: zwei zeitversetzte manuelle Durchgänge durch dieselbe Person, nicht personell unabhängig. **Rest:** Referenzseiten freigeben, Vollreferenzen erstellen/versionieren; Akzeptanz der eingeschränkten Unabhängigkeit gesondert entscheiden. |
 | A4 | Ungeprüfte Referenz abweisen | Ungeprüfte/unvollständige Referenz liefert keine Gütezahlen und keine Freigabe | M | offen | 23.11. Bubblewrap: 3 bestehende Schutz-/Provenienztests PASS in 0,08 s, SHA-Manifest PASS, Git sauber. **Rest:** unvollständige Referenz und vollständige Freigabebarriere am Korpus prüfen; bestehende 3 Tests nicht grundlos wiederholen. |
-| A5 | Korpusabdeckung dokumentieren | Alle zehn freigegebenen Seitenplätze belegt oder Abweichung begründet; Kategorien nachvollziehbar | M | offen | **23.11.: sieben konkrete Kandidaten zwischenfreigegeben: OQ-02 sowie OQ-05–OQ-10** (siehe Abschnitt 3); OQ-01 und OQ-03 visuell geeignet, aber noch nicht zwischenfreigegeben, OQ-04 nur bedingt geeignet. **Rest:** OQ-01/OQ-03/OQ-04 entscheiden, lokale Original-/Renderidentität prüfen und Gesamtkorpus gesondert abnehmen. |
+| A5 | Korpusabdeckung dokumentieren | Alle zehn freigegebenen Seitenplätze belegt oder Abweichung begründet; Kategorien nachvollziehbar | M | offen | **23.11.: neun Seitenkandidaten OQ-01 bis OQ-03 und OQ-05 bis OQ-10 zwischenfreigegeben** (Abschnitt 3); OQ-04 mit teilweise verdeckter Vorlage nur bedingt geeignet. **Rest:** OQ-04 klären, Quellen-/Scan-/Renderidentität aller Seiten lokal sichern und Gesamtkorpus gesondert abnehmen. |
 
 ## 5. B – OCR-Routing und Textqualität
 
@@ -214,13 +227,13 @@ Die 29 Test-IDs sind weiterhin **unverändert eingefroren**. Die Einzelzeilen de
 | Feld | Eintrag |
 | --- | --- |
 | Fachliche Freigabe dieser Matrix | **22.11.2026 – 29 IDs und Prioritäten verbindlich eingefroren** |
-| Freigegebener Korpus | **7/10 konkrete Seitenkandidaten zwischenfreigegeben:** OQ-02 sowie OQ-05 bis OQ-10. OQ-01, OQ-03, OQ-04 und A5-Gesamtabnahme offen |
+| Freigegebener Korpus | **9/10 konkrete Seitenkandidaten zwischenfreigegeben:** OQ-01 bis OQ-03 und OQ-05 bis OQ-10; OQ-04 und A5-Gesamtabnahme offen |
 | Freigegebene Schwellenwerte / Varianten | ausstehend |
 | Datum / Prüferin | — |
 | Quell- und Referenzversionen (nur lokal) | — |
 | Geprüfter Repository-Commit | — |
 | Ergebnis A–E | 29 formale IDs offen; technische Teilnachweise und verbleibende Restprüfungen je ID dokumentiert |
-| Ausnahmen / Abweichungen / Entscheidungen | A5: Sieben zwischenfreigegebene Seitenkandidaten; drei noch nicht freigegebene Scan-Kategorien. OQ-02 als echter bildbasierter Scan-Kandidat; native Text-PDFs weiterhin kein Raster-OCR-Beleg |
+| Ausnahmen / Abweichungen / Entscheidungen | A5: Neun Seitenkandidaten zwischenfreigegeben; OQ-04 noch ungeeignet für vollständige Referenz wegen verdeckter Inhalte. OQ-01/OQ-03 anhand echter Buchscans visuell geeignet; native Text-PDFs bleiben kein Raster-OCR-Beleg |
 | Freigabe zu OCR-Evaluation | Historische Tests und technische A1/A2/A4-Prüfungen dokumentiert; **keine** Freigabe neuer OCR-/VLM-Gütemessungen |
 | Freigabe zu Indexierung/Fakten-/Produktivbetrieb | **nicht Gegenstand dieser Matrix** |
 
@@ -240,3 +253,4 @@ Die 29 Test-IDs sind weiterhin **unverändert eingefroren**. Die Einzelzeilen de
 | 23.11.2026 | Historische OCR-/Layout-/VLM-/PR13-Ergebnisse und aktuelle A1/A2/A4-Teilnachweise je ID eingetragen; OQ-Kategorien und A3-Verfahrenstatus aktualisiert | **Kein** Ändern von 29 IDs, Prüfkriterien, Prioritäten oder Schwellenwerten; keine automatische fachliche Freigabe; PR #15 unberührt |
 | 23.11.2026 | OQ-05 bis OQ-10 als sechs konkrete Seitenkandidaten fachlich zwischenfreigegeben und samt Grenzen in Abschnitt 3 dokumentiert | Betreiberfreigabe nach visueller Sichtung; vier Scan-Kategorien, alle formalen Matrix-IDs und gesamte A5-Abnahme bleiben offen |
 | 23.11.2026 | OQ-02: Texas Instruments TMS4164, PDF-Seite 2, als siebten konkreten Seitenkandidaten fachlich zwischenfreigegeben | Ausdrückliche Nutzerfreigabe nach Sichtung des 19-seitigen gescannten Datenblatts; OQ-01/OQ-03/OQ-04 und A5-Gesamtabnahme offen; keine Änderung eingefrorener Testkriterien |
+| 23.11.2026 | OQ-01 (CP/M-Handbuch S. 7-6) und OQ-03 (C64-Programmlisting S. 104) nach Sichtprüfung als achte und neunte Seitenkandidaten fachlich zwischenfreigegeben | Gemeinsame Betreiberzustimmung zu den vorgeschlagenen Kandidaten; OQ-04 wegen verdeckter Inhalte offen; keine Referenzen, neuen Testläufe oder Änderung eingefrorener Kriterien |
