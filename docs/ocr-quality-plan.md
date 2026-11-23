@@ -284,3 +284,23 @@ Quelle: `docs/PR13_POSEIDON_INTEGRATION_TEST_2026-11-22.md` auf `integration/pdf
 **Stoppregel:** Bis zu den gesonderten Ausführungsfreigaben bleiben alle 29 Matrix-IDs im bisherigen Status. Keine neuen Testfälle, keine Codeänderungen, keine Messläufe und keine Änderung der Matrix oder der PR-#15-Unterlagen.
 
 **Freigabeprotokoll:** 22.11.2026 – Nutzerfreigabe zur Aufnahme des geplanten fünfphasigen Ablaufs in `docs/ocr-quality-plan.md`. **Nur der Ablaufplan ist freigegeben; die konkreten Evaluationsschritte bleiben freigabepflichtig.**
+
+## 16. A3 – Festgelegtes Verfahren für den manuellen Referenzabgleich (23.11.2026)
+
+**Entscheidung des Betreibers vom 23.11.2026:** Für A3 wurde **Variante A** gewählt: Zwei **zeitlich getrennte manuelle Prüfdurchgänge durch dieselbe Person**. Diese Festlegung erlaubt die Vorbereitung des Prüfverfahrens, jedoch ausdrücklich **noch keine Auswahl konkreter Seiten und keine Erstellung von Referenztexten**.
+
+### Verfahrensregeln für spätere, gesondert freizugebende Referenzen
+
+1. Erstdurchgang: Sichtbaren Originalinhalt manuell erfassen, ohne OCR-Ausgaben als Referenz zu übernehmen; unlesbare Stellen sichtbar kennzeichnen statt raten.
+2. Zweitdurchgang: Nach dokumentiertem zeitlichem Abstand das Original unabhängig vom ersten Durchgang **erneut visuell kontrollieren**; Datum/Uhrzeit beider Durchgänge und festgestellte Korrekturen lokal protokollieren. Ein Mindestabstand wurde **nicht festgelegt** und darf nicht unterstellt werden.
+3. Besondere Zeichenfolgen (Modellnummern, Zahlen, Vorzeichen, Dezimaltrennzeichen, Einheiten) und bei Bedarf Blockreihenfolge/Zellbeziehungen einzeln prüfen.
+4. Referenz erst nach vollständigem zweiten visuellen Abgleich versionieren und gegen spätere stille Änderungen schützen; vor diesem Zeitpunkt `review_status=unreviewed` beibehalten. Eine spätere technische Bewertung darf daraus keine automatische Indexierungs- oder Faktenfreigabe ableiten.
+5. Alle Texte, Seitenbilder, Quellhashes und personenbezogenen Prüfprotokolle verbleiben im isolierten lokalen Evaluationsbereich; keine Übernahme ins öffentliche Repository.
+
+### Explizite Einschränkung der Unabhängigkeit und A3-Abnahme
+
+**Die zweite Kontrolle erfolgt nicht durch eine andere Person.** Dadurch ist sie zeitlich, aber **nicht personell unabhängig**; eigene Fehler oder Vorannahmen können in beiden Durchgängen bestehen bleiben. Dies ist eine bewusste methodische Einschränkung und **kein gleichwertiger Nachweis einer unabhängigen Zweitprüfung**.
+
+Die eingefrorene Matrix führt A3 als „Unabhängiger Referenztext“ mit Zweitprüfung. Ihre Akzeptanzkriterien werden durch diese Dokumentation **nicht geändert oder stillschweigend als erfüllt bewertet**. Ob ein anhand von Variante A erstellter Referenztext A3 trotz der eingeschränkten Unabhängigkeit fachlich erfüllen darf, ist **vor einer späteren A3-Abnahme ausdrücklich zu entscheiden und als Abweichung zu dokumentieren**; andernfalls bleibt A3 offen. Eine echte Zweitprüfung durch eine andere Person kann diese Einschränkung später beheben.
+
+**Status:** Prüfverfahren Variante A fachlich festgelegt; A3-Abnahme weiterhin **offen**. Der am 23.11.2026 freigegebene Korpusrahmen OQ-01 bis OQ-10 ist hiervon unabhängig; **keine konkreten Seiten freigegeben**, keine Referenzen erzeugt und keine OCR-Evaluation ausgeführt. PR #15 sowie die eingefrorene OCR-Testmatrix bleiben unverändert.
