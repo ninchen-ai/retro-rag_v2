@@ -1,7 +1,7 @@
 # Testmatrix – OCR-Qualitätsbewertung (Retro-RAG V2)
 
 **Status:** Abnahmeumfang fachlich freigegeben und eingefroren am 22.11.2026; konkrete Testdurchführung nicht freigegeben, technische Abnahme ausstehend  
-**Stand:** 22.11.2026  
+**Stand:** 23.11.2026 – historische Teilnachweise und offene Restprüfungen abgeglichen  
 **Branch:** `feat/ocr-quality-evaluation`  
 **Grundlage:** `docs/ocr-quality-plan.md`, `docs/OCR_QUALITY_EVALUATION.md`, `conventions.md` sowie `docs/PROJECT_ROADMAP.md` auf `integration/pdf-ocr-webdav-2026-11-21` (historischer Stand 21./22.11.2026)  
 **Umgebung für spätere Versuche:** Poseidon, ausschließlich isolierte lokale Dateien
@@ -29,12 +29,12 @@ Diese Matrix ist **eigenständig**. Die fachlich eingefrorene PR-#15-Abnahme unt
 
 | Freigabepunkt | Entscheidung | Status |
 | --- | --- | --- |
-| Zehn Kategorien OQ-01 bis OQ-10 als Korpusrahmen | Noch nicht fachlich freigegeben | offen |
-| Konkrete zehn Originalseiten und Seiten-/Renderidentitäten | Erst nach Freigabe auswählen | offen |
-| Manuelle Transkription, zweiter visueller Abgleich und eingefrorene Referenz | Noch nicht freigegeben/erstellt | offen |
+| Zehn Kategorien OQ-01 bis OQ-10 als Korpusrahmen | 23.11.2026: Kategorien fachlich freigegeben; keine Seiten ausgewählt | freigegeben |
+| Konkrete zehn Originalseiten und Seiten-/Renderidentitäten | Vorbereitung der Kandidatenprüfung erlaubt; endgültige Seitenauswahl bleibt freigabepflichtig | offen |
+| Manuelle Transkription, zweiter visueller Abgleich und eingefrorene Referenz | A3-Verfahren A am 23.11. festgelegt: zwei zeitlich getrennte manuelle Kontrollen durch dieselbe Person; keine personelle Unabhängigkeit; keine Texte erstellen | Verfahren festgelegt, Referenzen offen |
 | Gemeinsame Textnormalisierung, Block-/Zellreferenzregeln | Zur Freigabe | offen |
 | Grenzwerte und kritische Fehlertoleranz aus Qualitätsplan Abschnitt 8 | Zur Freigabe | offen |
-| A–D: PyMuPDF/Tesseract-Sprach- und DPI-Vergleich | Zur Freigabe | offen |
+| A–D: PyMuPDF/Tesseract-Sprach- und DPI-Vergleich | Historische Versuche liegen vor; neue vergleichende Korpus-Messläufe nicht freigegeben | offen |
 | E: DocLayout-YOLO-gestützte Regionen-OCR | Gesonderte optionale Freigabe | offen |
 | F: lokales Vision-LLM als selektiver, regelbasierter Zweitkandidat | Gesonderte optionale Freigabe für Ausführung; kein automatischer Ersatz oder Übernahme | offen |
 | Verpflichtende VLM-Schutzbewertung E5 | Vor einer etwaigen VLM-Nutzung anhand historischer Befunde und ggf. gesondert freigegebener Realversuche prüfen; ohne Freigabe keine VLM-Ausführung | offen |
@@ -62,55 +62,55 @@ Leerseiten- und OCR-Routingprüfung als **separaten** Kontrollfall dokumentieren
 
 | ID | Szenario | Akzeptanzkriterium | Prio | Status | Vorhandene Abdeckung / Grenze |
 | --- | --- | --- | --- | --- | --- |
-| A1 | Isolierter Betrieb | Keine DB-/Worker-/Nextcloud-Schreibzugriffe, keine Quelldateiänderung; lokales Ausgabeverzeichnis | M | offen | Technische Read-only-Tests teilweise vorhanden; neue Umgebung nicht ausgeführt |
-| A2 | Exakte Quell-/Renderidentität | Identischer PDF-Inhalt/Seite/Region mit SHA- und Render-/Modellparametern; kein Vergleich unterschiedlicher Ausschnitte | M | offen | `tests/test_pdf_goldstandard.py`, `tests/test_pdf_column_order_v2.py` – teilweise |
-| A3 | Unabhängiger Referenztext | Manuell vom sichtbaren Original erstellt, zweitgeprüft und vor der Messung eingefroren | M | offen | `tests/test_pdf_goldstandard.py::test_unreviewed_template_must_not_infer_ground_truth` – teilweise, keine fertigen Volltranskriptionen |
-| A4 | Ungeprüfte Referenz abweisen | Ungeprüfte/unvollständige Referenz liefert keine Gütezahlen und keine Freigabe | M | offen | `tests/test_ocr_evaluation.py::test_unreviewed_does_not_get_a_score` – direkt für technischen Schutz |
-| A5 | Korpusabdeckung dokumentieren | Alle zehn freigegebenen Seitenplätze belegt oder Abweichung begründet; Kategorien nachvollziehbar | M | offen | Keine fachliche Korpusabnahme vorhanden |
+| A1 | Isolierter Betrieb | Keine DB-/Worker-/Nextcloud-Schreibzugriffe, keine Quelldateiänderung; lokales Ausgabeverzeichnis | M | offen | 23.11. Poseidon: isoliertes Arbeitsverzeichnis, Bubblewrap ohne Netzroute, historische Dateien ro; SHA-256-Integritätscheck PASS. **Rest:** vollständigen Korpuslauf isoliert nachweisen; WebDAV-PROPFIND war gesondert lesend mit Netz. |
+| A2 | Exakte Quell-/Renderidentität | Identischer PDF-Inhalt/Seite/Region mit SHA- und Render-/Modellparametern; kein Vergleich unterschiedlicher Ausschnitte | M | offen | 23.11. echter CUBX-Quellhash gegen Review und OCR-Run identisch; S.111 bei 140 DPI mit PyMuPDF 1.28.2 als 1157×1638 PNG pixelidentisch. **Rest:** andere freigegebene Seiten und Regions-/Engineparameter; kein Beweis bytegleicher 200-DPI-OCR. |
+| A3 | Unabhängiger Referenztext | Manuell vom sichtbaren Original erstellt, zweitgeprüft und vor der Messung eingefroren | M | offen | 23.11. Verfahren A entschieden: zwei zeitversetzte manuelle Durchgänge durch dieselbe Person, nicht personell unabhängig. **Rest:** Referenzseiten freigeben, Vollreferenzen erstellen/versionieren; Akzeptanz der eingeschränkten Unabhängigkeit gesondert entscheiden. |
+| A4 | Ungeprüfte Referenz abweisen | Ungeprüfte/unvollständige Referenz liefert keine Gütezahlen und keine Freigabe | M | offen | 23.11. Bubblewrap: 3 bestehende Schutz-/Provenienztests PASS in 0,08 s, SHA-Manifest PASS, Git sauber. **Rest:** unvollständige Referenz und vollständige Freigabebarriere am Korpus prüfen; bestehende 3 Tests nicht grundlos wiederholen. |
+| A5 | Korpusabdeckung dokumentieren | Alle zehn freigegebenen Seitenplätze belegt oder Abweichung begründet; Kategorien nachvollziehbar | M | offen | 23.11. zehn Kategorien OQ-01–OQ-10 freigegeben; WebDAV-PROPFIND 29 PDFs / 28 unterschiedliche Dateinamen, alle Größen bekannt, keine Downloads. Historische PDF-Baseline 5064 Seiten. **Rest:** zehn konkrete Seiten nach Sichtprüfung getrennt freigeben; schwierige Scans bisher nicht eindeutig belegt. |
 
 ## 5. B – OCR-Routing und Textqualität
 
 | ID | Szenario | Akzeptanzkriterium | Prio | Status | Vorhandene Abdeckung / Grenze |
 | --- | --- | --- | --- | --- | --- |
-| B1 | Native Extraktion vs. OCR-Auslösung | Textseiten erhalten native Ausgabe; echte Scan-Kandidaten/erzwungene geprüfte Seiten werden korrekt unterschieden | M | offen | `tests/test_pdf_ocr.py::test_no_ocr_by_default`, `test_auto_preserves_native_text`, `test_auto_ocr_scan_and_status` – technische Abdeckung |
-| B2 | Leerseite / OCR-Warnungen | Visuell leere Seite zählt nicht als verlorener Text; OCR-Fehler bei nichtleeren Seiten werden getrennt markiert | M | offen | `tests/test_pdf_ocr.py::test_ocr_failure_preserves_original`, `test_read_pdf_keeps_gate_closed_and_tracks_ocr` – teilweise; historische CUBX-S.112-Warnung kein Qualitätsverlust |
-| B3 | CER/WER je Seite und Variante | Auf freigegebenen Ganzseitenreferenzen berechnen und einzeln sowie nach Kategorie berichten | M | offen | `tests/test_ocr_evaluation.py::test_normalization_and_distance`, `test_perfect_match`, `test_insertions_can_exceed_one_hundred_percent` – Rechenlogik, **keine echte Ganzseitenabnahme** |
-| B4 | Sprachvergleich `eng` / `eng+deu` | Gleiche Originalregion, DPI, Referenz und OCR-Parameter bis auf Sprache; Ergebnisunterschiede belegt | M | offen | Historischer CUBX-PNG-Ausschnitt: CER 2,32 % vs. 2,51 %, WER 15,00 % vs. 16,25 %; provisorische Referenz, **kein** formaler Pass |
-| B5 | DPI-Vergleich 200 / 300 | Vergleich auf identischer Quelle/Referenz und kontrollierten Einstellungen; Laufzeit protokolliert | S | offen | Kein freigegebener Realvergleich belegt |
-| B6 | Modellnummern exakt | Jede freigegebene Referenzkennung exakt prüfen, Fehl-/Verwechslungen einzeln berichten | M | offen | `tests/test_ocr_evaluation.py::test_wrong_hardware_number_is_detected` und `critical_term_recall` – teilweise; vorgeschlagen ≥ 99 % |
-| B7 | Zahlen und Wert-Einheit-Paare | Vorzeichen, Dezimalstellen, Kennungen, Einheiten und Wertepaare separat zählen; kritische Fehler ausweisen | M | offen | Noch keine vollständige eigenständige fachliche Bewertungsstrecke; vorgeschlagen ≥ 99 % |
-| B8 | Erfundene technische Angaben | Zusätzlich im OCR-/Vision-Ergebnis auftauchende unbelegte technische Kennungen und Werte explizit bewerten | M | offen | `critical_term_recall` erfasst fehlende Begriffe, **nicht** erfundene; vorgeschlagen 0 kritische Fälle |
-| B9 | PSM 6/7/11 unter gleichen Bedingungen | Für jeweils geeignete, freigegebene Bildregionen identische Quelle, Zuschnitt, DPI, Sprache und Referenz; nur PSM variieren; CER/WER und kritische Zeichen vergleichen | M | offen | Roadmap: 12 Kandidaten aus drei Regionen mit PSM 6/11; zusätzlich PSM-7-Einzelzeilenversuch und Regression 153 passed/11 skipped. Technisch dokumentiert, **kein** regionsgleicher Ground-Truth-Qualitätsnachweis |
-| B10 | Ganze Seite gegenüber Regions-OCR | Den Textumfang vorab genau angleichen: Ganzseitenergebnis auf dieselben Referenzregionen abbilden, gesondert Vollständigkeit/Regionenabdeckung bewerten; keine Ganzseiten-CER gegen einzelne Crop-Referenz | M | offen | Roadmap: CUBX S. 111 als Ganzseite sowie regionale 200/300-DPI-/PSM-Experimente; historische Kandidaten vorhanden, ein fairer quantitativer Vergleich fehlt |
+| B1 | Native Extraktion vs. OCR-Auslösung | Textseiten erhalten native Ausgabe; echte Scan-Kandidaten/erzwungene geprüfte Seiten werden korrekt unterschieden | M | offen | Stage-4-Regressions-/Mocktests; realer CUBX-PDF-Lauf: OCR S.111, Leer S.112, 112 Seiten/114 Chunks, ohne Warnungen bei nur S.111. **Rest:** Routing am freigegebenen Korpus; technische Basis nicht erneut testen. |
+| B2 | Leerseite / OCR-Warnungen | Visuell leere Seite zählt nicht als verlorener Text; OCR-Fehler bei nichtleeren Seiten werden getrennt markiert | M | offen | S.112 visuell bestätigte weiße Leerseite, bei absichtlich erzwungener OCR erwarteter Leertext-Fehler; Lauf nur S.111 ohne Warnungen. Vektor-Negativtest vorhanden. **Rest:** Warnungs-/Leerfallabnahme je einschlägigem Korpusfall. |
+| B3 | CER/WER je Seite und Variante | Auf freigegebenen Ganzseitenreferenzen berechnen und einzeln sowie nach Kategorie berichten | M | offen | 8 OCR-Evaluator-Tests (synthetisch) und Ruff PASS; CER/WER-Funktionen vorhanden. **Rest:** CER/WER gegen vollständige, freigegebene Seitenreferenzen je Variante. |
+| B4 | Sprachvergleich `eng` / `eng+deu` | Gleiche Originalregion, DPI, Referenz und OCR-Parameter bis auf Sprache; Ergebnisunterschiede belegt | M | offen | CUBX-PNG bei PSM6: `eng` CER 2,32 %/WER 15 %, `eng+deu` CER 2,51 %/WER 16,25 %; bytegleich reproduziert, **Referenz provisorisch**. **Rest:** Vergleich am freigegebenen Korpus, keine allgemeine Sprachentscheidung. |
+| B5 | DPI-Vergleich 200 / 300 | Vergleich auf identischer Quelle/Referenz und kontrollierten Einstellungen; Laufzeit protokolliert | S | offen | Historisch 12 Regionen-Kandidaten (PSM6/11, 200/300 DPI) plus 6 Einzelzeilen-Kandidaten (PSM7). **Rest:** identische Regionen, endgültige Referenzen und vergleichbare Laufzeiten. |
+| B6 | Modellnummern exakt | Jede freigegebene Referenzkennung exakt prüfen, Fehl-/Verwechslungen einzeln berichten | M | offen | Synthetischer Kennungstest; reale CUBX-Werte im Spezifikationsbereich weitgehend erkannt; VLM-Badge-Fehler `Banned`/`Bundled`. **Rest:** absolute Treffer/Fehler aller freigegebenen Referenzkennungen. |
+| B7 | Zahlen und Wert-Einheit-Paare | Vorzeichen, Dezimalstellen, Kennungen, Einheiten und Wertepaare separat zählen; kritische Fehler ausweisen | M | offen | CUBX-Werte `300MHz`, `32MB DDR SGRAM`, `704x480` visuell untersucht, keine vollständige Wert-Einheit-Metrik. **Rest:** Vorzeichen/Dezimalzeichen/Wertepaare gegen freigegebene Referenzen zählen. |
+| B8 | Erfundene technische Angaben | Zusätzlich im OCR-/Vision-Ergebnis auftauchende unbelegte technische Kennungen und Werte explizit bewerten | M | offen | Gemma verwechselt `Banned`/`Bundled`, Qwen erzeugt unbelegte Erklärungen; `critical_term_recall` erfasst fehlende, nicht erfundene Begriffe. **Rest:** unbelegte/entstellte technische Angaben separat prüfen. |
+| B9 | PSM 6/7/11 unter gleichen Bedingungen | Für jeweils geeignete, freigegebene Bildregionen identische Quelle, Zuschnitt, DPI, Sprache und Referenz; nur PSM variieren; CER/WER und kritische Zeichen vergleichen | M | offen | 3 CUBX-Regionen × 200/300 DPI × PSM6/11 = 12 Kandidaten; drei Zeilen × 200/300 × PSM7 = 6; nach Regression 153 passed, 11 skipped. **Rest:** PSM6/7/11 auf exakt derselben geeigneten Region mit verifizierter Referenz. |
+| B10 | Ganze Seite gegenüber Regions-OCR | Den Textumfang vorab genau angleichen: Ganzseitenergebnis auf dieselben Referenzregionen abbilden, gesondert Vollständigkeit/Regionenabdeckung bewerten; keine Ganzseiten-CER gegen einzelne Crop-Referenz | M | offen | CUBX-Ganzseiten-OCR (1723 Zeichen) und 18 Regions-/Zeilen-Kandidaten existieren. **Rest:** regionsidentischer Vergleich und Vollständigkeitsbewertung; keine Ganzseiten-CER gegen Crop-Referenz. |
 
 ## 6. C – Layout und Struktur
 
 | ID | Szenario | Akzeptanzkriterium | Prio | Status | Vorhandene Abdeckung / Grenze |
 | --- | --- | --- | --- | --- | --- |
-| C1 | Zweispaltige Lesereihenfolge | Reihenfolge der vorab referenzierten Textblöcke/Übergänge nachweisbar korrekt | M | offen | `tests/test_pdf_column_order_v2.py` (Erhalt/Geometrie), reale USB-601/606-Vorschläge `REVIEW_REQUIRED`; vorgeschlagen ≥ 95 % |
-| C2 | Einfache Tabellenstruktur | Zelltexte plus Zeilen-/Spaltenbeziehungen mit geprüfter Referenz vergleichen | M | offen | PyMuPDF-Tabellenkandidaten sind **keine** validierte Zellstruktur; vorgeschlagen ≥ 95 % |
-| C3 | Komplexe Pin-/Registermatrix | Jede freigegebene Pin-/Signal- bzw. Register-/Wert-Zuordnung nachweisbar; keine Faktenfreigabe bei Mehrdeutigkeit | M | offen | Historische Matrox-G200-Pinmatrix bleibt unbestätigt; keine vollständige Zellabnahme |
-| C4 | DocLayout-YOLO nur als Vorschlag | Klassenkonflikte und unzugeordnete Inhalte bleiben erhalten und führen zu Review, nicht zur automatischen Auswahl | S | offen | `tests/test_pdf_layout_conflicts_v2.py`, `tests/test_doclayout_batch_benchmark.py`; historische 16 Konflikttests grün, keine fachliche Freigabe |
+| C1 | Zweispaltige Lesereihenfolge | Reihenfolge der vorab referenzierten Textblöcke/Übergänge nachweisbar korrekt | M | offen | USB 2.0 S.601/606: echte zweispaltige Indexseiten, PyMuPDF `sort=True` vermischt Spalten; Segmentierungsvorschläge `REVIEW_REQUIRED`. **Rest:** geprüfte Blockreferenz und nachgewiesene korrekte Leseordnung. |
+| C2 | Einfache Tabellenstruktur | Zelltexte plus Zeilen-/Spaltenbeziehungen mit geprüfter Referenz vergleichen | M | offen | 3720 technische Tabellenhinweise im Survey, EHCI S.43, USB 1.0 S.152, CUBX S.21 als historische Kandidaten. **Rest:** einfache Tabelle mit validierten Zell-/Zeilen-/Spaltenbeziehungen. |
+| C3 | Komplexe Pin-/Registermatrix | Jede freigegebene Pin-/Signal- bzw. Register-/Wert-Zuordnung nachweisbar; keine Faktenfreigabe bei Mehrdeutigkeit | M | offen | Matrox G200 S.522 visuell bestätigte Pinmatrix; Chunking verlustfrei, aber 2D-Zuordnung ungesichert; YOLO `table`/`figure`-Konflikt. **Rest:** geprüfte Pin-/Signal-Zuordnungen. |
+| C4 | DocLayout-YOLO nur als Vorschlag | Klassenkonflikte und unzugeordnete Inhalte bleiben erhalten und führen zu Review, nicht zur automatischen Auswahl | S | offen | 16 Unit-Tests zu Layoutkonflikten bestanden; reale YOLO-CPU-Läufe USB S.601 1,8840 s, S.606 0,7302 s, Matrox S.522 0,7220 s. **Rest:** tatsächlichen Review-Fallback und unzugeordnete Inhalte fachlich abnehmen. |
 
 ## 7. D – Vergleichbarkeit, Messung und Ergebnisentscheidung
 
 | ID | Szenario | Akzeptanzkriterium | Prio | Status | Vorhandene Abdeckung / Grenze |
 | --- | --- | --- | --- | --- | --- |
-| D1 | Messvarianten vergleichbar | A–D für dieselbe freigegebene Quelle; E/F nur nach Einzelentscheidung; fehlende Varianten als `nicht getestet` kennzeichnen | M | offen | Technische Einzeladapter vorhanden; kein freigegebener Variantenvergleich am Gesamtkorpus |
-| D2 | Laufzeit auf gleicher Grundlage | OCR-Zeit/Seite, reine Layout-Inferenz und gesamte Pipeline getrennt ausweisen, Host/Modelle/Startbedingungen dokumentieren | M | offen | Historische YOLO-Inferenz 0,7220–1,8840 s; isolierter PDF-E2E 21,46 s **nicht** unmittelbar vergleichbar |
-| D3 | Qualitätsgrenzen anwenden | Sämtliche vorgeschlagenen, **erst noch freizugebenden** Grenzwerte je Seite/Kategorie auswerten; kritische Fehler nicht wegmitteln | M | offen | Keine Grenzwerte im OCR-Tool als Indexierungsfreigabe implementiert |
-| D4 | Manuelle Nachprüfung und Empfehlung | Begründete Entscheidung zu Standard-OCR, regionalem Routing, zusätzlicher Layoutanalyse und Review-Bedarf | M | offen | Bisherige Versuchsergebnisse nur Baseline |
-| D5 | Reproduzierbarkeit/Provenienz | Quell-/Seitenidentität, Referenzversion, Engine-/Modellversion, Sprache, DPI, Parameter und Ergebnis dokumentiert | M | offen | `tests/test_ocr_evaluation.py::test_reviewed_case_provenance`, Goldstandard-/Layout-Tests – teilweise |
+| D1 | Messvarianten vergleichbar | A–D für dieselbe freigegebene Quelle; E/F nur nach Einzelentscheidung; fehlende Varianten als `nicht getestet` kennzeichnen | M | offen | OCR-/Sprach-/DPI-/PSM-Varianten und VLM-Einzelversuche historisch vorhanden. **Rest:** dieselben freigegebenen Quellen/Referenzen und gesonderte Methodenfreigabe; E/F nur separat. |
+| D2 | Laufzeit auf gleicher Grundlage | OCR-Zeit/Seite, reine Layout-Inferenz und gesamte Pipeline getrennt ausweisen, Host/Modelle/Startbedingungen dokumentieren | M | offen | YOLO-CPU-Inferenz 0,7220–1,8840 s, realer PDF/OCR/Embedding-E2E 21,46 s – verschiedene Metriken. **Rest:** OCR/Layout/E2E auf vergleichbarer Grundlage separat messen. |
+| D3 | Qualitätsgrenzen anwenden | Sämtliche vorgeschlagenen, **erst noch freizugebenden** Grenzwerte je Seite/Kategorie auswerten; kritische Fehler nicht wegmitteln | M | offen | Grenzwerte in Abschnitt 9 noch unbestätigte Vorschläge; provisorischer CUBX-WER ist keine formale Grenzwertverletzung. **Rest:** Schwellen freigeben und pro Seite inkl. kritischer Fehlstellen anwenden. |
+| D4 | Manuelle Nachprüfung und Empfehlung | Begründete Entscheidung zu Standard-OCR, regionalem Routing, zusätzlicher Layoutanalyse und Review-Bedarf | M | offen | Historisch: Tesseract bei Spezifikationen brauchbar, Stiltext schwierig, USB/Matrox strukturell fehleranfällig, VLM kann Fachbegriffe falsch lesen. **Rest:** freigegebene Bewertung und begründete Empfehlung. |
+| D5 | Reproduzierbarkeit/Provenienz | Quell-/Seitenidentität, Referenzversion, Engine-/Modellversion, Sprache, DPI, Parameter und Ergebnis dokumentiert | M | offen | CUBX-Quellhash und 140-DPI-Render pixelidentisch (23.11.); PNG-PSM6-Sprachtexte bytegleich (12.11.); PR13-Real-E2E bestanden. **Rest:** Quelle/Referenz/Region/Engine/Modell/Prompt/Laufzeiten für jede endgültige Variante nachvollziehbar. |
 
 ## 8. E – Optionale, gesondert freizugebende Vergleiche
 
 | ID | Szenario | Akzeptanzkriterium | Prio | Status | Vorhandene Abdeckung / Grenze |
 | --- | --- | --- | --- | --- | --- |
-| E1 | DocLayout-gestützte Regions-OCR | Eindeutige Region zu exakt gleicher Referenz; Textgenauigkeit und Struktur separat vergleichen | O | offen | YOLO/Geometrie experimentell erprobt, keine freigegebene integrierte Regions-OCR |
-| E2 | Selektiver, regelbasierter Vision-LLM-Zweitkandidat | Erst Standardextraktion/Tesseract; VLM ausschließlich bei vordefinierten auffälligen Regionen und nach gesonderter Freigabe. Tesseract- und VLM-Transkripte parallel als unbestätigte Kandidaten mit Region, Modell, Prompt, Abweichungen und Reviewbedarf erhalten; **kein automatisches Überschreiben, Indexieren oder Faktenfreigeben** | O | offen | Roadmap: Qwen3-VL 2B und Gemma 3 12B nur als isolierte Einzelversuche. Triggerregeln, Review und produktive Integration nicht freigegeben |
-| E3 | Ressourcen und Nutzen | Qualitätsgewinn gegen CPU-/GPU-/RAM- und Laufzeitkosten dokumentieren | O | offen | Keine vergleichbaren, vollständig gemessenen End-to-End-Varianten vorhanden |
-| E4 | Qwen3-VL 2B gegen Gemma 3 12B | Nach gesonderter VLM-Ausführungsfreigabe dieselben ungesehenen, unabhängig referenzierten Bildregionen und neutrale Transkriptionsprompts vergleichen; Wiederholungen, CER/WER, Kennungen, Fehler und Ressourcen pro Modell dokumentieren | S | offen | Roadmap: Qwen 2/3, Gemma 3/3 visuell richtige Titel-/Sloganzeilen, Gemma bei zehn Badges mit Fehler `3D Games Banned` statt `3D Games Bundled`; kleine, **nicht statistisch belastbare** Stichproben |
-| E5 | VLM-Halluzinationen, Prompt-Einfluss und Reviewbarriere | An historischen Befunden sowie – nur falls gesondert freigegeben – neuen Blind-/Wiederholungsversuchen unbelegte Ergänzungen, falsch begründete Kandidaten, Prompt-Leakage und Tesseract/VLM-Konflikte erfassen. Kriterien/Entscheidung zur menschlichen Prüfung dokumentieren; keine Selbstbestätigung, kein automatisches Überschreiben oder Fakten-/Indexfreigabe | M | offen | Roadmap: Qwen rationalisierte einen falschen Unterstrich mit unbelegten Aussagen; Gemma verwechselte `Bundled` und `Banned`. Schutzbewertung ist verpflichtend, **auch wenn E2/E4 nicht zur Ausführung freigegeben werden** |
+| E1 | DocLayout-gestützte Regions-OCR | Eindeutige Region zu exakt gleicher Referenz; Textgenauigkeit und Struktur separat vergleichen | O | offen | YOLO-Regionserkennung und getrennte CUBX-Regions-OCR erprobt, nicht als integrierte Kette gegen gleiche Referenz abgenommen. **Rest optional:** vollständiger Regionenvergleich nach gesonderter Freigabe. |
+| E2 | Selektiver, regelbasierter Vision-LLM-Zweitkandidat | Erst Standardextraktion/Tesseract; VLM ausschließlich bei vordefinierten auffälligen Regionen und nach gesonderter Freigabe. Tesseract- und VLM-Transkripte parallel als unbestätigte Kandidaten mit Region, Modell, Prompt, Abweichungen und Reviewbedarf erhalten; **kein automatisches Überschreiben, Indexieren oder Faktenfreigeben** | O | offen | Qwen3-VL 2B/Gemma3 12B als lokale OCR-Zweitkandidaten manuell erprobt, kein regelbasierter Trigger- und Reviewprozess. **Rest optional:** Trigger, nachvollziehbare parallele Kandidaten und menschliche Freigabebarriere. |
+| E3 | Ressourcen und Nutzen | Qualitätsgewinn gegen CPU-/GPU-/RAM- und Laufzeitkosten dokumentieren | O | offen | Gemma3 12B auf GTX 1060 6GB ausprobiert; VRAM/CPU-Snapshots, aber keine vergleichbaren Laufzeit-/Qualitätsreihen. **Rest optional:** Nutzen und Ressourcenaufwand mit gleichen Bedingungen. |
+| E4 | Qwen3-VL 2B gegen Gemma 3 12B | Nach gesonderter VLM-Ausführungsfreigabe dieselben ungesehenen, unabhängig referenzierten Bildregionen und neutrale Transkriptionsprompts vergleichen; Wiederholungen, CER/WER, Kennungen, Fehler und Ressourcen pro Modell dokumentieren | S | offen | Qwen3-VL 2B 2/3, Gemma3 12B 3/3 Zeilen visuell korrekt; Gemma-Badge `Banned` statt `Bundled`. **Rest nur nach Zusatzfreigabe:** blinde, wiederholte, regionsgleiche quantitative Vergleiche. |
+| E5 | VLM-Halluzinationen, Prompt-Einfluss und Reviewbarriere | An historischen Befunden sowie – nur falls gesondert freigegeben – neuen Blind-/Wiederholungsversuchen unbelegte Ergänzungen, falsch begründete Kandidaten, Prompt-Leakage und Tesseract/VLM-Konflikte erfassen. Kriterien/Entscheidung zur menschlichen Prüfung dokumentieren; keine Selbstbestätigung, kein automatisches Überschreiben oder Fakten-/Indexfreigabe | M | offen | Qwen rationalisierte falsche Unterstriche mit nicht belegten Aussagen; Gemma las `Banned` statt `Bundled`. **Rest verpflichtend:** historische Risiko-/Promptbewertung und funktionierende menschliche Reviewbarriere dokumentieren; keine neue VLM-Ausführung ohne Freigabe. |
 
 ## 9. Vorgeschlagene Schwellenwerte – alle **zur Freigabe**
 
@@ -145,6 +145,37 @@ Leerseiten- und OCR-Routingprüfung als **separaten** Kontrollfall dokumentieren
 
 Quellen stehen in `docs/ocr-quality-plan.md`, Abschnitte 12–14; zusätzlich `docs/PROJECT_ROADMAP.md` und `docs/PR13_POSEIDON_INTEGRATION_TEST_2026-11-22.md` auf `integration/pdf-ocr-webdav-2026-11-21`. Kein historischer Befund wird hier als **neuer Testlauf** dargestellt.
 
+### Nachtrag 23.11.2026 – historisch erledigte Teilprüfungen, verbleibende Abnahmen
+
+Die 29 Test-IDs sind weiterhin **unverändert eingefroren**. Die Einzelzeilen der Matrix enthalten jetzt die nachweislich bereits erledigten historischen Teilprüfungen und **jeweils nur noch den offenen Rest**. Ein bestandener technischer Test ist nicht dasselbe wie eine bestandene vollständige fachliche Matrix-ID.
+
+| Vorhandener Nachweis | Belegter Umfang | Keine erneute technische Pflichtwiederholung für |
+| --- | --- | --- |
+| PDF-Qualitätsbaseline vom 10.11. | 29 PDFs, 5.064 Seiten technisch vollständig; 7/14 Goldstandard-Seiten visuell klassifiziert | PDF-Survey und rein technische Klassifikation |
+| Stage-4-OCR-Regression und reale CUBX-Vorschau | 17 Tests zu PDF/OCR, realer Seiten-OCR-Lauf und kontrolliertes Leerseitenrouting | Synthetischer Kontrollfluss, grundlegende OCR-Erreichbarkeit |
+| OCR-Evaluator vom 12.11. | 8 Tests und Ruff bestanden; CER/WER-Rechenfunktionen | Bereits bestätigte Metrik-Unit-Tests |
+| CUBX-Sprachvergleich vom 12.11. | PSM6, PNG-Ausschnitt: `eng` 2,32 % CER/15 % WER; `eng+deu` 2,51 %/16,25 %; bytegleich reproduziert, **provisorische Referenz** | Reproduzierbarkeit dieses historischen Ausschnitts |
+| CUBX-Regionen und PSM7 vom 21.11. | 12 PSM6/11-Kandidaten, sechs PSM7-Zeilenkandidaten; Regression zuletzt 153 passed, 11 skipped | Experimentelle Machbarkeit, keine CER/WER-Abnahme |
+| DocLayout-YOLO und Struktur | USB-/Matrox-Einzelfälle, 16 Konflikttests, drei reale CPU-Inferenzzeiten | Detektionsmachbarkeit, nicht Layout- oder Tabellenfreigabe |
+| Qwen3-VL 2B und Gemma3 12B | Titel/Slogan 2/3 bzw. 3/3; Gemma verwechselte `Bundled` mit `Banned`; Qwen unbelegte Fehlerbegründung | Historische qualitative Einzelbefunde; keine VLM-Blindstudie |
+| PR13 Real-Dokument-E2E vom 22.11. | CUBX 112 Seiten, 114 Chunks und 114 Ollama-Embeddings; isolierter Test 1 passed in 21,46 s | Technische Verkettung, keine OCR-Güte |
+| Poseidon A1/A2 vom 23.11. | Bubblewrap schreibgeschützt/netzisoliert, SHA-Manifeste PASS; CUBX-Originalhash verifiziert und S.111 bei 140 DPI unter PyMuPDF 1.28.2 pixelidentisch | Historische Einzel-Quell-/Renderprüfung |
+| Poseidon A4 vom 23.11. | 3 vorhandene Schutz-/Provenienztests in Isolation bestanden (0,08 s), historische Dateien unverändert | Diese drei technischen Tests |
+
+**Wichtige Unterscheidung beim Nextcloud-Bestand:** Aktuelle PROPFIND-Inventur: 29 PDFs mit 28 verschiedenen *Dateinamen*. Die historische PDF-Analyse identifizierte 28 eindeutige *Inhalte*. Aus der aktuellen Namenszählung allein lässt sich die heutige SHA-256-Identität nicht erneut beweisen. Keine PDFs wurden bei der Inventur heruntergeladen.
+
+**Offene Abnahmen statt Testwiederholungen – empfohlene Reihenfolge:**
+
+1. **A5/A2:** Bereits vorhandenen lokalen Qualitätsbericht prüfen; fehlende Scankategorien ergänzend visuell untersuchen und erst danach zehn konkrete Seiten jeweils gesondert freigeben; Original-/Regionidentität bestätigen.
+2. **A3:** Manuelle Vollreferenzen nach dem vereinbarten zeitlich getrennten Zweidurchgangsverfahren erstellen, nachdem die Referenz-Erstellung eigens freigegeben wurde. **Keine personell unabhängige Zweitprüfung**: methodische Abweichung vor Abnahme ausdrücklich entscheiden und dokumentieren.
+3. **A4/A1:** Noch fehlende Schutzabdeckung für unvollständige Referenzen und den gesamten isolierten Evaluationslauf bestätigen, ohne die drei bereits bestandenen Unit-Tests nur zum Nachweis zu wiederholen.
+4. **B/C/D:** Nur ausstehende fachliche Messungen anhand freigegebener Regionen und Referenzen, einschließlich der noch zu genehmigenden Grenzwerte. Zeichengüte, Leseordnung und Matrix-Zellzuordnung getrennt beurteilen.
+5. **E5 verpflichtend:** Bereits nachgewiesene VLM-Fehlermodi und Reviewbarriere fachlich bewerten. E1–E4 nur bei eigenständiger optionaler Freigabe ausführen, andernfalls offen/mit begründeter Zurückstellung behandeln.
+
+**Formale Bewertung:** Alle 29 IDs bleiben `offen`, bis das gesamte jeweilige eingefrorene Akzeptanzkriterium erfüllt oder eine Abweichung entschieden ist. Eine historische Teilabdeckung darf nicht als grüner Gesamttest umetikettiert werden. **Es gibt aber nicht 29 neu auszuführende Tests**: Die verbleibenden Anforderungen stehen in der letzten Spalte jeder ID.
+
+**Quellen:** `docs/PDF_OCR_STAGE4.md`, `docs/OCR_QUALITY_EVALUATION.md`, `docs/PDF_GOLDSTANDARD_REVIEW.md`, `docs/ocr-quality-plan.md`; `docs/PROJECT_ROADMAP.md` und `docs/PR13_POSEIDON_INTEGRATION_TEST_2026-11-22.md` auf `integration/pdf-ocr-webdav-2026-11-21`; vom Betreiber am 23.11.2026 im Dialog übermittelte A1/A2/A4-Poseidon-Ausgaben. Die letzten Ausgaben sind **nicht** als ins Repository importiertes Testlog zu verstehen.
+
 ## 11. Abbruchkriterien und Definition „fertig“
 
 **Abbruch:** Sicherheits-/Isolationsverletzung, Veränderung des Originals, notwendige DB-/Worker-/Apply-Verarbeitung, unklare Modell-/Quellidentität oder methodisch ungültiger Referenzvergleich. Ein individueller OCR-Fehler oder schlechter Qualitätswert ist ein reguläres **Messergebnis**, kein pauschaler Abbruchgrund.
@@ -156,14 +187,14 @@ Quellen stehen in `docs/ocr-quality-plan.md`, Abschnitte 12–14; zusätzlich `d
 | Feld | Eintrag |
 | --- | --- |
 | Fachliche Freigabe dieser Matrix | **22.11.2026 – 29 IDs und Prioritäten verbindlich eingefroren** |
-| Freigegebener Korpus | ausstehend |
+| Freigegebener Korpus | Zehn Kategorien am 23.11. freigegeben; konkrete Seiten ausstehend |
 | Freigegebene Schwellenwerte / Varianten | ausstehend |
 | Datum / Prüferin | — |
 | Quell- und Referenzversionen (nur lokal) | — |
 | Geprüfter Repository-Commit | — |
-| Ergebnis A–E | offen |
+| Ergebnis A–E | 29 formale IDs offen; technische Teilnachweise und verbleibende Restprüfungen je ID dokumentiert |
 | Ausnahmen / Abweichungen / Entscheidungen | — |
-| Freigabe zu OCR-Evaluation | **nicht erteilt; bisher nur Abnahmeumfang freigegeben** |
+| Freigabe zu OCR-Evaluation | Historische Tests und technische A1/A2/A4-Prüfungen dokumentiert; **keine** Freigabe neuer OCR-/VLM-Gütemessungen |
 | Freigabe zu Indexierung/Fakten-/Produktivbetrieb | **nicht Gegenstand dieser Matrix** |
 
 ## 13. Vorschläge und Änderungsprotokoll
@@ -179,3 +210,4 @@ Quellen stehen in `docs/ocr-quality-plan.md`, Abschnitte 12–14; zusätzlich `d
 | 22.11.2026 | Erster eigenständiger Matrixentwurf mit 5 Prüfgruppen und bestehenden technischen Testzuordnungen | Reproduzierbare OCR-Qualitätsbewertung unabhängig von der eingefrorenen PR-#15-Abnahme planen |
 | 22.11.2026 | B9, B10, E4, E5 ergänzt und E2 als selektiver, regelbasierter VLM-Zweitkandidat präzisiert | Vom Betreiber ausdrücklich gewünschter Abgleich mit `PROJECT_ROADMAP.md`; dokumentierte PSM-/Regionsversuche und VLM-Fehlermodi in der späteren Qualitätsbewertung berücksichtigen. Keine Testausführung und keine fachliche Freigabe der Gesamtmatrix |
 | 22.11.2026 | **Fachliche Freigabe und Einfrieren des Abnahmeumfangs: 29 IDs, 23 M / 3 S / 3 O** | Ausdrückliche Zustimmung des Betreibers nach akzeptiertem Entwurf. Dies ist keine Freigabe der konkreten Testseiten, der Ground-Truth-Erstellung, der Schwellenwerte oder der Testdurchführung; PR #15 bleibt unberührt |
+| 23.11.2026 | Historische OCR-/Layout-/VLM-/PR13-Ergebnisse und aktuelle A1/A2/A4-Teilnachweise je ID eingetragen; OQ-Kategorien und A3-Verfahrenstatus aktualisiert | **Kein** Ändern von 29 IDs, Prüfkriterien, Prioritäten oder Schwellenwerten; keine automatische fachliche Freigabe; PR #15 unberührt |
