@@ -1,7 +1,7 @@
 # Testmatrix – OCR-Qualitätsbewertung (Retro-RAG V2)
 
 **Status:** Abnahmeumfang fachlich freigegeben und eingefroren am 22.11.2026; konkrete Testdurchführung nicht freigegeben, technische Abnahme ausstehend  
-**Stand:** 23.11.2026 – historische Nachweise und A5-Zwischenfreigaben aller zehn OQ-Seitenkandidaten dokumentiert  
+**Stand:** 23.11.2026 – A5 nach vollständiger lokaler Identitätsprüfung und ausdrücklicher Betreiberfreigabe formal abgenommen  
 **Branch:** `feat/ocr-quality-evaluation`  
 **Grundlage:** `docs/ocr-quality-plan.md`, `docs/OCR_QUALITY_EVALUATION.md`, `conventions.md` sowie `docs/PROJECT_ROADMAP.md` auf `integration/pdf-ocr-webdav-2026-11-21` (historischer Stand 21./22.11.2026)  
 **Umgebung für spätere Versuche:** Poseidon, ausschließlich isolierte lokale Dateien
@@ -30,7 +30,7 @@ Diese Matrix ist **eigenständig**. Die fachlich eingefrorene PR-#15-Abnahme unt
 | Freigabepunkt | Entscheidung | Status |
 | --- | --- | --- |
 | Zehn Kategorien OQ-01 bis OQ-10 als Korpusrahmen | 23.11.2026: Kategorien fachlich freigegeben; keine Seiten ausgewählt | freigegeben |
-| Konkrete zehn Originalseiten und Seiten-/Renderidentitäten | **OQ-01 bis OQ-10 als zehn konkrete Seitenkandidaten am 23.11.2026 fachlich zwischenfreigegeben**; bei OQ-04 ausschließlich linke Buchseite 100, moderate Beleuchtungsabweichung und Bundkrümmung. Lokale Original-/Seiten-/Renderidentität, vollständige Korpus- und A5-Abnahme ausstehend | Teilfreigabe 10/10 |
+| Konkrete zehn Originalseiten und Seiten-/Renderidentitäten | **10/10 Seiten für A5 am 23.11.2026 formal freigegeben**; sechs historische PDF-Hashes und vier neu erfasste Scanhashes lokal verifiziert; PDF-Seiten/Abmessungen und OQ-04-Regionsfreigabe auf Poseidon geprüft. Grenzen: unbekannte Scannerparameter, moderate OQ-04-Ausleuchtung, native Text-PDFs sind keine Raster-OCR-Gütemessung | freigegeben (A5) |
 | Manuelle Transkription, zweiter visueller Abgleich und eingefrorene Referenz | A3-Verfahren A am 23.11. festgelegt: zwei zeitlich getrennte manuelle Kontrollen durch dieselbe Person; keine personelle Unabhängigkeit; keine Texte erstellen | Verfahren festgelegt, Referenzen offen |
 | Gemeinsame Textnormalisierung, Block-/Zellreferenzregeln | Zur Freigabe | offen |
 | Grenzwerte und kritische Fehlertoleranz aus Qualitätsplan Abschnitt 8 | Zur Freigabe | offen |
@@ -116,6 +116,21 @@ Leerseiten- und OCR-Routingprüfung als **separaten** Kontrollfall dokumentieren
 
 **Schutzgrenzen:** Freigabe nur der OQ-04-Region, **keine** Freigabe der A5-Gesamtabnahme, von A3-Referenzen, OCR-, Layout- oder VLM-Testläufen, Indexierung oder Faktenübernahme. Alle 29 eingefrorenen Test-IDs und deren Kriterien bleiben unverändert `offen`.
 
+### A5 – Formale Korpusabnahme nach lokalem Gesamtcheck (23.11.2026)
+
+**Entscheidung:** Nach vollständig bestandener, ausschließlich lesender Gesamtprüfung auf Poseidon hat der Betreiber **A5 am 23.11.2026 ausdrücklich formal freigegeben**. Alle zehn fachlich ausgewählten Seitenplätze OQ-01 bis OQ-10 sind im lokalen Korpus `/data/retro-rag/v2/ocr-evaluation/a5-corpus-2026-11-23/` nachvollziehbar belegt.
+
+**Gemeldete und vom Betreiber übermittelte Prüfergebnisse:**
+- `OQ-01` bis `OQ-10`: jeweils `PASS` gegen lokales Manifest; **10/10 Originaldateien**, Quell-SHA-256 und Dateigrößen übereinstimmend.
+- **6 historische PDFs**: SHA-256 stimmt mit dem historischen Atlas-Qualitätsbericht überein; ausgewählte PDF-Seiten und Seitenzahlen sind gültig.
+- **4 neue Scanvorlagen**: SHA-256 lokal erfasst und bei der Prüfung bestätigt; Bildabmessungen bzw. PDF-Seiten geprüft.
+- **OQ-04**: Freigabedatei `region-review-oq04-2026-11-23/OQ-04-region-approved.json` vorhanden; Koordinaten `(300, 50, 1950, 2400)`, Original- und Vorschauhash `PASS`; der vorgelagerte direkte Pixelvergleich ergab ebenfalls `PASS`.
+- **Git-Arbeitsverzeichnis sauber**. Alle Originalquellen und vollständigen Hashwerte verbleiben lokal, nicht im Repository.
+
+**Bekannte Einschränkungen, ausdrücklich mit abgenommen:** Fehlende Scannerparameter sind nicht nachträglich geschätzt; OQ-04 weist nur eine **moderate** Beleuchtungs-/Bundabweichung auf und enthält als Bewertungsregion ausschließlich die linke Buchseite 100. OQ-05 bis OQ-10 beruhen überwiegend auf **nativem PDF-Text** und erlauben keine Schlussfolgerung zur Raster-OCR-Zeichengenauigkeit.
+
+**Abnahmeumfang:** Die eingefrorene ID **A5 = `grün`**. Die übrigen **28 IDs bleiben `offen`**, insbesondere A1–A4 und B–E. Diese Freigabe autorisiert **weder** manuelle A3-Ground-Truth-Erstellung noch CER/WER-/OCR-/Layout-/VLM-Testläufe, Indexierung, Faktenfreigabe oder Änderungen an Originalen, Nextcloud, Datenbank und Worker. Kein weiterer Korpustest eigenmächtig ergänzt.
+
 **Nachweisgrenzen:** Die sechs Seiten sind überwiegend native Text-PDFs; Eignung für Struktur-/Präzisionsprüfungen bedeutet **keine** nachgewiesene Raster-OCR-Qualität. Original-PDF-SHA-256, Versions- und Renderparameter sowie spätere Referenztexte nur lokal sichern. Alle 29 eingefrorenen Test-IDs, Akzeptanzkriterien, Prioritäten und formalen Status bleiben unverändert `offen`. A5 insgesamt noch nicht freigegeben. Keine Testausführung, keine Indexierungs- oder Faktenfreigabe.
 
 ## 4. A – Isolation, Quellen und Referenzqualität
@@ -126,7 +141,7 @@ Leerseiten- und OCR-Routingprüfung als **separaten** Kontrollfall dokumentieren
 | A2 | Exakte Quell-/Renderidentität | Identischer PDF-Inhalt/Seite/Region mit SHA- und Render-/Modellparametern; kein Vergleich unterschiedlicher Ausschnitte | M | offen | 23.11. echter CUBX-Quellhash gegen Review und OCR-Run identisch; S.111 bei 140 DPI mit PyMuPDF 1.28.2 als 1157×1638 PNG pixelidentisch. **Rest:** andere freigegebene Seiten und Regions-/Engineparameter; kein Beweis bytegleicher 200-DPI-OCR. |
 | A3 | Unabhängiger Referenztext | Manuell vom sichtbaren Original erstellt, zweitgeprüft und vor der Messung eingefroren | M | offen | 23.11. Verfahren A entschieden: zwei zeitversetzte manuelle Durchgänge durch dieselbe Person, nicht personell unabhängig. **Rest:** Referenzseiten freigeben, Vollreferenzen erstellen/versionieren; Akzeptanz der eingeschränkten Unabhängigkeit gesondert entscheiden. |
 | A4 | Ungeprüfte Referenz abweisen | Ungeprüfte/unvollständige Referenz liefert keine Gütezahlen und keine Freigabe | M | offen | 23.11. Bubblewrap: 3 bestehende Schutz-/Provenienztests PASS in 0,08 s, SHA-Manifest PASS, Git sauber. **Rest:** unvollständige Referenz und vollständige Freigabebarriere am Korpus prüfen; bestehende 3 Tests nicht grundlos wiederholen. |
-| A5 | Korpusabdeckung dokumentieren | Alle zehn freigegebenen Seitenplätze belegt oder Abweichung begründet; Kategorien nachvollziehbar | M | offen | **23.11.: zehn konkrete Seitenkandidaten OQ-01–OQ-10 zwischenfreigegeben**; OQ-04-Region **(300, 50, 1950, 2400)** nach Sichtprüfung ausdrücklich freigegeben (Abschnitt 3). Zehn Originaldateien auf Poseidon lokal gesichert; 6 historische Hashes bestätigt und 4 neue Hashes erfasst. **Rest:** dauerhafte lokale Regionsfreigabe/Hashbeziehung und Quellen-/Scan-/Renderidentitäten kontrollieren; A5-Gesamtkorpus gesondert abnehmen. |
+| A5 | Korpusabdeckung dokumentieren | Alle zehn freigegebenen Seitenplätze belegt oder Abweichung begründet; Kategorien nachvollziehbar | M | grün | **23.11.2026: formale Betreiberfreigabe nach vollständigem lokalem A5-Gesamtcheck.** OQ-01–OQ-10 vollständig besetzt; 10 Originaldateien mit Manifest und SHA-256 PASS; 6 historische PDF-Hashes identisch, 4 neue Scanhashes bestätigt; ausgewählte PDF-Seiten und Bildabmessungen PASS; OQ-04-Regionsdatei `OQ-04-region-approved.json` vorhanden und Original-/Vorschauhash PASS, vorgelagerter Pixelvergleich PASS; Git sauber. **Einschränkungen:** Scannerparameter teilweise unbekannt; OQ-04 bildet moderate Bundschatten-/Beleuchtungsabweichung ab; OQ-05–OQ-10 überwiegend native Text-PDFs, keine Aussage zur Raster-OCR-Güte. **Nur A5 abgeschlossen**, A3 und Qualitätsmessungen bleiben offen. |
 
 ## 5. B – OCR-Routing und Textqualität
 
@@ -247,13 +262,13 @@ Die 29 Test-IDs sind weiterhin **unverändert eingefroren**. Die Einzelzeilen de
 | Feld | Eintrag |
 | --- | --- |
 | Fachliche Freigabe dieser Matrix | **22.11.2026 – 29 IDs und Prioritäten verbindlich eingefroren** |
-| Freigegebener Korpus | **10/10 Seitenkandidaten sowie OQ-04-Regionskoordinaten fachlich freigegeben**; lokale Freigabemetadaten/Hashabgleich und A5-Gesamtabnahme weiterhin offen |
+| Freigegebener Korpus | **A5 formal freigegeben am 23.11.2026:** 10/10 Seiten; lokale Dateien, SHA-256, PDF-Seiten/Bildabmessungen und OQ-04-Regionsfreigabe vollständig kontrolliert. Scannerparameter teils unbekannt, OQ-04 nur moderate Beleuchtungsabweichung |
 | Freigegebene Schwellenwerte / Varianten | ausstehend |
 | Datum / Prüferin | — |
 | Quell- und Referenzversionen (nur lokal) | — |
 | Geprüfter Repository-Commit | — |
-| Ergebnis A–E | 29 formale IDs offen; technische Teilnachweise und verbleibende Restprüfungen je ID dokumentiert |
-| Ausnahmen / Abweichungen / Entscheidungen | A5: Alle zehn Seitenkandidaten zwischenfreigegeben. OQ-04 S. 100: Region (300, 50, 1950, 2400) nach Sichtprüfung freigegeben; nur linke Seite, moderate Bundschattenwirkung. Dauerhafte lokale Regionsfreigabe und Hashabgleich noch nachzuweisen. Native Text-PDFs bleiben kein Raster-OCR-Beleg |
+| Ergebnis A–E | **A5 grün (1/29)** nach ausdrücklicher Betreiberfreigabe; übrige **28 IDs offen**. Historische technische Teilnachweise und Restprüfungen unverändert |
+| Ausnahmen / Abweichungen / Entscheidungen | A5: Lokale Regionsfreigabedatei OQ-04 vorhanden und Hash-/Pixelkontrollen PASS; Region (300, 50, 1950, 2400), nur linke Seite. Unbekannte Scannerparameter nicht nachgetragen; moderate Bundschattenwirkung. Native Text-PDFs bleiben kein Raster-OCR-Beleg. Keine A3-/Messungsfreigabe |
 | Freigabe zu OCR-Evaluation | Historische Tests und technische A1/A2/A4-Prüfungen dokumentiert; **keine** Freigabe neuer OCR-/VLM-Gütemessungen |
 | Freigabe zu Indexierung/Fakten-/Produktivbetrieb | **nicht Gegenstand dieser Matrix** |
 
@@ -276,3 +291,4 @@ Die 29 Test-IDs sind weiterhin **unverändert eingefroren**. Die Einzelzeilen de
 | 23.11.2026 | OQ-01 (CP/M-Handbuch S. 7-6) und OQ-03 (C64-Programmlisting S. 104) nach Sichtprüfung als achte und neunte Seitenkandidaten fachlich zwischenfreigegeben | Gemeinsame Betreiberzustimmung zu den vorgeschlagenen Kandidaten; OQ-04 wegen verdeckter Inhalte offen; keine Referenzen, neuen Testläufe oder Änderung eingefrorener Kriterien |
 | 23.11.2026 | OQ-04: „Maschinensprache für Einsteiger“, gedruckte Seite 100, nach visueller Sichtprüfung als zehnten Seitenkandidaten fachlich zwischenfreigegeben | Ausdrückliche Betreiberzustimmung; nur die vollständig sichtbare linke Seite, milde Bundschatten-/Geometrieabweichung, rechte Nachbarseite ausgeschlossen; lokale Identitäts- und A5-Gesamtabnahme offen |
 | 23.11.2026 | OQ-04: endgültige Bewertungsregion (300, 50, 1950, 2400) aus dem Originalscan 2448 × 3437 px ausdrücklich freigegeben | Betreiberzustimmung nach visueller Prüfung des 1650 × 2350 px-Ausschnitts; nur Bewertungsbereich, keine A5-Gesamtabnahme. Lokaler persistenter Regionsstatus und Hashnachweis noch ausstehend |
+| 23.11.2026 | **A5 formell abgenommen: einzige geänderte ID auf `grün`** | Betreiberfreigabe nach lokalem 10/10-Quellen-/Manifest-/SHA-256-Gesamtcheck sowie OQ-04-Regionsfreigabe; Scannerparameter teilweise unbekannt, OQ-04 moderate Beleuchtung, native Text-PDFs kein Raster-OCR-Beleg. Übrige 28 IDs und alle eingefrorenen Kriterien unverändert |
