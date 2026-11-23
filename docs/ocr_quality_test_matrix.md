@@ -1,7 +1,7 @@
 # Testmatrix – OCR-Qualitätsbewertung (Retro-RAG V2)
 
 **Status:** Abnahmeumfang fachlich freigegeben und eingefroren am 22.11.2026; konkrete Testdurchführung nicht freigegeben, technische Abnahme ausstehend  
-**Stand:** 23.11.2026 – historische Teilnachweise und offene Restprüfungen abgeglichen  
+**Stand:** 23.11.2026 – historische Nachweise und A5-Zwischenfreigabe OQ-05 bis OQ-10 dokumentiert  
 **Branch:** `feat/ocr-quality-evaluation`  
 **Grundlage:** `docs/ocr-quality-plan.md`, `docs/OCR_QUALITY_EVALUATION.md`, `conventions.md` sowie `docs/PROJECT_ROADMAP.md` auf `integration/pdf-ocr-webdav-2026-11-21` (historischer Stand 21./22.11.2026)  
 **Umgebung für spätere Versuche:** Poseidon, ausschließlich isolierte lokale Dateien
@@ -30,7 +30,7 @@ Diese Matrix ist **eigenständig**. Die fachlich eingefrorene PR-#15-Abnahme unt
 | Freigabepunkt | Entscheidung | Status |
 | --- | --- | --- |
 | Zehn Kategorien OQ-01 bis OQ-10 als Korpusrahmen | 23.11.2026: Kategorien fachlich freigegeben; keine Seiten ausgewählt | freigegeben |
-| Konkrete zehn Originalseiten und Seiten-/Renderidentitäten | Vorbereitung der Kandidatenprüfung erlaubt; endgültige Seitenauswahl bleibt freigabepflichtig | offen |
+| Konkrete zehn Originalseiten und Seiten-/Renderidentitäten | OQ-05 bis OQ-10 am 23.11. als sechs konkrete Seitenkandidaten fachlich zwischenfreigegeben; OQ-01 bis OQ-04 und Gesamtkorpus offen; exakte Referenz-/Renderidentität später lokal prüfen | Teilfreigabe 6/10 |
 | Manuelle Transkription, zweiter visueller Abgleich und eingefrorene Referenz | A3-Verfahren A am 23.11. festgelegt: zwei zeitlich getrennte manuelle Kontrollen durch dieselbe Person; keine personelle Unabhängigkeit; keine Texte erstellen | Verfahren festgelegt, Referenzen offen |
 | Gemeinsame Textnormalisierung, Block-/Zellreferenzregeln | Zur Freigabe | offen |
 | Grenzwerte und kritische Fehlertoleranz aus Qualitätsplan Abschnitt 8 | Zur Freigabe | offen |
@@ -58,6 +58,23 @@ Diese Matrix ist **eigenständig**. Die fachlich eingefrorene PR-#15-Abnahme unt
 
 Leerseiten- und OCR-Routingprüfung als **separaten** Kontrollfall dokumentieren; nicht in CER/WER-Nenner für texttragende Seiten aufnehmen.
 
+### A5-Zwischenfreigabe – sechs konkrete Seitenkandidaten (23.11.2026)
+
+**Fachliche Entscheidung:** Der Betreiber hat OQ-05 bis OQ-10 am 23.11.2026 ausdrücklich **als Seitenkandidaten für die weitere Vorbereitung** zwischenfreigegeben. Keine Freigabe von Vollreferenzen, Qualitätsmessungen oder gesamtem A5.
+
+| ID | Zwischenfreigegebene Seite (PDF-Seite 1-basiert) | Sichtprüfung und fachliche Eignung | Grenze |
+| --- | --- | --- | --- |
+| OQ-05 | `usb_20.pdf`, S. 601 | Zwei Indexspalten, historisch visuell bestätigt; dokumentiertes `sort=True`-Lesereihenfolgeproblem | Strukturreferenz und korrekten Leseweg noch abnehmen |
+| OQ-06 | `agp30.pdf`, S. 40 | „Table 16: Graphics Card Options“, drei Spalten, sechs Datenzeilen, visuell klar abgrenzbar | Zell-/Zeilen-/Spaltenzuordnung gesondert prüfen |
+| OQ-07 | `MGA-G200_199811.pdf`, S. 522 | Historisch visuell bestätigte komplexe Pinmatrix | Signal-/Pin-Zuordnung noch nicht abgenommen |
+| OQ-08 | `82443BX.PDF`, S. 124 | Dicht beschrifteter Pinplan mit Fußnoten; 4,9 pt dominante Schrift laut historischem Bericht | Natives Text-PDF; keine automatische Raster-OCR-Freigabe |
+| OQ-09 | `Core X6800 and Core Duo E6000 and E4000.PDF`, S. 20 | Visuell geprüft: eng gruppierte ähnliche CPU-Modellnummern und technische Werte; S. 9 nur Reserve | Natives Text-PDF; exakte Kennungstrefferquote ausstehend |
+| OQ-10 | `cubx-103.pdf`, S. 21 | Visuell geprüfte Prozessor-/Busfrequenzen, Multiplikatoren und DIP-Schalterwerte | Präzise Wert-Einheit- und Zeilenzuordnung noch messen |
+
+**Unbesetzt:** OQ-01 (sauberer Fließtextscan), OQ-02 (sauberes technisches Scan-Datenblatt), OQ-03 (schlechter Scan: Rauschen/Kontrast/Kompression) und OQ-04 (schlechter Scan: Schräglage/Unschärfe/Ausleuchtung). Die bereits bekannte CUBX-Werbung S. 111 ist kein nachgewiesener schlechter Scan.
+
+**Nachweisgrenzen:** Die sechs Seiten sind überwiegend native Text-PDFs; Eignung für Struktur-/Präzisionsprüfungen bedeutet **keine** nachgewiesene Raster-OCR-Qualität. Original-PDF-SHA-256, Versions- und Renderparameter sowie spätere Referenztexte nur lokal sichern. Alle 29 eingefrorenen Test-IDs, Akzeptanzkriterien, Prioritäten und formalen Status bleiben unverändert `offen`. A5 insgesamt noch nicht freigegeben. Keine Testausführung, keine Indexierungs- oder Faktenfreigabe.
+
 ## 4. A – Isolation, Quellen und Referenzqualität
 
 | ID | Szenario | Akzeptanzkriterium | Prio | Status | Vorhandene Abdeckung / Grenze |
@@ -66,7 +83,7 @@ Leerseiten- und OCR-Routingprüfung als **separaten** Kontrollfall dokumentieren
 | A2 | Exakte Quell-/Renderidentität | Identischer PDF-Inhalt/Seite/Region mit SHA- und Render-/Modellparametern; kein Vergleich unterschiedlicher Ausschnitte | M | offen | 23.11. echter CUBX-Quellhash gegen Review und OCR-Run identisch; S.111 bei 140 DPI mit PyMuPDF 1.28.2 als 1157×1638 PNG pixelidentisch. **Rest:** andere freigegebene Seiten und Regions-/Engineparameter; kein Beweis bytegleicher 200-DPI-OCR. |
 | A3 | Unabhängiger Referenztext | Manuell vom sichtbaren Original erstellt, zweitgeprüft und vor der Messung eingefroren | M | offen | 23.11. Verfahren A entschieden: zwei zeitversetzte manuelle Durchgänge durch dieselbe Person, nicht personell unabhängig. **Rest:** Referenzseiten freigeben, Vollreferenzen erstellen/versionieren; Akzeptanz der eingeschränkten Unabhängigkeit gesondert entscheiden. |
 | A4 | Ungeprüfte Referenz abweisen | Ungeprüfte/unvollständige Referenz liefert keine Gütezahlen und keine Freigabe | M | offen | 23.11. Bubblewrap: 3 bestehende Schutz-/Provenienztests PASS in 0,08 s, SHA-Manifest PASS, Git sauber. **Rest:** unvollständige Referenz und vollständige Freigabebarriere am Korpus prüfen; bestehende 3 Tests nicht grundlos wiederholen. |
-| A5 | Korpusabdeckung dokumentieren | Alle zehn freigegebenen Seitenplätze belegt oder Abweichung begründet; Kategorien nachvollziehbar | M | offen | 23.11. zehn Kategorien OQ-01–OQ-10 freigegeben; WebDAV-PROPFIND 29 PDFs / 28 unterschiedliche Dateinamen, alle Größen bekannt, keine Downloads. Historische PDF-Baseline 5064 Seiten. **Rest:** zehn konkrete Seiten nach Sichtprüfung getrennt freigeben; schwierige Scans bisher nicht eindeutig belegt. |
+| A5 | Korpusabdeckung dokumentieren | Alle zehn freigegebenen Seitenplätze belegt oder Abweichung begründet; Kategorien nachvollziehbar | M | offen | **23.11.: OQ-05–OQ-10 nach Sichtprüfung konkret zwischenfreigegeben** (siehe Abschnitt 3); vier Scankategorien OQ-01–OQ-04 unbesetzt. **Rest:** Korpus komplettieren, lokale Quell-/Renderidentität nachweisen, A5 abschließend gesondert abnehmen. |
 
 ## 5. B – OCR-Routing und Textqualität
 
@@ -187,13 +204,13 @@ Die 29 Test-IDs sind weiterhin **unverändert eingefroren**. Die Einzelzeilen de
 | Feld | Eintrag |
 | --- | --- |
 | Fachliche Freigabe dieser Matrix | **22.11.2026 – 29 IDs und Prioritäten verbindlich eingefroren** |
-| Freigegebener Korpus | Zehn Kategorien am 23.11. freigegeben; konkrete Seiten ausstehend |
+| Freigegebener Korpus | OQ-05 bis OQ-10 als sechs konkrete Seitenkandidaten zwischenfreigegeben; OQ-01 bis OQ-04 und A5-Gesamtabnahme offen |
 | Freigegebene Schwellenwerte / Varianten | ausstehend |
 | Datum / Prüferin | — |
 | Quell- und Referenzversionen (nur lokal) | — |
 | Geprüfter Repository-Commit | — |
 | Ergebnis A–E | 29 formale IDs offen; technische Teilnachweise und verbleibende Restprüfungen je ID dokumentiert |
-| Ausnahmen / Abweichungen / Entscheidungen | — |
+| Ausnahmen / Abweichungen / Entscheidungen | A5: Zwischenfreigabe von sechs Seitenkandidaten, vier Scan-Kategorien offen; native Text-PDFs nicht als Raster-OCR-Beleg werten |
 | Freigabe zu OCR-Evaluation | Historische Tests und technische A1/A2/A4-Prüfungen dokumentiert; **keine** Freigabe neuer OCR-/VLM-Gütemessungen |
 | Freigabe zu Indexierung/Fakten-/Produktivbetrieb | **nicht Gegenstand dieser Matrix** |
 
@@ -211,3 +228,4 @@ Die 29 Test-IDs sind weiterhin **unverändert eingefroren**. Die Einzelzeilen de
 | 22.11.2026 | B9, B10, E4, E5 ergänzt und E2 als selektiver, regelbasierter VLM-Zweitkandidat präzisiert | Vom Betreiber ausdrücklich gewünschter Abgleich mit `PROJECT_ROADMAP.md`; dokumentierte PSM-/Regionsversuche und VLM-Fehlermodi in der späteren Qualitätsbewertung berücksichtigen. Keine Testausführung und keine fachliche Freigabe der Gesamtmatrix |
 | 22.11.2026 | **Fachliche Freigabe und Einfrieren des Abnahmeumfangs: 29 IDs, 23 M / 3 S / 3 O** | Ausdrückliche Zustimmung des Betreibers nach akzeptiertem Entwurf. Dies ist keine Freigabe der konkreten Testseiten, der Ground-Truth-Erstellung, der Schwellenwerte oder der Testdurchführung; PR #15 bleibt unberührt |
 | 23.11.2026 | Historische OCR-/Layout-/VLM-/PR13-Ergebnisse und aktuelle A1/A2/A4-Teilnachweise je ID eingetragen; OQ-Kategorien und A3-Verfahrenstatus aktualisiert | **Kein** Ändern von 29 IDs, Prüfkriterien, Prioritäten oder Schwellenwerten; keine automatische fachliche Freigabe; PR #15 unberührt |
+| 23.11.2026 | OQ-05 bis OQ-10 als sechs konkrete Seitenkandidaten fachlich zwischenfreigegeben und samt Grenzen in Abschnitt 3 dokumentiert | Betreiberfreigabe nach visueller Sichtung; vier Scan-Kategorien, alle formalen Matrix-IDs und gesamte A5-Abnahme bleiben offen |
